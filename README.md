@@ -1,4 +1,4 @@
-# ISRO SOC Security Analytics Platform
+# SOC Security Analytics Platform
 
 A security analytics platform with a Python (FastAPI) backend and a React frontend, using Elasticsearch for data storage and analysis.
 
