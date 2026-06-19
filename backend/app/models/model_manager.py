@@ -154,21 +154,103 @@ class ModelManager:
         )
 
     async def score_all_entities(self, feature_df: pd.DataFrame, normalized_df: pd.DataFrame) -> list[ScoringResult]:
-        """Pushes massive Pandas datasets extracting chronological execution boundaries per-entity inside parallel ML evaluations."""
+        """Backwards compatible wrapper for batch execution."""
+        return await self.score_all_entities_batched(feature_df, normalized_df)
+
+    async def score_all_entities_batched(self, feature_df: pd.DataFrame, normalized_df: pd.DataFrame, batch_size: int = 32) -> list[ScoringResult]:
+        """Pushes massive Pandas datasets extracting chronological execution boundaries per-entity inside parallel ML evaluations using vectorized batches."""
         if feature_df.empty:
             return []
             
         results = []
-        for _, row in feature_df.iterrows():
-            row_dict = row.to_dict()
-            entity_key = row_dict.get("entity_key")
-            seqs = []
-            if not normalized_df.empty and entity_key:
-                seqs = build_event_sequences(normalized_df, entity_key, sequence_len=20)
-                
-            res = self.score_entity(row_dict, seqs)
-            results.append(res)
+        
+        # Split into batches
+        for start_idx in range(0, len(feature_df), batch_size):
+            batch_df = feature_df.iloc[start_idx:start_idx + batch_size]
             
+            # Vectorized IF scoring
+            net_scores = np.zeros(len(batch_df))
+            if self.if_detector and self.net_scaler:
+                try:
+                    raw_net_vecs = batch_df[NETWORK_FEATURE_COLS].values
+                    scaled_net_vecs = scale_features(raw_net_vecs, self.net_scaler)
+                    net_scores = self.if_detector.score_batch(scaled_net_vecs)
+                except Exception as e:
+                    logger.error(f"Batch IF scoring error: {e}")
+            
+            # Vectorized AE scoring
+            proc_scores = np.zeros(len(batch_df))
+            if self.ae_detector and self.proc_scaler:
+                try:
+                    raw_proc_vecs = batch_df[PROCESS_FEATURE_COLS].values
+                    scaled_proc_vecs = scale_features(raw_proc_vecs, self.proc_scaler)
+                    proc_scores = self.ae_detector.score_batch(scaled_proc_vecs)
+                except Exception as e:
+                    logger.error(f"Batch AE scoring error: {e}")
+                    
+            # Process each entity in the batch
+            for idx, (_, row) in enumerate(batch_df.iterrows()):
+                row_dict = row.to_dict()
+                entity_key = row_dict.get("entity_key")
+                
+                seq_score = 0.0
+                if self.lstm_detector and not normalized_df.empty and entity_key:
+                    seqs = build_event_sequences(normalized_df, entity_key, sequence_len=20)
+                    if seqs:
+                        scores = [self.lstm_detector.sequence_anomaly_score(seq) for seq in seqs]
+                        seq_score = float(max(scores)) if scores else 0.0
+                
+                rule_eval = evaluate_rules(row_dict)
+                rule_score = rule_eval["rule_score"]
+                
+                # Combine scores
+                net_score = float(net_scores[idx])
+                proc_score = float(proc_scores[idx])
+                
+                weights = {"network": 0.25, "process": 0.35, "sequence": 0.15, "rule": 0.25}
+                active_models = ["rule"]
+                if self.if_detector: active_models.append("network")
+                if self.ae_detector: active_models.append("process")
+                if self.lstm_detector: active_models.append("sequence")
+                
+                inactive = set(weights.keys()) - set(active_models)
+                total_inactive_weight = sum(weights[m] for m in inactive)
+                for m in inactive:
+                    weights[m] = 0.0
+                    
+                if total_inactive_weight > 0 and len(active_models) > 0:
+                    redist = total_inactive_weight / len(active_models)
+                    for m in active_models:
+                        weights[m] += redist
+                        
+                threat_score = (
+                    weights["network"] * net_score +
+                    weights["process"] * proc_score +
+                    weights["sequence"] * seq_score +
+                    weights["rule"] * rule_score
+                )
+                
+                if threat_score < 0.3: threat_level = "low"
+                elif threat_score < 0.6: threat_level = "medium"
+                elif threat_score < 0.8: threat_level = "high"
+                else: threat_level = "critical"
+                    
+                res = ScoringResult(
+                    entity_key=str(entity_key or "unknown"),
+                    window_bucket=str(row_dict.get("window_bucket", "unknown")),
+                    network_anomaly_score=net_score,
+                    process_anomaly_score=proc_score,
+                    sequence_anomaly_score=seq_score,
+                    rule_score=rule_score,
+                    triggered_rules=[r.rule_id for r in rule_eval["triggered_rules"]],
+                    mitre_tactics=rule_eval["mitre_tactics"],
+                    mitre_technique_ids=rule_eval["mitre_techniques"],
+                    threat_score=float(threat_score),
+                    threat_level=threat_level,
+                    human_explanation=get_rule_explanation(rule_eval["triggered_rules"])
+                )
+                results.append(res)
+                
         return results
 
     async def train_all_models(self, feature_df: pd.DataFrame, normalized_df: pd.DataFrame):

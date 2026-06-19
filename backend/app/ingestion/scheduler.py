@@ -25,33 +25,63 @@ scheduler_state = {
 
 _scheduler: AsyncIOScheduler | None = None
 
-async def bulk_index(es: AsyncElasticsearch, docs: list[dict], index: str) -> dict[str, Any]:
-    """Bulk index documents into Elasticsearch."""
+import asyncio
+import time
+
+async def bulk_index(es: AsyncElasticsearch, docs: list[dict], index: str, chunk_size: int = 500) -> dict[str, Any]:
+    """Bulk index documents into Elasticsearch with batching and concurrent optimization."""
     if not docs:
         return {"indexed": 0, "errors": []}
         
-    actions = [
-        {
-            "_index": index,
-            "_source": doc
-        }
-        for doc in docs
-    ]
+    start_time = time.time()
+    total_indexed = 0
+    all_errors = []
     
-    try:
-        success, failed = await async_bulk(
-            es, actions, stats_only=False, raise_on_error=False, raise_on_exception=False
-        )
-        
-        errors = []
-        if failed:
-            for item in failed:
-                errors.append(item)
+    # Split docs into chunks
+    chunks = [docs[i:i + chunk_size] for i in range(0, len(docs), chunk_size)]
+    
+    # Process chunks concurrently with max 3 concurrent
+    semaphore = asyncio.Semaphore(3)
+    
+    async def process_chunk(chunk):
+        async with semaphore:
+            actions = [
+                {
+                    "_index": index,
+                    "_source": doc
+                }
+                for doc in chunk
+            ]
+            
+            try:
+                success, failed = await async_bulk(
+                    es, actions, stats_only=False, raise_on_error=False, raise_on_exception=False
+                )
                 
-        return {"indexed": success, "errors": errors}
-    except Exception as e:
-        logger.error("bulk_indexing_exception", error=str(e))
-        return {"indexed": 0, "errors": [str(e)]}
+                chunk_errors = []
+                if failed:
+                    for item in failed:
+                        chunk_errors.append(item)
+                
+                # Log warning if errors > 5%
+                if len(chunk_errors) > len(chunk) * 0.05:
+                    logger.warning("bulk_index_high_error_rate", chunk_size=len(chunk), errors=len(chunk_errors))
+                    
+                return success, chunk_errors
+            except Exception as e:
+                logger.error("bulk_indexing_chunk_exception", error=str(e))
+                return 0, [str(e)] * len(chunk)
+                
+    results = await asyncio.gather(*(process_chunk(chunk) for chunk in chunks))
+    
+    for success, errors in results:
+        total_indexed += success
+        all_errors.extend(errors)
+        
+    elapsed = time.time() - start_time
+    logger.info("bulk_index_completed", total=len(docs), indexed=total_indexed, errors=len(all_errors), time_seconds=round(elapsed, 2))
+        
+    return {"indexed": total_indexed, "errors": all_errors}
 
 def get_window_bucket(ts: datetime, window_minutes: int = 5) -> datetime:
     """Floors a timestamp to the nearest window_minutes."""

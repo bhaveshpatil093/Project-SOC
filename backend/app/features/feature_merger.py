@@ -187,9 +187,26 @@ def load_scaler(path: str) -> StandardScaler:
         return joblib.load(path)
     return StandardScaler()
 
-async def run_feature_pipeline(es: AsyncElasticsearch, since_minutes: int = 5) -> tuple[pd.DataFrame, pd.DataFrame]:
+import asyncio
+
+async def extract_network_async(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return pd.DataFrame()
+    return await asyncio.to_thread(extract_all_network_features, df)
+
+async def extract_process_async(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return pd.DataFrame()
+    return await asyncio.to_thread(extract_all_process_features, df)
+
+async def extract_alert_async(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return pd.DataFrame()
+    return await asyncio.to_thread(extract_all_alert_features, df)
+
+async def run_feature_pipeline_parallel(es: AsyncElasticsearch, since_minutes: int = 5) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Full pipeline: fetch -> normalize -> extract all three feature sets -> merge -> return DataFrame ready for ML
+    Full pipeline: fetch -> normalize -> extract all three feature sets concurrently -> merge
     """
     raw_results = await fetch_all_sources(es, since_minutes=since_minutes)
     
@@ -219,9 +236,14 @@ async def run_feature_pipeline(es: AsyncElasticsearch, since_minutes: int = 5) -
     process_df_in = enrich_normalized(process_norm)
     alert_df_in = enrich_normalized(alert_norm)
     
-    network_features = extract_all_network_features(network_df_in)
-    process_features = extract_all_process_features(process_df_in)
-    alert_features = extract_all_alert_features(alert_df_in)
+    # Extract all 3 feature sets concurrently
+    network_task = asyncio.create_task(extract_network_async(network_df_in))
+    process_task = asyncio.create_task(extract_process_async(process_df_in))
+    alert_task = asyncio.create_task(extract_alert_async(alert_df_in))
+    
+    network_features, process_features, alert_features = await asyncio.gather(
+        network_task, process_task, alert_task
+    )
     
     merged_df = merge_features(network_features, process_features, alert_features)
     
@@ -247,3 +269,6 @@ async def store_feature_vectors(es: AsyncElasticsearch, feature_df: pd.DataFrame
         docs.append(doc)
         
     return await bulk_index(es, docs, index_name)
+
+# Alias for backwards compatibility
+run_feature_pipeline = run_feature_pipeline_parallel

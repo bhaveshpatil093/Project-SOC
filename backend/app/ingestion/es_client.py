@@ -25,11 +25,15 @@ async def get_es_client() -> AsyncElasticsearch:
     global _es_client
     if _es_client is None:
         scheme = "https" if settings.ES_VERIFY_CERTS else "http"
-        # Since docker-compose sets xpack.security.http.ssl.enabled=false, we use HTTP
         _es_client = AsyncElasticsearch(
-            [f"http://{settings.ES_HOST}:{settings.ES_PORT}"],
+            hosts=[{"host": settings.ES_HOST, "port": settings.ES_PORT, "scheme": scheme}],
             basic_auth=(settings.ES_USERNAME, settings.ES_PASSWORD),
             verify_certs=settings.ES_VERIFY_CERTS,
+            connections_per_node=10,        # Connection pool size
+            http_compress=True,             # Gzip compression
+            retry_on_timeout=True,
+            max_retries=3,
+            sniff_on_start=False
         )
     return _es_client
 

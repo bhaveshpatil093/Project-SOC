@@ -57,6 +57,10 @@ class IsolationForestDetector:
         scores = self.predict(X)
         return float(scores[0])
 
+    def score_batch(self, feature_matrix: np.ndarray) -> np.ndarray:
+        """Predicts against a contiguous 2D batch feature mapping."""
+        return self.predict(feature_matrix)
+
     def save(self, path: str):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         joblib.dump(self, path)
