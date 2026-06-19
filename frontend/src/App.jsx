@@ -4,6 +4,7 @@ import { AlertNotificationBanner } from './components/layout/AlertNotificationBa
 import { Dashboard } from './pages/Dashboard';
 import { Alerts } from './pages/Alerts';
 import { AlertDetail } from './pages/AlertDetail';
+import { Incidents } from './pages/Incidents';
 import { Investigation } from './pages/Investigation';
 import { Feedback } from './pages/Feedback';
 import { Settings } from './pages/Settings';
@@ -43,6 +44,7 @@ const AppContent = () => {
             <Route path="dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
             <Route path="alerts" element={<ErrorBoundary><Alerts /></ErrorBoundary>} />
             <Route path="alerts/:id" element={<ErrorBoundary><AlertDetail /></ErrorBoundary>} />
+            <Route path="incidents" element={<ErrorBoundary><Incidents /></ErrorBoundary>} />
             <Route path="investigation" element={<ErrorBoundary><Investigation /></ErrorBoundary>} />
             <Route path="feedback" element={<ErrorBoundary><Feedback /></ErrorBoundary>} />
             <Route path="training" element={<ErrorBoundary><Training /></ErrorBoundary>} />

@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useUiStore } from '../../store/uiStore';
-import { LayoutDashboard, ShieldAlert, Search, MessageSquare, Activity, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, ShieldAlert, Search, MessageSquare, Activity, Settings, ChevronLeft, ChevronRight, Network } from 'lucide-react';
 
 export const Sidebar = () => {
   const { sidebarOpen, toggleSidebar } = useUiStore();
@@ -10,6 +10,7 @@ export const Sidebar = () => {
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/alerts', label: 'Alerts', icon: ShieldAlert },
+    { path: '/incidents', label: 'Incidents', icon: Network },
     { path: '/investigation', label: 'Investigation', icon: Search },
     { path: '/feedback', label: 'Feedback Loop', icon: MessageSquare },
     { path: '/training', label: 'ML Training', icon: Activity },
