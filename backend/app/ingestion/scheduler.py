@@ -93,6 +93,13 @@ async def run_ingestion_cycle(es: AsyncElasticsearch):
     try:
         logger.info("ingestion_cycle_started")
         
+        from app.api.routes.websocket import manager
+        now_iso = datetime.utcnow().isoformat() + "Z"
+        await manager.broadcast({
+            "type": "ingestion_started",
+            "data": {"timestamp": now_iso}
+        })
+        
         # a. Fetch logs
         raw_results = await fetch_all_sources(es, since_minutes=5)
         
@@ -127,6 +134,12 @@ async def run_ingestion_cycle(es: AsyncElasticsearch):
         index_result = await bulk_index(es, all_enriched_docs, target_index)
         
         # e. Run Full Threat Scoring Engine (encapsulates feature pipeline inherently)
+        now_iso = datetime.utcnow().isoformat() + "Z"
+        await manager.broadcast({
+            "type": "scoring_started",
+            "data": {"timestamp": now_iso}
+        })
+        
         from app.scoring.threat_engine import get_threat_engine
         engine = get_threat_engine()
         scoring_stats = await engine.run_scoring_cycle(since_minutes=5)
@@ -135,6 +148,23 @@ async def run_ingestion_cycle(es: AsyncElasticsearch):
         scheduler_state["last_run"] = datetime.utcnow().isoformat() + "Z"
         scheduler_state["docs_last_cycle"] = index_result["indexed"]
         
+        # Broadcast ingestion and scoring completions
+        from app.api.routes.websocket import manager
+        now_iso = datetime.utcnow().isoformat() + "Z"
+        await manager.broadcast({
+            "type": "scoring_complete",
+            "data": {
+                "scored": scoring_stats["scored"], "critical": scoring_stats["critical"], 
+                "high": scoring_stats["high"], "medium": scoring_stats["medium"], 
+                "low": scoring_stats["low"], "cycle_time_ms": scoring_stats["cycle_time_ms"],
+                "timestamp": now_iso
+            }
+        })
+        await manager.broadcast({
+            "type": "ingestion_complete",
+            "data": {"docs_fetched": total_fetched, "docs_indexed": index_result["indexed"], "timestamp": now_iso}
+        })
+
         # e. Log results
         logger.info("ingestion_cycle_completed", 
                     docs_fetched=total_fetched, 
@@ -147,6 +177,37 @@ async def run_ingestion_cycle(es: AsyncElasticsearch):
     except Exception as e:
         logger.error("ingestion_cycle_failed", error=str(e))
 
+async def broadcast_stats(es: AsyncElasticsearch):
+    try:
+        from app.api.routes.websocket import manager
+        from app.ingestion.es_client import INDEX_NAMES
+        
+        query = {
+            "size": 0,
+            "aggs": {
+                "critical": {"filter": {"term": {"threat_level": "critical"}}},
+                "high": {"filter": {"term": {"threat_level": "high"}}},
+                "medium": {"filter": {"term": {"threat_level": "medium"}}},
+                "low": {"filter": {"term": {"threat_level": "low"}}}
+            }
+        }
+        res = await es.search(index=INDEX_NAMES["alerts_processed"], body=query, ignore_unavailable=True)
+        aggs = res.get("aggregations", {})
+        
+        stats = {
+            "critical": aggs.get("critical", {}).get("doc_count", 0),
+            "high": aggs.get("high", {}).get("doc_count", 0),
+            "medium": aggs.get("medium", {}).get("doc_count", 0),
+            "low": aggs.get("low", {}).get("doc_count", 0),
+            "total": res.get("hits", {}).get("total", {}).get("value", 0)
+        }
+        await manager.broadcast({
+            "type": "stats_update",
+            "data": stats
+        })
+    except Exception as e:
+        logger.error("broadcast_stats_failed", error=str(e))
+
 async def start_scheduler(es: AsyncElasticsearch):
     """Starts the APScheduler background ingestion job."""
     global _scheduler
@@ -158,6 +219,14 @@ async def start_scheduler(es: AsyncElasticsearch):
         trigger=IntervalTrigger(minutes=5),
         args=[es],
         id="ingestion_pipeline",
+        replace_existing=True
+    )
+    
+    _scheduler.add_job(
+        broadcast_stats,
+        trigger=IntervalTrigger(seconds=60),
+        args=[es],
+        id="stats_broadcast",
         replace_existing=True
     )
     

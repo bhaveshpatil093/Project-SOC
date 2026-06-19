@@ -236,6 +236,12 @@ class AlertCorrelator:
         try:
             await es.index(index=INDEX_NAMES["incidents"], id=incident.incident_id, document=doc)
             logger.info("incident_stored", incident_id=incident.incident_id, threat_level=incident.threat_level)
+            
+            from app.api.routes.websocket import manager
+            await manager.broadcast({
+                "type": "new_incident",
+                "data": doc
+            })
         except Exception as e:
             logger.error("failed_to_store_incident", incident_id=incident.incident_id, error=str(e))
 

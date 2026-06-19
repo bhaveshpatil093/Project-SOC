@@ -1,6 +1,29 @@
 import { useEffect, useState, useRef } from "react";
 import { useAlertStore } from "../store/alertStore";
 import { useBannerStore } from "../store/bannerStore";
+import { create } from "zustand";
+
+export const useWebSocketStore = create((set) => ({
+  wsConnected: false,
+  lastIngestion: null,
+  lastScoring: null,
+  ingestionRunning: false,
+  scoringRunning: false,
+  liveAlerts: [],
+  liveStats: null,
+  setWsConnected: (status) => set({ wsConnected: status }),
+  setLastIngestion: (data) => set({ lastIngestion: data, ingestionRunning: false }),
+  setLastScoring: (data) => set({ lastScoring: data, scoringRunning: false }),
+  setIngestionRunning: (status) => set({ ingestionRunning: status }),
+  setScoringRunning: (status) => set({ scoringRunning: status }),
+  setLiveStats: (data) => set({ liveStats: data }),
+  addLiveAlert: (alert) => set((state) => {
+    const alertId = alert.id || alert._id;
+    const exists = state.liveAlerts.find(a => (a.id || a._id) === alertId);
+    if (exists) return state;
+    return { liveAlerts: [alert, ...state.liveAlerts].slice(0, 20) };
+  })
+}));
 
 export function useWebSocket(isAuthenticated = false) {
   const [connected, setConnected] = useState(false);
@@ -22,6 +45,7 @@ export function useWebSocket(isAuthenticated = false) {
 
       ws.onopen = () => {
         setConnected(true);
+        useWebSocketStore.getState().setWsConnected(true);
         setReconnecting(false);
         retryCount.current = 0;
       };
@@ -53,6 +77,24 @@ export function useWebSocket(isAuthenticated = false) {
              if (threat === "critical" || threat === "high") {
                  useBannerStore.getState().addBanner(alertData);
              }
+
+             // 3. Add to live alerts feed for dashboard
+             useWebSocketStore.getState().addLiveAlert(alertData);
+          }
+          else if (msg.type === "scoring_started") {
+             useWebSocketStore.getState().setScoringRunning(true);
+          }
+          else if (msg.type === "scoring_complete") {
+             useWebSocketStore.getState().setLastScoring(msg.data);
+          }
+          else if (msg.type === "ingestion_started") {
+             useWebSocketStore.getState().setIngestionRunning(true);
+          }
+          else if (msg.type === "ingestion_complete") {
+             useWebSocketStore.getState().setLastIngestion(msg.data);
+          }
+          else if (msg.type === "stats_update") {
+             useWebSocketStore.getState().setLiveStats(msg.data);
           }
         } catch (err) {
           console.error("Failed to parse WS message", err);
@@ -61,6 +103,7 @@ export function useWebSocket(isAuthenticated = false) {
 
       ws.onclose = () => {
         setConnected(false);
+        useWebSocketStore.getState().setWsConnected(false);
         if (retryCount.current < maxRetries) {
           setReconnecting(true);
           retryCount.current += 1;
