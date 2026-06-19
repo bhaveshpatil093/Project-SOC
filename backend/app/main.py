@@ -27,6 +27,7 @@ from app.api.routes.feedback import router as feedback_router
 from app.api.routes.training import router as training_router
 from app.api.routes.websocket import router as websocket_router
 from app.api.routes.slm import router as slm_router
+from app.api.routes.health import router as health_router
 from app.auth.routes import router as auth_router
 from app.slm.model_loader import _slm_engine
 from app.logging_config import configure_logging, get_logger
@@ -145,6 +146,7 @@ def create_app() -> FastAPI:
     app.include_router(feedback_router, prefix="/api/feedback", tags=["Feedback"])
     app.include_router(training_router, prefix="/api/training", tags=["Training"])
     app.include_router(slm_router, prefix="/api/slm", tags=["SLM"])
+    app.include_router(health_router, prefix="/health", tags=["Health"])
 
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -155,10 +157,6 @@ def create_app() -> FastAPI:
         allowed_hosts=["localhost", "127.0.0.1", "*.isro.gov.in"]
     )
     app.include_router(websocket_router, tags=["WebSocket"])
-
-    @app.get("/health", tags=["Health"], response_model=dict, summary="System Health Check", description="Returns ok if the API is active.")
-    def health_check():
-        return {"status": "ok", "version": "1.0.0"}
 
     return app
 

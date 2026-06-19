@@ -14,9 +14,9 @@ export const Settings = () => {
   const [actionResult, setActionResult] = useState(null);
 
   // Health Queries
-  const { data: health, isLoading: healthLoading } = useQuery({
-    queryKey: ["health"],
-    queryFn: () => apiClient.get("/health"),
+  const { data: deepHealth, isLoading: healthLoading } = useQuery({
+    queryKey: ["healthDeep"],
+    queryFn: () => apiClient.get("/health/deep"),
     refetchInterval: 30000,
   });
 
@@ -44,10 +44,8 @@ export const Settings = () => {
     refetchInterval: 30000,
   });
 
-  const isHealthy = health?.status === "ok";
-
   const refreshStatus = () => {
-    queryClient.invalidateQueries({ queryKey: ["health"] });
+    queryClient.invalidateQueries({ queryKey: ["healthDeep"] });
     queryClient.invalidateQueries({ queryKey: ["ingestionStatus"] });
     refetchSlm();
     refetchRag();
@@ -159,71 +157,63 @@ export const Settings = () => {
         </button>
       </div>
 
-      {/* SECTION 1: System Health Panel */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-5 shadow-lg flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-slate-900 rounded text-slate-400 border border-slate-700"><Database className="h-5 w-5"/></div>
-            {healthLoading ? <LoadingSpinner size={4}/> : isHealthy ? (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full"><div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"/> Connected</span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-red-500 bg-red-500/10 px-2 py-1 rounded-full"><div className="w-1.5 h-1.5 bg-red-500 rounded-full"/> Disconnected</span>
-            )}
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Elasticsearch Node</h3>
-            <p className="text-lg font-medium text-white">Main Cluster</p>
-          </div>
+      {/* SECTION 1: Deep Health Panel */}
+      <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 shadow-lg">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Activity className="h-5 w-5 text-blue-400" />
+            Platform Deep Health
+          </h2>
+          {healthLoading ? (
+            <LoadingSpinner size={4}/>
+          ) : (
+            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+              deepHealth?.status === "healthy" ? "bg-green-500/10 text-green-500 border-green-500/30" : 
+              deepHealth?.status === "degraded" ? "bg-orange-500/10 text-orange-500 border-orange-500/30" : 
+              "bg-red-500/10 text-red-500 border-red-500/30"
+            }`}>
+              {deepHealth?.status || "Unknown"}
+            </span>
+          )}
         </div>
-
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-5 shadow-lg flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-slate-900 rounded text-slate-400 border border-slate-700"><Server className="h-5 w-5"/></div>
-            {ingestionLoading ? <LoadingSpinner size={4}/> : ingestion?.status === "running" ? (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded-full"><div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"/> Running</span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-slate-400 bg-slate-500/10 px-2 py-1 rounded-full">Stopped</span>
-            )}
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Ingestion Scheduler</h3>
-            <p className="text-xs text-slate-300">
-              {ingestion?.last_run ? `Last run: ${formatDate(ingestion.last_run)}` : 'Waiting for initial tick...'}
-              <br/><span className="text-slate-500 font-mono mt-1 block">Docs: {ingestion?.docs_last_cycle || 0}</span>
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-5 shadow-lg flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-slate-900 rounded text-slate-400 border border-slate-700"><MonitorDot className="h-5 w-5"/></div>
-            {wsConnected ? (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full"><div className="w-1.5 h-1.5 bg-green-500 rounded-full"/> Connected</span>
-            ) : wsReconnecting ? (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-orange-500 bg-orange-500/10 px-2 py-1 rounded-full"><div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-ping"/> Reconnecting</span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-red-500 bg-red-500/10 px-2 py-1 rounded-full">Offline</span>
-            )}
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">WebSocket Live Feed</h3>
-            <p className="text-xs text-slate-300">Real-time alert streaming channel</p>
-          </div>
-        </div>
-
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-5 shadow-lg flex flex-col justify-between">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2 bg-slate-900 rounded text-slate-400 border border-slate-700"><Activity className="h-5 w-5"/></div>
-            {isHealthy ? (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full">Healthy</span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-xs font-bold text-red-500 bg-red-500/10 px-2 py-1 rounded-full">Degraded</span>
-            )}
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Scoring & AI Engine</h3>
-            <p className="text-xs text-slate-300">FastAPI ML Dependency Runtime</p>
-          </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {deepHealth?.components?.map((comp) => (
+            <div key={comp.name} className="bg-slate-900 border border-slate-700 rounded-lg p-4 flex flex-col justify-between">
+              <div className="flex justify-between items-start mb-3">
+                <h3 className="text-sm font-bold text-white capitalize">{comp.name.replace("_", " ")}</h3>
+                <span className={`flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  comp.status === "healthy" ? "bg-green-500/10 text-green-500" :
+                  comp.status === "degraded" ? "bg-orange-500/10 text-orange-500" :
+                  "bg-red-500/10 text-red-500"
+                }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${
+                    comp.status === "healthy" ? "bg-green-500" :
+                    comp.status === "degraded" ? "bg-orange-500 animate-pulse" :
+                    "bg-red-500"
+                  }`} />
+                  {comp.status}
+                </span>
+              </div>
+              <div className="space-y-1 mt-auto">
+                <p className="text-xs text-slate-400 flex justify-between">
+                  <span>Latency</span>
+                  <span className="font-mono text-slate-300">{comp.latency_ms?.toFixed(1) || 0} ms</span>
+                </p>
+                {Object.entries(comp.details || {}).slice(0, 2).map(([k, v]) => (
+                  <p key={k} className="text-xs text-slate-400 flex justify-between">
+                    <span className="capitalize">{k.replace(/_/g, " ")}</span>
+                    <span className="font-mono text-slate-300 truncate max-w-[120px]" title={String(v)}>{String(v)}</span>
+                  </p>
+                ))}
+              </div>
+            </div>
+          ))}
+          {(!deepHealth?.components || deepHealth.components.length === 0) && !healthLoading && (
+            <div className="col-span-full py-8 text-center text-slate-500 text-sm">
+              No health data available. Server might be offline.
+            </div>
+          )}
         </div>
       </div>
 
