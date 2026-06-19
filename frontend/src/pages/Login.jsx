@@ -31,7 +31,7 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg_primary)] flex flex-col items-center justify-center relative overflow-hidden">
       {/* Background decorations */}
       <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950"></div>
       <div className="absolute -top-[500px] -right-[500px] w-[1000px] h-[1000px] rounded-full bg-blue-500/5 blur-3xl"></div>
@@ -39,13 +39,13 @@ export const Login = () => {
       <div className="z-10 w-full max-w-md p-8">
         <div className="flex flex-col items-center mb-8">
           <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-900/20 border border-blue-500/30">
-            <ShieldAlert className="w-10 h-10 text-white" />
+            <ShieldAlert className="w-10 h-10 text-[var(--text_primary)]" />
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">ISRO ISTRAC</h1>
-          <p className="text-slate-400 mt-2 font-medium">Advanced SOC Analytics Platform</p>
+          <h1 className="text-3xl font-bold text-[var(--text_primary)] tracking-tight">ISRO ISTRAC</h1>
+          <p className="text-[var(--text_secondary)] mt-2 font-medium">Advanced SOC Analytics Platform</p>
         </div>
 
-        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-[var(--bg_primary)]/60 backdrop-blur-xl border border-[var(--border)] rounded-2xl p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start">
@@ -55,26 +55,26 @@ export const Login = () => {
             )}
             
             <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-300 ml-1">Personnel ID</label>
+              <label className="text-sm font-medium text-[var(--text_secondary)] ml-1">Personnel ID</label>
               <input 
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className={`w-full bg-slate-950/50 border ${fieldErrors.username ? 'border-red-500' : 'border-slate-700'} rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all`}
+                className={`w-full bg-[var(--bg_primary)]/50 border ${fieldErrors.username ? 'border-red-500' : 'border-[var(--border)]'} rounded-xl px-4 py-3 text-[var(--text_primary)] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all`}
                 placeholder="Enter your tracking designation"
               />
               {fieldErrors.username && <p className="text-xs text-red-400 mt-1">{fieldErrors.username}</p>}
             </div>
             
             <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-300 ml-1">Passcode</label>
+              <label className="text-sm font-medium text-[var(--text_secondary)] ml-1">Passcode</label>
               <input 
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className={`w-full bg-slate-950/50 border ${fieldErrors.password ? 'border-red-500' : 'border-slate-700'} rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all`}
+                className={`w-full bg-[var(--bg_primary)]/50 border ${fieldErrors.password ? 'border-red-500' : 'border-[var(--border)]'} rounded-xl px-4 py-3 text-[var(--text_primary)] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all`}
                 placeholder="••••••••"
               />
               {fieldErrors.password && <p className="text-xs text-red-400 mt-1">{fieldErrors.password}</p>}
@@ -83,7 +83,7 @@ export const Login = () => {
             <button 
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-blue-900/20"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-[var(--text_primary)] font-medium rounded-xl px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-blue-900/20"
             >
               {isSubmitting ? (
                 <>
@@ -101,7 +101,7 @@ export const Login = () => {
         </div>
         
         <div className="mt-8 text-center">
-          <p className="text-xs text-slate-500 font-medium">
+          <p className="text-xs text-[var(--text_secondary)] font-medium">
             RESTRICTED ACCESS • AUTHORIZED PERSONNEL ONLY
           </p>
         </div>

@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as d3 from 'd3';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Filter as FilterIcon } from 'lucide-react';
+import { useUiStore } from '../../store/uiStore';
+import { THEMES } from '../../utils/theme';
 
 export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNodes = 500, onNodeClick }) => {
   const containerRef = useRef(null);
@@ -13,6 +15,8 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
   const [onlyIncidents, setOnlyIncidents] = useState(false);
   const [simulation, setSimulation] = useState(null);
   const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, content: null });
+  const { theme } = useUiStore();
+  const colors = THEMES[theme];
 
   // Data processing to graph representation
   const graphData = useMemo(() => {
@@ -191,9 +195,9 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
         .data(links)
         .join("line")
         .attr("stroke", d => {
-          if (d.type === 'alert-incident') return '#ef4444'; 
-          if (d.type === 'alert-alert') return '#f97316'; 
-          return '#475569'; 
+          if (d.type === 'alert-incident') return colors.critical; 
+          if (d.type === 'alert-alert') return colors.high; 
+          return colors.border; 
         })
         .attr("stroke-width", d => d.type === 'alert-incident' ? 3 : 1.5)
         .attr("stroke-dasharray", d => d.type === 'alert-alert' ? "4,4" : "none");
@@ -227,32 +231,33 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
         if (d.type === 'incident') {
           el.append("path")
             .attr("d", hexPath(d.radius))
-            .attr("fill", "#7f1d1d")
-            .attr("stroke", "#ef4444")
+            .attr("fill", colors.critical + '33') // 20% opacity
+            .attr("stroke", colors.critical)
             .attr("stroke-width", 2);
         } else {
           el.append("circle")
             .attr("r", d.radius)
             .attr("fill", d => {
-              if (d.type === 'host') return '#1e3a8a';
-              if (d.type === 'user') return '#4c1d95';
+              if (d.type === 'host') return colors.accent + '33';
+              if (d.type === 'user') return '#8b5cf633'; // light purple
               if (d.type === 'alert') {
-                if (d.score >= 0.8) return '#991b1b';
-                if (d.score >= 0.6) return '#9a3412';
-                if (d.score >= 0.4) return '#854d0e';
-                return '#1e40af';
+                if (d.score >= 0.8) return colors.critical + '33';
+                if (d.score >= 0.6) return colors.high + '33';
+                if (d.score >= 0.4) return colors.medium + '33';
+                return colors.low + '33';
               }
-              return '#334155';
+              return colors.bg_tertiary;
             })
             .attr("stroke", d => {
-              if (d.type === 'host') return '#3b82f6';
+              if (d.type === 'host') return colors.accent;
               if (d.type === 'user') return '#8b5cf6';
               if (d.type === 'alert') {
-                if (d.score >= 0.8) return '#ef4444';
-                if (d.score >= 0.6) return '#f97316';
-                return '#3b82f6';
+                if (d.score >= 0.8) return colors.critical;
+                if (d.score >= 0.6) return colors.high;
+                if (d.score >= 0.4) return colors.medium;
+                return colors.low;
               }
-              return '#64748b';
+              return colors.border;
             })
             .attr("stroke-width", 2);
         }
@@ -264,7 +269,7 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
         .attr("y", 4)
         .text(d => d.label)
         .attr("font-size", "10px")
-        .attr("fill", "#94a3b8")
+        .attr("fill", colors.text_secondary)
         .attr("font-family", "monospace")
         .attr("pointer-events", "none");
 
@@ -283,11 +288,12 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
         setTooltip({ show: false, x: 0, y: 0, content: null });
         d3.select(event.currentTarget).select("circle, path")
           .attr("stroke-width", 2)
-          .attr("stroke", d.type === 'incident' ? "#ef4444" : (
-            d.type === 'host' ? '#3b82f6' :
+          .attr("stroke", d.type === 'incident' ? colors.critical : (
+            d.type === 'host' ? colors.accent :
             d.type === 'user' ? '#8b5cf6' :
-            d.score >= 0.8 ? '#ef4444' :
-            d.score >= 0.6 ? '#f97316' : '#3b82f6'
+            d.score >= 0.8 ? colors.critical :
+            d.score >= 0.6 ? colors.high : 
+            d.score >= 0.4 ? colors.medium : colors.low
           ));
       })
       .on("click", (event, d) => {
@@ -326,15 +332,15 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
           context.moveTo(d.source.x, d.source.y);
           context.lineTo(d.target.x, d.target.y);
           if (d.type === 'alert-incident') {
-            context.strokeStyle = '#ef4444';
+            context.strokeStyle = colors.critical;
             context.lineWidth = 3;
             context.setLineDash([]);
           } else if (d.type === 'alert-alert') {
-            context.strokeStyle = '#f97316';
+            context.strokeStyle = colors.high;
             context.lineWidth = 1.5;
             context.setLineDash([4, 4]);
           } else {
-            context.strokeStyle = '#475569';
+            context.strokeStyle = colors.border;
             context.lineWidth = 1.5;
             context.setLineDash([]);
           }
@@ -355,20 +361,20 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
               else context.lineTo(x, y);
             }
             context.closePath();
-            context.fillStyle = "#7f1d1d";
-            context.strokeStyle = "#ef4444";
+            context.fillStyle = colors.critical + '33';
+            context.strokeStyle = colors.critical;
             context.lineWidth = 2;
           } else {
             context.arc(d.x, d.y, d.radius, 0, 2 * Math.PI);
-            if (d.type === 'host') { context.fillStyle = '#1e3a8a'; context.strokeStyle = '#3b82f6'; }
-            else if (d.type === 'user') { context.fillStyle = '#4c1d95'; context.strokeStyle = '#8b5cf6'; }
+            if (d.type === 'host') { context.fillStyle = colors.accent + '33'; context.strokeStyle = colors.accent; }
+            else if (d.type === 'user') { context.fillStyle = '#8b5cf633'; context.strokeStyle = '#8b5cf6'; }
             else if (d.type === 'alert') {
-              if (d.score >= 0.8) { context.fillStyle = '#991b1b'; context.strokeStyle = '#ef4444'; }
-              else if (d.score >= 0.6) { context.fillStyle = '#9a3412'; context.strokeStyle = '#f97316'; }
-              else if (d.score >= 0.4) { context.fillStyle = '#854d0e'; context.strokeStyle = '#3b82f6'; }
-              else { context.fillStyle = '#1e40af'; context.strokeStyle = '#3b82f6'; }
+              if (d.score >= 0.8) { context.fillStyle = colors.critical + '33'; context.strokeStyle = colors.critical; }
+              else if (d.score >= 0.6) { context.fillStyle = colors.high + '33'; context.strokeStyle = colors.high; }
+              else if (d.score >= 0.4) { context.fillStyle = colors.medium + '33'; context.strokeStyle = colors.medium; }
+              else { context.fillStyle = colors.low + '33'; context.strokeStyle = colors.low; }
             } else {
-              context.fillStyle = '#334155'; context.strokeStyle = '#64748b';
+              context.fillStyle = colors.bg_tertiary; context.strokeStyle = colors.border;
             }
             context.lineWidth = 2;
           }
@@ -376,7 +382,7 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
           context.stroke();
           
           // Labels
-          context.fillStyle = "#94a3b8";
+          context.fillStyle = colors.text_secondary;
           context.font = "10px monospace";
           context.fillText(d.label, d.x + d.radius + 5, d.y + 4);
         });
@@ -415,7 +421,7 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
     return () => {
       sim.stop();
     };
-  }, [graphData, navigate, onNodeClick]);
+  }, [graphData, navigate, onNodeClick, colors]);
 
   const handleResetLayout = () => {
     if (simulation) {
@@ -424,14 +430,14 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
   };
 
   return (
-    <div className="relative w-full h-full bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-inner flex flex-col">
+    <div className="relative w-full h-full bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl overflow-hidden shadow-inner flex flex-col">
       
       {/* Controls Overlay */}
-      <div className="absolute top-4 right-4 z-10 bg-slate-900/80 backdrop-blur border border-slate-700 p-3 rounded-lg flex flex-col gap-3 shadow-lg">
-        <div className="flex items-center gap-2 text-slate-300 text-xs">
+      <div className="absolute top-4 right-4 z-10 bg-[var(--bg_primary)]/80 backdrop-blur border border-[var(--border)] p-3 rounded-lg flex flex-col gap-3 shadow-lg">
+        <div className="flex items-center gap-2 text-[var(--text_secondary)] text-xs">
           <FilterIcon className="h-4 w-4 text-blue-500" />
           <select 
-            className="bg-slate-800 border border-slate-700 rounded px-2 py-1 outline-none"
+            className="bg-[var(--bg_secondary)] border border-[var(--border)] rounded px-2 py-1 outline-none"
             value={minLevel} onChange={e => setMinLevel(e.target.value)}
           >
             <option value="all">All Levels</option>
@@ -440,14 +446,14 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
             <option value="critical">Critical Only</option>
           </select>
         </div>
-        <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+        <label className="flex items-center gap-2 text-xs text-[var(--text_secondary)] cursor-pointer">
           <input type="checkbox" checked={onlyIncidents} onChange={e => setOnlyIncidents(e.target.checked)} className="accent-blue-500" />
           Only Incidents & Entities
         </label>
-        <button onClick={handleResetLayout} className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-xs text-white px-3 py-1.5 rounded transition-colors border border-slate-600">
+        <button onClick={handleResetLayout} className="flex items-center justify-center gap-2 bg-[var(--bg_secondary)] hover:bg-[var(--bg_tertiary)] text-xs text-[var(--text_primary)] px-3 py-1.5 rounded transition-colors border border-[var(--border)]">
           <RefreshCw className="h-3 w-3" /> Reset Layout
         </button>
-        <div className="text-[10px] text-slate-500 mt-1 text-center font-mono">
+        <div className="text-[10px] text-[var(--text_secondary)] mt-1 text-center font-mono">
           Showing {graphData.nodes.length} nodes, {graphData.links.length} edges
         </div>
       </div>
@@ -461,10 +467,10 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
       {/* Tooltip */}
       {tooltip.show && (
         <div 
-          className="fixed z-50 bg-slate-900 border border-slate-700 text-white text-xs rounded shadow-2xl p-3 pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-10px]"
+          className="fixed z-50 bg-[var(--bg_primary)] border border-[var(--border)] text-[var(--text_primary)] text-xs rounded shadow-2xl p-3 pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-10px]"
           style={{ left: tooltip.x, top: tooltip.y }}
         >
-          <p className="font-bold mb-1 border-b border-slate-800 pb-1 uppercase tracking-wider">{tooltip.content.type}</p>
+          <p className="font-bold mb-1 border-b border-[var(--border)] pb-1 uppercase tracking-wider">{tooltip.content.type}</p>
           <p className="font-mono text-blue-400 mb-1 break-all max-w-[200px]">{tooltip.content.id}</p>
           {tooltip.content.score !== undefined && <p>Score: {(tooltip.content.score * 100).toFixed(0)}</p>}
           {tooltip.content.tactic && <p>Tactic: {tooltip.content.tactic}</p>}

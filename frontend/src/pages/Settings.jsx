@@ -111,17 +111,17 @@ export const Settings = () => {
   };
 
   const ActionBox = ({ title, icon: Icon, description, mutation, type }) => (
-    <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 flex flex-col items-start transition-all hover:border-slate-500">
+    <div className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl p-6 flex flex-col items-start transition-all hover:border-slate-500">
       <div className="p-3 bg-blue-500/10 text-blue-500 rounded-lg mb-4">
         <Icon className="h-6 w-6" />
       </div>
-      <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
-      <p className="text-sm text-slate-400 mb-6 flex-1">{description}</p>
+      <h3 className="text-lg font-bold text-[var(--text_primary)] mb-2">{title}</h3>
+      <p className="text-sm text-[var(--text_secondary)] mb-6 flex-1">{description}</p>
       
       <button 
         onClick={() => handleAction(mutation, type)}
         disabled={mutation.isPending}
-        className="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors mb-4"
+        className="w-full bg-[var(--bg_secondary)] hover:bg-[var(--bg_tertiary)] border border-[var(--border)] disabled:opacity-50 text-[var(--text_primary)] font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors mb-4"
       >
         {mutation.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
         {title}
@@ -146,21 +146,21 @@ export const Settings = () => {
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">System Settings & Health</h1>
-          <p className="text-slate-400 mt-1">Monitor ingestion schedulers, verify database connections, and run manual orchestrations.</p>
+          <h1 className="text-3xl font-bold text-[var(--text_primary)] tracking-tight">System Settings & Health</h1>
+          <p className="text-[var(--text_secondary)] mt-1">Monitor ingestion schedulers, verify database connections, and run manual orchestrations.</p>
         </div>
         <button 
           onClick={refreshStatus}
-          className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg text-sm font-medium border border-slate-700 transition-colors"
+          className="flex items-center gap-2 bg-[var(--bg_secondary)] hover:bg-[var(--bg_tertiary)] text-[var(--text_primary)] px-4 py-2 rounded-lg text-sm font-medium border border-[var(--border)] transition-colors"
         >
           <RefreshCw className="h-4 w-4" /> Refresh Status
         </button>
       </div>
 
       {/* SECTION 1: Deep Health Panel */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 shadow-lg">
+      <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <h2 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2">
             <Activity className="h-5 w-5 text-blue-400" />
             Platform Deep Health
           </h2>
@@ -179,9 +179,9 @@ export const Settings = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {deepHealth?.components?.map((comp) => (
-            <div key={comp.name} className="bg-slate-900 border border-slate-700 rounded-lg p-4 flex flex-col justify-between">
+            <div key={comp.name} className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-lg p-4 flex flex-col justify-between">
               <div className="flex justify-between items-start mb-3">
-                <h3 className="text-sm font-bold text-white capitalize">{comp.name.replace("_", " ")}</h3>
+                <h3 className="text-sm font-bold text-[var(--text_primary)] capitalize">{comp.name.replace("_", " ")}</h3>
                 <span className={`flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   comp.status === "healthy" ? "bg-green-500/10 text-green-500" :
                   comp.status === "degraded" ? "bg-orange-500/10 text-orange-500" :
@@ -196,21 +196,21 @@ export const Settings = () => {
                 </span>
               </div>
               <div className="space-y-1 mt-auto">
-                <p className="text-xs text-slate-400 flex justify-between">
+                <p className="text-xs text-[var(--text_secondary)] flex justify-between">
                   <span>Latency</span>
-                  <span className="font-mono text-slate-300">{comp.latency_ms?.toFixed(1) || 0} ms</span>
+                  <span className="font-mono text-[var(--text_secondary)]">{comp.latency_ms?.toFixed(1) || 0} ms</span>
                 </p>
                 {Object.entries(comp.details || {}).slice(0, 2).map(([k, v]) => (
-                  <p key={k} className="text-xs text-slate-400 flex justify-between">
+                  <p key={k} className="text-xs text-[var(--text_secondary)] flex justify-between">
                     <span className="capitalize">{k.replace(/_/g, " ")}</span>
-                    <span className="font-mono text-slate-300 truncate max-w-[120px]" title={String(v)}>{String(v)}</span>
+                    <span className="font-mono text-[var(--text_secondary)] truncate max-w-[120px]" title={String(v)}>{String(v)}</span>
                   </p>
                 ))}
               </div>
             </div>
           ))}
           {(!deepHealth?.components || deepHealth.components.length === 0) && !healthLoading && (
-            <div className="col-span-full py-8 text-center text-slate-500 text-sm">
+            <div className="col-span-full py-8 text-center text-[var(--text_secondary)] text-sm">
               No health data available. Server might be offline.
             </div>
           )}
@@ -218,39 +218,39 @@ export const Settings = () => {
       </div>
 
       {/* SECTION SLM MODEL PANEL */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg p-6">
+      <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <h2 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2">
             <Cpu className="h-5 w-5 text-blue-400" />
             SLM Engine Configuration
           </h2>
           {slmLoading || reloadModelMutation.isPending ? (
-            <span className="flex items-center gap-2 text-sm text-slate-400">
+            <span className="flex items-center gap-2 text-sm text-[var(--text_secondary)]">
               <RefreshCw className="w-4 h-4 animate-spin text-blue-500" /> Hot-reloading tensors...
             </span>
           ) : (
-            <span className={`text-xs font-bold px-2 py-1 rounded-full border ${slmModelInfo?.is_finetuned ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' : 'bg-slate-700/50 text-slate-400 border-slate-600'}`}>
+            <span className={`text-xs font-bold px-2 py-1 rounded-full border ${slmModelInfo?.is_finetuned ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' : 'bg-[var(--bg_tertiary)]/50 text-[var(--text_secondary)] border-[var(--border)]'}`}>
               {slmModelInfo?.is_finetuned ? 'Fine-Tuned Adapter Active' : 'Base Model Active'}
             </span>
           )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Current Model</h4>
-            <p className="text-sm text-slate-200 truncate" title={slmModelInfo?.model_name || 'Loading...'}>{slmModelInfo?.model_name || 'Loading...'}</p>
+          <div className="bg-[var(--bg_primary)] rounded-lg p-4 border border-[var(--border)]">
+            <h4 className="text-xs text-[var(--text_secondary)] uppercase font-semibold mb-1">Current Model</h4>
+            <p className="text-sm text-[var(--text_primary)] truncate" title={slmModelInfo?.model_name || 'Loading...'}>{slmModelInfo?.model_name || 'Loading...'}</p>
           </div>
-          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Hardware Device</h4>
-            <p className="text-sm text-slate-200 uppercase font-mono">{slmModelInfo?.device || 'N/A'}</p>
+          <div className="bg-[var(--bg_primary)] rounded-lg p-4 border border-[var(--border)]">
+            <h4 className="text-xs text-[var(--text_secondary)] uppercase font-semibold mb-1">Hardware Device</h4>
+            <p className="text-sm text-[var(--text_primary)] uppercase font-mono">{slmModelInfo?.device || 'N/A'}</p>
           </div>
-          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">VRAM Footprint</h4>
-            <p className="text-sm text-slate-200">{slmModelInfo?.estimated_memory_mb ? `${Math.round(slmModelInfo.estimated_memory_mb)} MB` : 'N/A'}</p>
+          <div className="bg-[var(--bg_primary)] rounded-lg p-4 border border-[var(--border)]">
+            <h4 className="text-xs text-[var(--text_secondary)] uppercase font-semibold mb-1">VRAM Footprint</h4>
+            <p className="text-sm text-[var(--text_primary)]">{slmModelInfo?.estimated_memory_mb ? `${Math.round(slmModelInfo.estimated_memory_mb)} MB` : 'N/A'}</p>
           </div>
-          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Load Latency</h4>
-            <p className="text-sm text-slate-200">{slmModelInfo?.load_time_seconds ? `${slmModelInfo.load_time_seconds.toFixed(2)}s` : 'N/A'}</p>
+          <div className="bg-[var(--bg_primary)] rounded-lg p-4 border border-[var(--border)]">
+            <h4 className="text-xs text-[var(--text_secondary)] uppercase font-semibold mb-1">Load Latency</h4>
+            <p className="text-sm text-[var(--text_primary)]">{slmModelInfo?.load_time_seconds ? `${slmModelInfo.load_time_seconds.toFixed(2)}s` : 'N/A'}</p>
           </div>
         </div>
 
@@ -261,7 +261,7 @@ export const Settings = () => {
               reloadModelMutation.mutate("base");
             }}
             disabled={reloadModelMutation.isPending || slmLoading}
-            className="flex-1 bg-slate-900 hover:bg-slate-700 border border-slate-600 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+            className="flex-1 bg-[var(--bg_primary)] hover:bg-[var(--bg_tertiary)] border border-[var(--border)] text-[var(--text_primary)] font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
           >
             Switch to Base Model
           </button>
@@ -271,7 +271,7 @@ export const Settings = () => {
               reloadModelMutation.mutate("finetuned");
             }}
             disabled={reloadModelMutation.isPending || slmLoading}
-            className="flex-1 bg-blue-600 hover:bg-blue-500 border border-blue-500 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-[0_0_15px_rgba(59,130,246,0.3)] disabled:opacity-50"
+            className="flex-1 bg-blue-600 hover:bg-blue-500 border border-blue-500 text-[var(--text_primary)] font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-[0_0_15px_rgba(59,130,246,0.3)] disabled:opacity-50"
           >
             Switch to Fine-tuned Model
           </button>
@@ -292,14 +292,14 @@ export const Settings = () => {
       </div>
 
       {/* SECTION RAG PIPELINE PANEL */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg p-6">
+      <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <h2 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2">
             <Network className="h-5 w-5 text-purple-400" />
             RAG Vector Database
           </h2>
           {ragLoading || reindexRagMutation.isPending ? (
-            <span className="flex items-center gap-2 text-sm text-slate-400">
+            <span className="flex items-center gap-2 text-sm text-[var(--text_secondary)]">
               <RefreshCw className="w-4 h-4 animate-spin text-purple-500" /> Syncing blocks...
             </span>
           ) : (
@@ -310,17 +310,17 @@ export const Settings = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Total Indexed Alerts</h4>
-            <p className="text-lg text-slate-200 font-mono font-bold text-purple-400">{ragStats?.total_indexed ?? 'Loading...'}</p>
+          <div className="bg-[var(--bg_primary)] rounded-lg p-4 border border-[var(--border)]">
+            <h4 className="text-xs text-[var(--text_secondary)] uppercase font-semibold mb-1">Total Indexed Alerts</h4>
+            <p className="text-lg text-[var(--text_primary)] font-mono font-bold text-purple-400">{ragStats?.total_indexed ?? 'Loading...'}</p>
           </div>
-          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Embedding Model</h4>
-            <p className="text-sm text-slate-200">{ragStats?.embedding_model || 'Loading...'}</p>
+          <div className="bg-[var(--bg_primary)] rounded-lg p-4 border border-[var(--border)]">
+            <h4 className="text-xs text-[var(--text_secondary)] uppercase font-semibold mb-1">Embedding Model</h4>
+            <p className="text-sm text-[var(--text_primary)]">{ragStats?.embedding_model || 'Loading...'}</p>
           </div>
-          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Persist Directory</h4>
-            <p className="text-xs text-slate-200 font-mono break-all">{ragStats?.persist_dir || 'Loading...'}</p>
+          <div className="bg-[var(--bg_primary)] rounded-lg p-4 border border-[var(--border)]">
+            <h4 className="text-xs text-[var(--text_secondary)] uppercase font-semibold mb-1">Persist Directory</h4>
+            <p className="text-xs text-[var(--text_primary)] font-mono break-all">{ragStats?.persist_dir || 'Loading...'}</p>
           </div>
         </div>
 
@@ -333,7 +333,7 @@ export const Settings = () => {
               }
             }}
             disabled={clearRagMutation.isPending || ragLoading}
-            className="flex-1 bg-slate-900 hover:bg-red-900/40 border border-red-500/30 text-red-400 font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+            className="flex-1 bg-[var(--bg_primary)] hover:bg-red-900/40 border border-red-500/30 text-red-400 font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
           >
             Clear Index
           </button>
@@ -343,7 +343,7 @@ export const Settings = () => {
               reindexRagMutation.mutate();
             }}
             disabled={reindexRagMutation.isPending || ragLoading}
-            className="flex-1 bg-purple-600 hover:bg-purple-500 border border-purple-500 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-[0_0_15px_rgba(168,85,247,0.3)] disabled:opacity-50"
+            className="flex-1 bg-purple-600 hover:bg-purple-500 border border-purple-500 text-[var(--text_primary)] font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-[0_0_15px_rgba(168,85,247,0.3)] disabled:opacity-50"
           >
             <Database className="w-4 h-4" /> Re-index All Alerts
           </button>
@@ -364,49 +364,49 @@ export const Settings = () => {
       </div>
 
       {/* SECTION SLM PERFORMANCE METRICS */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg p-6">
+      <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <h2 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2">
             <LineChart className="h-5 w-5 text-green-400" />
             SLM Quality & Performance Analytics
           </h2>
-          <span className="text-xs font-bold text-slate-400 border border-slate-700 bg-slate-900 px-2 py-1 rounded-full">
+          <span className="text-xs font-bold text-[var(--text_secondary)] border border-[var(--border)] bg-[var(--bg_primary)] px-2 py-1 rounded-full">
             Last 24 Hours
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col items-center justify-center text-center">
-            <h4 className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-2">Total Queries</h4>
-            <div className="text-3xl font-black text-white">{slmMetrics?.total_queries ?? '-'}</div>
-            <p className="text-xs text-slate-400 mt-2">Investigative Traces</p>
+          <div className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl p-5 flex flex-col items-center justify-center text-center">
+            <h4 className="text-xs text-[var(--text_secondary)] uppercase font-bold tracking-wider mb-2">Total Queries</h4>
+            <div className="text-3xl font-black text-[var(--text_primary)]">{slmMetrics?.total_queries ?? '-'}</div>
+            <p className="text-xs text-[var(--text_secondary)] mt-2">Investigative Traces</p>
           </div>
 
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col items-center justify-center text-center">
-            <h4 className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-2">Avg Latency</h4>
+          <div className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl p-5 flex flex-col items-center justify-center text-center">
+            <h4 className="text-xs text-[var(--text_secondary)] uppercase font-bold tracking-wider mb-2">Avg Latency</h4>
             <div className="text-3xl font-black text-blue-400">
               {slmMetrics?.avg_response_time ? `${Math.round(slmMetrics.avg_response_time)}` : '-'}
-              <span className="text-sm text-slate-500 ml-1">ms</span>
+              <span className="text-sm text-[var(--text_secondary)] ml-1">ms</span>
             </div>
-            <p className="text-xs text-slate-400 mt-2">Time to First Token Target</p>
+            <p className="text-xs text-[var(--text_secondary)] mt-2">Time to First Token Target</p>
           </div>
 
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col items-center justify-center text-center">
-            <h4 className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-2">Throughput</h4>
+          <div className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl p-5 flex flex-col items-center justify-center text-center">
+            <h4 className="text-xs text-[var(--text_secondary)] uppercase font-bold tracking-wider mb-2">Throughput</h4>
             <div className="text-3xl font-black text-orange-400 flex items-center justify-center gap-1">
               <Zap className="h-5 w-5" />
               {slmMetrics?.avg_tokens_per_sec ? `${slmMetrics.avg_tokens_per_sec.toFixed(1)}` : '-'}
             </div>
-            <p className="text-xs text-slate-400 mt-2">Tokens Per Second (TPS)</p>
+            <p className="text-xs text-[var(--text_secondary)] mt-2">Tokens Per Second (TPS)</p>
           </div>
 
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col items-center justify-center text-center">
-            <h4 className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-2">Avg Quality Score</h4>
+          <div className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl p-5 flex flex-col items-center justify-center text-center">
+            <h4 className="text-xs text-[var(--text_secondary)] uppercase font-bold tracking-wider mb-2">Avg Quality Score</h4>
             <div className="text-3xl font-black text-green-400">
               {slmMetrics?.avg_quality_score ? `${(slmMetrics.avg_quality_score * 100).toFixed(0)}` : '-'}
-              <span className="text-sm text-slate-500 ml-1">%</span>
+              <span className="text-sm text-[var(--text_secondary)] ml-1">%</span>
             </div>
-            <div className="w-full bg-slate-800 rounded-full h-1.5 mt-3">
+            <div className="w-full bg-[var(--bg_secondary)] rounded-full h-1.5 mt-3">
               <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${(slmMetrics?.avg_quality_score || 0) * 100}%` }}></div>
             </div>
           </div>
@@ -416,37 +416,37 @@ export const Settings = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* SECTION 2: Ingestion Configuration */}
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg lg:col-span-2">
-          <div className="px-6 py-5 border-b border-slate-700 bg-slate-900/50">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+        <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg lg:col-span-2">
+          <div className="px-6 py-5 border-b border-[var(--border)] bg-[var(--bg_primary)]/50">
+            <h3 className="text-lg font-bold text-[var(--text_primary)] flex items-center gap-2">
               <GitCommit className="h-5 w-5 text-purple-500" />
               Runtime Configuration Matrix
             </h3>
           </div>
           <table className="w-full text-left whitespace-nowrap">
             <tbody className="divide-y divide-slate-700/30 text-sm">
-              <tr className="hover:bg-slate-750/30">
-                <td className="px-6 py-4 font-medium text-slate-300">Window Size (minutes)</td>
+              <tr className="hover:bg-[var(--bg_tertiary)]/30">
+                <td className="px-6 py-4 font-medium text-[var(--text_secondary)]">Window Size (minutes)</td>
                 <td className="px-6 py-4 font-mono text-blue-400">5</td>
               </tr>
-              <tr className="hover:bg-slate-750/30">
-                <td className="px-6 py-4 font-medium text-slate-300">Index: Syslog</td>
+              <tr className="hover:bg-[var(--bg_tertiary)]/30">
+                <td className="px-6 py-4 font-medium text-[var(--text_secondary)]">Index: Syslog</td>
                 <td className="px-6 py-4 font-mono text-purple-400">logs-system.syslog-*</td>
               </tr>
-              <tr className="hover:bg-slate-750/30">
-                <td className="px-6 py-4 font-medium text-slate-300">Index: Process</td>
+              <tr className="hover:bg-[var(--bg_tertiary)]/30">
+                <td className="px-6 py-4 font-medium text-[var(--text_secondary)]">Index: Process</td>
                 <td className="px-6 py-4 font-mono text-purple-400">logs-endpoint.events.process-*</td>
               </tr>
-              <tr className="hover:bg-slate-750/30">
-                <td className="px-6 py-4 font-medium text-slate-300">Index: Security</td>
+              <tr className="hover:bg-[var(--bg_tertiary)]/30">
+                <td className="px-6 py-4 font-medium text-[var(--text_secondary)]">Index: Security</td>
                 <td className="px-6 py-4 font-mono text-purple-400">logs-windows.powershell_operational-*</td>
               </tr>
-              <tr className="hover:bg-slate-750/30">
-                <td className="px-6 py-4 font-medium text-slate-300">Threat Score Threshold</td>
+              <tr className="hover:bg-[var(--bg_tertiary)]/30">
+                <td className="px-6 py-4 font-medium text-[var(--text_secondary)]">Threat Score Threshold</td>
                 <td className="px-6 py-4 font-mono text-orange-400">0.3</td>
               </tr>
-              <tr className="hover:bg-slate-750/30">
-                <td className="px-6 py-4 font-medium text-slate-300">False Positive Suppress</td>
+              <tr className="hover:bg-[var(--bg_tertiary)]/30">
+                <td className="px-6 py-4 font-medium text-[var(--text_secondary)]">False Positive Suppress</td>
                 <td className="px-6 py-4 font-mono text-green-400">Enabled</td>
               </tr>
             </tbody>
@@ -454,20 +454,20 @@ export const Settings = () => {
         </div>
 
         {/* SECTION 4: About ISRO SOC */}
-        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 flex flex-col justify-center items-center text-center shadow-lg lg:col-span-1 border-t-4 border-t-blue-500">
-          <div className="w-20 h-20 bg-slate-900 rounded-full border-4 border-slate-700 flex items-center justify-center mb-6">
+        <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 flex flex-col justify-center items-center text-center shadow-lg lg:col-span-1 border-t-4 border-t-blue-500">
+          <div className="w-20 h-20 bg-[var(--bg_primary)] rounded-full border-4 border-[var(--border)] flex items-center justify-center mb-6">
             <Bot className="h-10 w-10 text-blue-500" />
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">ISRO ISTRAC</h2>
+          <h2 className="text-xl font-bold text-[var(--text_primary)] mb-2">ISRO ISTRAC</h2>
           <h3 className="text-sm font-semibold text-blue-400 tracking-wider uppercase mb-4">SOC AI Platform v1.0.0</h3>
-          <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+          <p className="text-sm text-[var(--text_secondary)] mb-6 leading-relaxed">
             Developed securely at the ISRO Satellite Tracking and Ranging Station, Bengaluru.
           </p>
           <div className="flex flex-wrap justify-center gap-2 mt-auto">
-            <span className="text-[10px] uppercase tracking-wider font-bold bg-slate-900 border border-slate-700 text-slate-300 px-2 py-1 rounded">Python 3.11</span>
-            <span className="text-[10px] uppercase tracking-wider font-bold bg-slate-900 border border-slate-700 text-slate-300 px-2 py-1 rounded">FastAPI</span>
-            <span className="text-[10px] uppercase tracking-wider font-bold bg-slate-900 border border-slate-700 text-slate-300 px-2 py-1 rounded">Elasticsearch 8.x</span>
-            <span className="text-[10px] uppercase tracking-wider font-bold bg-slate-900 border border-slate-700 text-slate-300 px-2 py-1 rounded">PyTorch</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold bg-[var(--bg_primary)] border border-[var(--border)] text-[var(--text_secondary)] px-2 py-1 rounded">Python 3.11</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold bg-[var(--bg_primary)] border border-[var(--border)] text-[var(--text_secondary)] px-2 py-1 rounded">FastAPI</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold bg-[var(--bg_primary)] border border-[var(--border)] text-[var(--text_secondary)] px-2 py-1 rounded">Elasticsearch 8.x</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold bg-[var(--bg_primary)] border border-[var(--border)] text-[var(--text_secondary)] px-2 py-1 rounded">PyTorch</span>
             <span className="text-[10px] uppercase tracking-wider font-bold bg-blue-900/30 border border-blue-500/50 text-blue-400 px-2 py-1 rounded">Phi-3-mini</span>
           </div>
         </div>
@@ -475,7 +475,7 @@ export const Settings = () => {
 
       {/* SECTION 3: Manual Controls */}
       <div>
-        <h2 className="text-xl font-bold text-white mb-6 mt-4">Manual Diagnostics & Overrides</h2>
+        <h2 className="text-xl font-bold text-[var(--text_primary)] mb-6 mt-4">Manual Diagnostics & Overrides</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <ActionBox 
             title="Trigger Ingestion Cycle" 

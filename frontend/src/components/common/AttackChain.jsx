@@ -3,7 +3,7 @@ import { Activity, Server, ShieldAlert, Cpu } from 'lucide-react';
 
 export const AttackChain = React.memo(({ chainData }) => {
   if (!chainData || chainData.length === 0) {
-    return <div className="text-slate-500 text-sm italic">No attack chain data available.</div>;
+    return <div className="text-[var(--text_secondary)] text-sm italic">No attack chain data available.</div>;
   }
 
   const getLogIcon = (logType) => {
@@ -16,9 +16,9 @@ export const AttackChain = React.memo(({ chainData }) => {
   };
 
   const getScoreColor = (score) => {
-    if (score >= 0.8) return 'bg-red-500 text-white';
-    if (score >= 0.5) return 'bg-orange-500 text-white';
-    return 'bg-blue-500 text-white';
+    if (score >= 0.8) return 'bg-red-500 text-[var(--text_primary)]';
+    if (score >= 0.5) return 'bg-orange-500 text-[var(--text_primary)]';
+    return 'bg-blue-500 text-[var(--text_primary)]';
   };
 
   const parseMinutes = (timeStr) => {
@@ -43,8 +43,8 @@ export const AttackChain = React.memo(({ chainData }) => {
             {/* Connection Line to previous node */}
             {idx > 0 && (
               <div className={`flex flex-col items-center justify-center w-24 -mt-8 ${stage.isFast ? 'text-red-500' : 'text-slate-600'}`}>
-                <span className="text-xs font-mono font-medium bg-slate-900 px-2 rounded-full z-10">{stage.isFast ? 'FAST' : ''}</span>
-                <div className={`h-1 w-full ${stage.isFast ? 'bg-red-500/50' : 'bg-slate-700'} -mt-2`} />
+                <span className="text-xs font-mono font-medium bg-[var(--bg_primary)] px-2 rounded-full z-10">{stage.isFast ? 'FAST' : ''}</span>
+                <div className={`h-1 w-full ${stage.isFast ? 'bg-red-500/50' : 'bg-[var(--bg_tertiary)]'} -mt-2`} />
               </div>
             )}
             
@@ -55,14 +55,14 @@ export const AttackChain = React.memo(({ chainData }) => {
               </div>
               
               <div className="mt-3 text-center">
-                <span className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">
+                <span className="block text-xs font-bold text-[var(--text_secondary)] uppercase tracking-wider mb-1">
                   {stage.tactic}
                 </span>
-                <span className="block text-[10px] font-mono text-slate-500 bg-slate-800 rounded px-2 py-0.5 inline-block border border-slate-700">
+                <span className="block text-[10px] font-mono text-[var(--text_secondary)] bg-[var(--bg_secondary)] rounded px-2 py-0.5 inline-block border border-[var(--border)]">
                   {stage.time}
                 </span>
                 <div className="mt-1 flex justify-center">
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${stage.score >= 0.8 ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-slate-800 text-slate-400'}`}>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${stage.score >= 0.8 ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)]'}`}>
                     {stage.parsedScore}
                   </span>
                 </div>

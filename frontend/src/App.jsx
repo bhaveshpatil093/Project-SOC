@@ -5,9 +5,15 @@ import { AlertNotificationBanner } from './components/layout/AlertNotificationBa
 import { useWebSocket } from './hooks/useWebSocket';
 import { AlertTriangle } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
+import { applyTheme } from './utils/theme';
+import { useUiStore } from './store/uiStore';
+
+// Apply initial theme on app startup
+applyTheme(useUiStore.getState().theme);
 
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Alerts = lazy(() => import('./pages/Alerts').then(m => ({ default: m.Alerts })));
@@ -22,11 +28,11 @@ const Login = lazy(() => import('./pages/Login').then(m => ({ default: m.Login }
 
 const NotFound = () => (
   <div className="flex flex-col items-center justify-center h-full min-h-[500px]">
-    <div className="p-4 bg-slate-800 rounded-full mb-6 text-slate-500">
+    <div className="p-4 bg-[var(--bg_secondary)] rounded-full mb-6 text-[var(--text_secondary)]">
       <AlertTriangle className="h-12 w-12" />
     </div>
-    <h2 className="text-3xl font-bold text-white mb-3">404 — Null Route Trajectory</h2>
-    <p className="text-slate-400">The requested endpoint hash does not map to any active internal layout components.</p>
+    <h2 className="text-3xl font-bold text-[var(--text_primary)] mb-3">404 — Null Route Trajectory</h2>
+    <p className="text-[var(--text_secondary)]">The requested endpoint hash does not map to any active internal layout components.</p>
   </div>
 );
 
@@ -39,7 +45,7 @@ const AppContent = () => {
   return (
     <>
       <AlertNotificationBanner />
-      <Suspense fallback={<div className="h-screen w-full flex items-center justify-center bg-slate-950"><LoadingSpinner /></div>}>
+      <Suspense fallback={<div className="h-screen w-full flex items-center justify-center bg-[var(--bg_primary)]"><LoadingSpinner /></div>}>
         <Routes>
           <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
           
@@ -66,9 +72,11 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <ToastProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }

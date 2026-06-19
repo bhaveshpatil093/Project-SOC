@@ -35,7 +35,7 @@ export const EntityTimeline = ({ entityKey, alerts = [], currentAlertId, maxItem
   };
 
   if (sortedAlerts.length === 0) {
-    return <div className="text-slate-500 text-sm italic p-4">No correlated events found for this entity.</div>;
+    return <div className="text-[var(--text_secondary)] text-sm italic p-4">No correlated events found for this entity.</div>;
   }
 
   const isCompact = compact || maxItems < 5;
@@ -51,7 +51,7 @@ export const EntityTimeline = ({ entityKey, alerts = [], currentAlertId, maxItem
         </div>
       )}
 
-      <div className="relative pl-6 border-l-2 border-slate-700/50 space-y-6">
+      <div className="relative pl-6 border-l-2 border-[var(--border)]/50 space-y-6">
         {sortedAlerts.map((alert, idx) => {
           const isCurrent = (alert.id || alert._id) === currentAlertId;
           const threatLevel = (alert.threat_level || "low").toLowerCase();
@@ -68,10 +68,10 @@ export const EntityTimeline = ({ entityKey, alerts = [], currentAlertId, maxItem
                   className={`absolute -left-[29px] top-1.5 h-3 w-3 rounded-full border-2 border-slate-900 ${isCurrent ? 'ring-2 ring-blue-500 scale-125' : ''}`}
                   style={{ backgroundColor: dotColor }}
                 />
-                <div className={`flex items-center gap-3 text-sm ${isCurrent ? 'bg-slate-800/80 p-2 rounded-lg -ml-2 border border-slate-700' : ''}`}>
-                  <span className="text-slate-400 text-xs w-20 shrink-0">{formatRelativeTime(alert.timestamp)}</span>
+                <div className={`flex items-center gap-3 text-sm ${isCurrent ? 'bg-[var(--bg_secondary)]/80 p-2 rounded-lg -ml-2 border border-[var(--border)]' : ''}`}>
+                  <span className="text-[var(--text_secondary)] text-xs w-20 shrink-0">{formatRelativeTime(alert.timestamp)}</span>
                   <Badge variant={threatLevel}>{threatLevel}</Badge>
-                  <span className="text-slate-300 truncate max-w-[200px]">{alert.top_rule || alert.log_type || "Unknown Rule"}</span>
+                  <span className="text-[var(--text_secondary)] truncate max-w-[200px]">{alert.top_rule || alert.log_type || "Unknown Rule"}</span>
                   <Link to={`/alerts/${alert.id || alert._id}`} className="ml-auto text-blue-400 hover:text-blue-300 text-xs flex items-center">
                     <ArrowRight className="h-3 w-3" />
                   </Link>
@@ -90,17 +90,17 @@ export const EntityTimeline = ({ entityKey, alerts = [], currentAlertId, maxItem
               />
 
               {/* Connecting bracket for attack chains (visually implied by proximity and the orange banner above, but we highlight the card border if it's high/crit) */}
-              <div className={`ml-2 bg-slate-800/80 rounded-xl border ${isCurrent ? 'border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]' : 'border-slate-700'} p-4 transition-all hover:border-slate-500`}>
+              <div className={`ml-2 bg-[var(--bg_secondary)]/80 rounded-xl border ${isCurrent ? 'border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]' : 'border-[var(--border)]'} p-4 transition-all hover:border-slate-500`}>
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-700">
+                    <div className="p-1.5 rounded-lg bg-[var(--bg_primary)] text-[var(--text_secondary)] border border-[var(--border)]">
                       {getLogIcon(alert.log_type)}
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white truncate max-w-[250px]" title={alert.top_rule || "Unknown Signature"}>
+                      <h4 className="text-sm font-bold text-[var(--text_primary)] truncate max-w-[250px]" title={alert.top_rule || "Unknown Signature"}>
                         {truncate(alert.top_rule || "Generic Anomaly Detected", 40)}
                       </h4>
-                      <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                      <div className="flex items-center gap-2 text-xs text-[var(--text_secondary)] mt-0.5">
                         <Clock className="h-3 w-3" />
                         <span title={formatTimestamp(alert.timestamp)}>{formatRelativeTime(alert.timestamp)}</span>
                       </div>
@@ -116,8 +116,8 @@ export const EntityTimeline = ({ entityKey, alerts = [], currentAlertId, maxItem
                 <div className="flex items-center justify-between mt-4">
                   {/* Compact Threat Progress Bar */}
                   <div className="flex items-center gap-2 w-[120px]">
-                    <span className="text-xs font-bold text-slate-400 w-6">{score.toFixed(0)}</span>
-                    <div className="h-1.5 flex-1 bg-slate-900 rounded-full overflow-hidden">
+                    <span className="text-xs font-bold text-[var(--text_secondary)] w-6">{score.toFixed(0)}</span>
+                    <div className="h-1.5 flex-1 bg-[var(--bg_primary)] rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${score}%`, backgroundColor: dotColor }} />
                     </div>
                   </div>

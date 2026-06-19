@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 export const TabPanel = ({ tabs, activeTab, onChange, children }) => {
   return (
     <div className="w-full">
-      <div className="bg-slate-900 border border-slate-700 rounded-xl p-1 inline-flex gap-1 overflow-x-auto w-full md:w-auto mb-6 shadow-sm">
+      <div className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl p-1 inline-flex gap-1 overflow-x-auto w-full md:w-auto mb-6 shadow-sm">
         {tabs.map(tab => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
@@ -13,7 +13,7 @@ export const TabPanel = ({ tabs, activeTab, onChange, children }) => {
               key={tab.id}
               onClick={() => onChange(tab.id)}
               className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
-                isActive ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                isActive ? "bg-blue-600 text-[var(--text_primary)] shadow-lg" : "text-[var(--text_secondary)] hover:text-[var(--text_primary)] hover:bg-[var(--bg_secondary)]"
               }`}
             >
               {Icon && <Icon className="h-4 w-4" />}

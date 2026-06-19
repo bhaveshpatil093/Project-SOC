@@ -99,6 +99,17 @@ async def lifespan(app: FastAPI):
         es = await get_es_client()
         await create_soc_indices(es)
         await start_scheduler(es)
+        
+    # API Documentation generation
+    try:
+        import json
+        os.makedirs("docs", exist_ok=True)
+        with open("docs/openapi.json", "w") as f:
+            json.dump(app.openapi(), f, indent=2)
+        logger.info("openapi_schema_generated", path="docs/openapi.json")
+    except Exception as e:
+        logger.warning("openapi_generation_failed", error=str(e))
+        
     yield
     # Shutdown: Clean up client
     await stop_scheduler()

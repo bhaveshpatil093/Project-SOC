@@ -34,10 +34,10 @@ const Banner = ({ alert, onDismiss }) => {
             <span className={`font-bold text-sm tracking-widest uppercase ${isCritical ? "text-red-400" : "text-orange-400"}`}>
               NEW {alert.threat_level} ALERT
             </span>
-            <span className="text-slate-500 text-xs">—</span>
-            <span className="text-white font-medium text-sm truncate">{alert.host_id || "Unknown Host"}</span>
+            <span className="text-[var(--text_secondary)] text-xs">—</span>
+            <span className="text-[var(--text_primary)] font-medium text-sm truncate">{alert.host_id || "Unknown Host"}</span>
           </div>
-          <div className="text-slate-300 text-xs mt-1 truncate font-mono">
+          <div className="text-[var(--text_secondary)] text-xs mt-1 truncate font-mono">
             Score: <span className={isCritical ? "text-red-400 font-bold" : "text-orange-400 font-bold"}>{score.toFixed(1)}</span>
             <span className="mx-2 opacity-50">|</span>
             Log: {alert.log_type || "N/A"}
@@ -49,14 +49,14 @@ const Banner = ({ alert, onDismiss }) => {
         <button 
           onClick={handleView}
           className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
-            isCritical ? "bg-red-600 hover:bg-red-500 text-white" : "bg-orange-600 hover:bg-orange-500 text-white"
+            isCritical ? "bg-red-600 hover:bg-red-500 text-[var(--text_primary)]" : "bg-orange-600 hover:bg-orange-500 text-[var(--text_primary)]"
           }`}
         >
           View Alert
         </button>
         <button 
           onClick={() => onDismiss(alert._ws_id)}
-          className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
+          className="p-1.5 hover:bg-white/10 rounded-lg text-[var(--text_secondary)] hover:text-[var(--text_primary)] transition-colors"
           title="Dismiss"
         >
           <X className="h-4 w-4" />

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useAlertStore } from "../store/alertStore";
 import { useBannerStore } from "../store/bannerStore";
+import { useNotifications } from "./useNotifications";
 import { create } from "zustand";
 
 export const useWebSocketStore = create((set) => ({
@@ -29,6 +30,8 @@ export function useWebSocket(isAuthenticated = false) {
   const [connected, setConnected] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
+  
+  const { notify } = useNotifications();
   
   const wsRef = useRef(null);
   const retryCount = useRef(0);
@@ -72,13 +75,16 @@ export function useWebSocket(isAuthenticated = false) {
                  }
              });
 
-             // 2. Trigger Notification Banner for High/Critical
+             // 2. Trigger Multi-Channel Notifications
+             notify(alertData);
+
+             // 3. Trigger Notification Banner for High/Critical (Legacy if still used)
              const threat = (alertData.threat_level || "").toLowerCase();
              if (threat === "critical" || threat === "high") {
                  useBannerStore.getState().addBanner(alertData);
              }
 
-             // 3. Add to live alerts feed for dashboard
+             // 4. Add to live alerts feed for dashboard
              useWebSocketStore.getState().addLiveAlert(alertData);
           }
           else if (msg.type === "scoring_started") {
@@ -118,7 +124,7 @@ export function useWebSocket(isAuthenticated = false) {
       if (timeoutId) clearTimeout(timeoutId);
       if (wsRef.current) wsRef.current.close();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, notify]);
 
   return { connected, reconnecting, lastMessage };
 }

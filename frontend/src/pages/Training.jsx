@@ -20,6 +20,8 @@ import {
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer
 } from 'recharts';
+import { useUiStore } from '../store/uiStore';
+import { THEMES } from '../utils/theme';
 
 const useJobStatus = (jobId) => {
   return useQuery({
@@ -45,7 +47,7 @@ const TabButton = ({ active, onClick, children }) => (
     className={`px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
       active 
         ? "border-blue-500 text-blue-400" 
-        : "border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600"
+        : "border-transparent text-[var(--text_secondary)] hover:text-[var(--text_primary)] hover:border-[var(--border)]"
     }`}
   >
     {children}
@@ -56,6 +58,9 @@ export const Training = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("status"); // status, runs, compare, schedule
   const [jobId, setJobId] = useState(null);
+  
+  const { theme } = useUiStore();
+  const colors = THEMES[theme];
   
   // For MLflow
   const [selectedExperiment, setSelectedExperiment] = useState(null);
@@ -168,13 +173,13 @@ export const Training = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-[var(--text_primary)] tracking-tight flex items-center gap-3">
           <Activity className="h-8 w-8 text-blue-500" /> MLflow Model Dashboard
         </h1>
-        <p className="text-slate-400 mt-1">Track ML experiments, compare runs, and orchestrate training cycles natively.</p>
+        <p className="text-[var(--text_secondary)] mt-1">Track ML experiments, compare runs, and orchestrate training cycles natively.</p>
       </div>
 
-      <div className="flex border-b border-slate-700 mt-6">
+      <div className="flex border-b border-[var(--border)] mt-6">
         <TabButton active={activeTab === "status"} onClick={() => setActiveTab("status")}>Model Status</TabButton>
         <TabButton active={activeTab === "runs"} onClick={() => setActiveTab("runs")}>Experiment Runs</TabButton>
         <TabButton active={activeTab === "compare"} onClick={() => setActiveTab("compare")}>
@@ -187,63 +192,63 @@ export const Training = () => {
       {activeTab === "status" && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 animate-in fade-in slide-in-from-bottom-2">
           {/* Isolation Forest Card */}
-          <div className={`rounded-xl border p-6 flex flex-col justify-between ${latestIF ? 'bg-slate-800 border-slate-700' : 'bg-slate-900 border-slate-800 opacity-80'}`}>
+          <div className={`rounded-xl border p-6 flex flex-col justify-between ${latestIF ? 'bg-[var(--bg_secondary)] border-[var(--border)]' : 'bg-[var(--bg_primary)] border-[var(--border)] opacity-80'}`}>
             <div>
               <div className="flex justify-between items-start mb-4">
-                <div className={`p-2 rounded-lg ${latestIF ? 'bg-blue-500/20 text-blue-500' : 'bg-slate-800 text-slate-500'}`}>
+                <div className={`p-2 rounded-lg ${latestIF ? 'bg-blue-500/20 text-blue-500' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)]'}`}>
                   <Network className="h-6 w-6" />
                 </div>
                 <Badge variant={latestIF ? "tp" : "fp"}>{latestIF ? "Loaded" : "Not Trained"}</Badge>
               </div>
-              <h3 className={`text-lg font-bold ${latestIF ? 'text-white' : 'text-slate-400'}`}>Isolation Forest</h3>
-              <p className="text-xs text-slate-500 mt-1">Unsupervised Outlier Detection</p>
+              <h3 className={`text-lg font-bold ${latestIF ? 'text-[var(--text_primary)]' : 'text-[var(--text_secondary)]'}`}>Isolation Forest</h3>
+              <p className="text-xs text-[var(--text_secondary)] mt-1">Unsupervised Outlier Detection</p>
             </div>
-            <div className="mt-6 space-y-2 border-t border-slate-700/50 pt-4">
+            <div className="mt-6 space-y-2 border-t border-[var(--border)]/50 pt-4">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-400">N Samples:</span>
-                <span className="text-slate-200 font-medium">{latestIF?.metrics?.n_samples || "—"}</span>
+                <span className="text-[var(--text_secondary)]">N Samples:</span>
+                <span className="text-[var(--text_primary)] font-medium">{latestIF?.metrics?.n_samples || "—"}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-400">Contamination:</span>
-                <span className="text-slate-200 font-medium">{latestIF?.metrics?.contamination || "—"}</span>
+                <span className="text-[var(--text_secondary)]">Contamination:</span>
+                <span className="text-[var(--text_primary)] font-medium">{latestIF?.metrics?.contamination || "—"}</span>
               </div>
-              <div className="flex justify-between text-sm mt-2 pt-2 border-t border-slate-800">
-                <span className="text-slate-400">Active Run:</span>
+              <div className="flex justify-between text-sm mt-2 pt-2 border-t border-[var(--border)]">
+                <span className="text-[var(--text_secondary)]">Active Run:</span>
                 <span className="text-blue-400 font-mono text-xs">{latestIF?.run_id?.substring(0,8) || "—"}</span>
               </div>
             </div>
             <button 
               onClick={handleInitial}
               disabled={initialMutation.isPending}
-              className="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-white text-sm py-2 rounded-lg transition-colors"
+              className="w-full mt-4 bg-[var(--bg_tertiary)] hover:bg-slate-600 text-[var(--text_primary)] text-sm py-2 rounded-lg transition-colors"
             >
               Retrain Baseline
             </button>
           </div>
 
           {/* Autoencoder Card */}
-          <div className={`rounded-xl border p-6 flex flex-col justify-between ${latestAE ? 'bg-slate-800 border-slate-700' : 'bg-slate-900 border-slate-800 opacity-80'}`}>
+          <div className={`rounded-xl border p-6 flex flex-col justify-between ${latestAE ? 'bg-[var(--bg_secondary)] border-[var(--border)]' : 'bg-[var(--bg_primary)] border-[var(--border)] opacity-80'}`}>
             <div>
               <div className="flex justify-between items-start mb-4">
-                <div className={`p-2 rounded-lg ${latestAE ? 'bg-purple-500/20 text-purple-500' : 'bg-slate-800 text-slate-500'}`}>
+                <div className={`p-2 rounded-lg ${latestAE ? 'bg-purple-500/20 text-purple-500' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)]'}`}>
                   <Brain className="h-6 w-6" />
                 </div>
                 <Badge variant={latestAE ? "tp" : "fp"}>{latestAE ? "Loaded" : "Not Trained"}</Badge>
               </div>
-              <h3 className={`text-lg font-bold ${latestAE ? 'text-white' : 'text-slate-400'}`}>Autoencoder</h3>
-              <p className="text-xs text-slate-500 mt-1">Deep Feature Reconstruction</p>
+              <h3 className={`text-lg font-bold ${latestAE ? 'text-[var(--text_primary)]' : 'text-[var(--text_secondary)]'}`}>Autoencoder</h3>
+              <p className="text-xs text-[var(--text_secondary)] mt-1">Deep Feature Reconstruction</p>
             </div>
-            <div className="mt-6 space-y-2 border-t border-slate-700/50 pt-4">
+            <div className="mt-6 space-y-2 border-t border-[var(--border)]/50 pt-4">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-400">Final Loss:</span>
-                <span className="text-slate-200 font-medium">{latestAE?.metrics?.final_loss?.toFixed(4) || "—"}</span>
+                <span className="text-[var(--text_secondary)]">Final Loss:</span>
+                <span className="text-[var(--text_primary)] font-medium">{latestAE?.metrics?.final_loss?.toFixed(4) || "—"}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-400">Threshold:</span>
-                <span className="text-slate-200 font-medium">{latestAE?.metrics?.threshold?.toFixed(4) || "—"}</span>
+                <span className="text-[var(--text_secondary)]">Threshold:</span>
+                <span className="text-[var(--text_primary)] font-medium">{latestAE?.metrics?.threshold?.toFixed(4) || "—"}</span>
               </div>
-              <div className="flex justify-between text-sm mt-2 pt-2 border-t border-slate-800">
-                <span className="text-slate-400">Active Run:</span>
+              <div className="flex justify-between text-sm mt-2 pt-2 border-t border-[var(--border)]">
+                <span className="text-[var(--text_secondary)]">Active Run:</span>
                 <span className="text-purple-400 font-mono text-xs">{latestAE?.run_id?.substring(0,8) || "—"}</span>
               </div>
             </div>
@@ -257,35 +262,35 @@ export const Training = () => {
           </div>
 
           {/* LSTM Card */}
-          <div className={`rounded-xl border p-6 flex flex-col justify-between ${latestLSTM ? 'bg-slate-800 border-slate-700' : 'bg-slate-900 border-slate-800 opacity-80'}`}>
+          <div className={`rounded-xl border p-6 flex flex-col justify-between ${latestLSTM ? 'bg-[var(--bg_secondary)] border-[var(--border)]' : 'bg-[var(--bg_primary)] border-[var(--border)] opacity-80'}`}>
             <div>
               <div className="flex justify-between items-start mb-4">
-                <div className={`p-2 rounded-lg ${latestLSTM ? 'bg-green-500/20 text-green-500' : 'bg-slate-800 text-slate-500'}`}>
+                <div className={`p-2 rounded-lg ${latestLSTM ? 'bg-green-500/20 text-green-500' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)]'}`}>
                   <Activity className="h-6 w-6" />
                 </div>
                 <Badge variant={latestLSTM ? "tp" : "fp"}>{latestLSTM ? "Loaded" : "Not Trained"}</Badge>
               </div>
-              <h3 className={`text-lg font-bold ${latestLSTM ? 'text-white' : 'text-slate-400'}`}>LSTM Sequence</h3>
-              <p className="text-xs text-slate-500 mt-1">Temporal Sequence Forecasting</p>
+              <h3 className={`text-lg font-bold ${latestLSTM ? 'text-[var(--text_primary)]' : 'text-[var(--text_secondary)]'}`}>LSTM Sequence</h3>
+              <p className="text-xs text-[var(--text_secondary)] mt-1">Temporal Sequence Forecasting</p>
             </div>
-            <div className="mt-6 space-y-2 border-t border-slate-700/50 pt-4">
+            <div className="mt-6 space-y-2 border-t border-[var(--border)]/50 pt-4">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-400">Vocab Size:</span>
-                <span className="text-slate-200 font-medium">{latestLSTM?.metrics?.vocab_size || "—"}</span>
+                <span className="text-[var(--text_secondary)]">Vocab Size:</span>
+                <span className="text-[var(--text_primary)] font-medium">{latestLSTM?.metrics?.vocab_size || "—"}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-slate-400">Seq Length:</span>
-                <span className="text-slate-200 font-medium">{latestLSTM?.params?.sequence_length || "—"}</span>
+                <span className="text-[var(--text_secondary)]">Seq Length:</span>
+                <span className="text-[var(--text_primary)] font-medium">{latestLSTM?.params?.sequence_length || "—"}</span>
               </div>
-              <div className="flex justify-between text-sm mt-2 pt-2 border-t border-slate-800">
-                <span className="text-slate-400">Active Run:</span>
+              <div className="flex justify-between text-sm mt-2 pt-2 border-t border-[var(--border)]">
+                <span className="text-[var(--text_secondary)]">Active Run:</span>
                 <span className="text-green-400 font-mono text-xs">{latestLSTM?.run_id?.substring(0,8) || "—"}</span>
               </div>
             </div>
             <button 
               onClick={handleInitial}
               disabled={initialMutation.isPending}
-              className="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-white text-sm py-2 rounded-lg transition-colors"
+              className="w-full mt-4 bg-[var(--bg_tertiary)] hover:bg-slate-600 text-[var(--text_primary)] text-sm py-2 rounded-lg transition-colors"
             >
               Retrain Baseline
             </button>
@@ -298,11 +303,11 @@ export const Training = () => {
         <div className="pt-4 animate-in fade-in slide-in-from-bottom-2 space-y-4">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-3">
-              <span className="text-slate-400 text-sm">Experiment:</span>
+              <span className="text-[var(--text_secondary)] text-sm">Experiment:</span>
               <select 
                 value={selectedExperiment || ""}
                 onChange={(e) => setSelectedExperiment(e.target.value)}
-                className="bg-slate-800 border border-slate-700 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500"
+                className="bg-[var(--bg_secondary)] border border-[var(--border)] text-[var(--text_primary)] text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500"
               >
                 {experiments.map(exp => (
                   <option key={exp.experiment_id} value={exp.experiment_id}>{exp.name} (ID: {exp.experiment_id})</option>
@@ -312,40 +317,40 @@ export const Training = () => {
             <button 
               onClick={() => setActiveTab("compare")}
               disabled={selectedRuns.length < 2}
-              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-[var(--text_primary)] px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               <GitCompare className="w-4 h-4" /> Compare Selected
             </button>
           </div>
 
-          <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg">
+          <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg">
             <div className="overflow-x-auto">
               <table className="w-full text-left whitespace-nowrap">
-                <thead className="bg-slate-900/80 border-b border-slate-700">
+                <thead className="bg-[var(--bg_primary)]/80 border-b border-[var(--border)]">
                   <tr>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase">Compare</th>
-                    <th className="px-6 py-3 text-xs font-semibold text-slate-400 uppercase">Run ID</th>
-                    <th className="px-6 py-3 text-xs font-semibold text-slate-400 uppercase">Timestamp</th>
-                    <th className="px-6 py-3 text-xs font-semibold text-slate-400 uppercase">Status</th>
-                    <th className="px-6 py-3 text-xs font-semibold text-slate-400 uppercase">Samples</th>
-                    <th className="px-6 py-3 text-xs font-semibold text-slate-400 uppercase">Final Loss / Cont</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase">Compare</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase">Run ID</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase">Timestamp</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase">Status</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase">Samples</th>
+                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase">Final Loss / Cont</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700/30">
                   {runsLoading ? (
                     <tr><td colSpan="6" className="px-6 py-8"><LoadingSpinner /></td></tr>
                   ) : runs.length === 0 ? (
-                    <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">No runs in this experiment.</td></tr>
+                    <tr><td colSpan="6" className="px-6 py-8 text-center text-[var(--text_secondary)]">No runs in this experiment.</td></tr>
                   ) : (
                     runs.map((run) => (
                       <React.Fragment key={run.run_id}>
-                        <tr className="hover:bg-slate-750/50 transition-colors">
+                        <tr className="hover:bg-[var(--bg_tertiary)]/50 transition-colors">
                           <td className="px-4 py-4 text-center">
                             <input 
                               type="checkbox" 
                               checked={selectedRuns.includes(run.run_id)}
                               onChange={() => toggleRunSelection(run.run_id)}
-                              className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
+                              className="w-4 h-4 rounded border-[var(--border)] bg-[var(--bg_primary)] text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
                             />
                           </td>
                           <td className="px-6 py-4">
@@ -356,9 +361,9 @@ export const Training = () => {
                               <GitCommit className="w-4 h-4" />
                               {run.run_id.substring(0, 8)}
                             </button>
-                            <div className="text-[10px] text-slate-500 mt-0.5">{run.tags?.["mlflow.runName"] || "unnamed"}</div>
+                            <div className="text-[10px] text-[var(--text_secondary)] mt-0.5">{run.tags?.["mlflow.runName"] || "unnamed"}</div>
                           </td>
-                          <td className="px-6 py-4 text-xs text-slate-400">{new Date(parseInt(run.start_time)).toLocaleString()}</td>
+                          <td className="px-6 py-4 text-xs text-[var(--text_secondary)]">{new Date(parseInt(run.start_time)).toLocaleString()}</td>
                           <td className="px-6 py-4">
                             <span className={`text-xs px-2 py-0.5 rounded font-bold uppercase ${
                               run.status === 'FINISHED' ? 'bg-green-500/20 text-green-500' : 
@@ -368,34 +373,34 @@ export const Training = () => {
                               {run.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-300">{run.metrics?.n_samples || "-"}</td>
-                          <td className="px-6 py-4 text-sm font-mono text-slate-300">
+                          <td className="px-6 py-4 text-sm text-[var(--text_secondary)]">{run.metrics?.n_samples || "-"}</td>
+                          <td className="px-6 py-4 text-sm font-mono text-[var(--text_secondary)]">
                             {run.metrics?.final_loss ? run.metrics.final_loss.toFixed(4) : (run.metrics?.contamination || "-")}
                           </td>
                         </tr>
                         {expandedRun === run.run_id && (
-                          <tr className="bg-slate-900/50 border-b border-slate-700/50">
+                          <tr className="bg-[var(--bg_primary)]/50 border-b border-[var(--border)]/50">
                             <td colSpan="6" className="px-8 py-6">
                               {expandedLoading ? <LoadingSpinner /> : (
                                 <div className="grid grid-cols-2 gap-8">
                                   <div>
-                                    <h4 className="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">Parameters</h4>
-                                    <div className="bg-slate-950 p-4 rounded-lg border border-slate-800">
+                                    <h4 className="text-sm font-bold text-[var(--text_secondary)] mb-3 uppercase tracking-wider">Parameters</h4>
+                                    <div className="bg-[var(--bg_primary)] p-4 rounded-lg border border-[var(--border)]">
                                       {Object.entries(expandedRunData?.data?.params || expandedRunData?.params || {}).map(([k, v]) => (
-                                        <div key={k} className="flex justify-between py-1 border-b border-slate-800 last:border-0 text-sm">
-                                          <span className="text-slate-500">{k}</span>
-                                          <span className="text-slate-300 font-mono">{v}</span>
+                                        <div key={k} className="flex justify-between py-1 border-b border-[var(--border)] last:border-0 text-sm">
+                                          <span className="text-[var(--text_secondary)]">{k}</span>
+                                          <span className="text-[var(--text_secondary)] font-mono">{v}</span>
                                         </div>
                                       ))}
                                     </div>
                                   </div>
                                   <div>
-                                    <h4 className="text-sm font-bold text-slate-300 mb-3 uppercase tracking-wider">Metrics</h4>
-                                    <div className="bg-slate-950 p-4 rounded-lg border border-slate-800">
+                                    <h4 className="text-sm font-bold text-[var(--text_secondary)] mb-3 uppercase tracking-wider">Metrics</h4>
+                                    <div className="bg-[var(--bg_primary)] p-4 rounded-lg border border-[var(--border)]">
                                       {Object.entries(expandedRunData?.data?.metrics || expandedRunData?.metrics || {}).map(([k, v]) => (
-                                        <div key={k} className="flex justify-between py-1 border-b border-slate-800 last:border-0 text-sm">
-                                          <span className="text-slate-500">{k}</span>
-                                          <span className="text-slate-300 font-mono">{typeof v === 'number' ? v.toFixed(4) : v}</span>
+                                        <div key={k} className="flex justify-between py-1 border-b border-[var(--border)] last:border-0 text-sm">
+                                          <span className="text-[var(--text_secondary)]">{k}</span>
+                                          <span className="text-[var(--text_secondary)] font-mono">{typeof v === 'number' ? v.toFixed(4) : v}</span>
                                         </div>
                                       ))}
                                     </div>
@@ -419,7 +424,7 @@ export const Training = () => {
       {activeTab === "compare" && (
         <div className="pt-4 animate-in fade-in slide-in-from-bottom-2 space-y-6">
           {selectedRuns.length < 2 ? (
-            <div className="bg-slate-800 rounded-xl p-8 border border-slate-700 text-center text-slate-500">
+            <div className="bg-[var(--bg_secondary)] rounded-xl p-8 border border-[var(--border)] text-center text-[var(--text_secondary)]">
               <GitCompare className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>Select at least 2 runs from the Experiment Runs tab to compare them side-by-side.</p>
             </div>
@@ -428,24 +433,24 @@ export const Training = () => {
           ) : (
             <>
               {/* Metrics Comparison Table */}
-              <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg">
-                <div className="px-6 py-4 border-b border-slate-700 bg-slate-900/50">
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg">
+                <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg_primary)]/50">
+                  <h3 className="text-lg font-bold text-[var(--text_primary)] flex items-center gap-2">
                     <Database className="w-5 h-5 text-blue-500" /> Metric & Parameter Comparison
                   </h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left whitespace-nowrap">
-                    <thead className="bg-slate-900/80 border-b border-slate-700">
+                    <thead className="bg-[var(--bg_primary)]/80 border-b border-[var(--border)]">
                       <tr>
-                        <th className="px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Field</th>
+                        <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase">Field</th>
                         {compareRuns.map((r, i) => (
-                          <th key={r.run_id} className="px-6 py-3 text-xs font-semibold text-slate-300 uppercase">
+                          <th key={r.run_id} className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase">
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
                               {r.name}
                             </div>
-                            <div className="text-[10px] text-slate-500 font-mono lowercase mt-1">{r.run_id.substring(0,8)}</div>
+                            <div className="text-[10px] text-[var(--text_secondary)] font-mono lowercase mt-1">{r.run_id.substring(0,8)}</div>
                           </th>
                         ))}
                       </tr>
@@ -453,12 +458,12 @@ export const Training = () => {
                     <tbody className="divide-y divide-slate-700/30">
                       {/* Collect all metric keys */}
                       {Array.from(new Set(compareRuns.flatMap(r => Object.keys(r.metrics || {})))).map(metricKey => (
-                        <tr key={`m_${metricKey}`} className="hover:bg-slate-750/50">
-                          <td className="px-6 py-3 text-sm font-bold text-slate-400">metric: {metricKey}</td>
+                        <tr key={`m_${metricKey}`} className="hover:bg-[var(--bg_tertiary)]/50">
+                          <td className="px-6 py-3 text-sm font-bold text-[var(--text_secondary)]">metric: {metricKey}</td>
                           {compareRuns.map(r => {
                             const val = r.metrics?.[metricKey];
                             return (
-                              <td key={r.run_id} className="px-6 py-3 text-sm font-mono text-slate-200">
+                              <td key={r.run_id} className="px-6 py-3 text-sm font-mono text-[var(--text_primary)]">
                                 {val !== undefined ? (typeof val === 'number' ? val.toFixed(4) : val) : "—"}
                               </td>
                             );
@@ -467,12 +472,12 @@ export const Training = () => {
                       ))}
                       {/* Collect all param keys */}
                       {Array.from(new Set(compareRuns.flatMap(r => Object.keys(r.params || {})))).map(paramKey => (
-                        <tr key={`p_${paramKey}`} className="hover:bg-slate-750/50 bg-slate-900/20">
-                          <td className="px-6 py-3 text-sm font-bold text-slate-500">param: {paramKey}</td>
+                        <tr key={`p_${paramKey}`} className="hover:bg-[var(--bg_tertiary)]/50 bg-[var(--bg_primary)]/20">
+                          <td className="px-6 py-3 text-sm font-bold text-[var(--text_secondary)]">param: {paramKey}</td>
                           {compareRuns.map(r => {
                             const val = r.params?.[paramKey];
                             return (
-                              <td key={r.run_id} className="px-6 py-3 text-sm font-mono text-slate-400">
+                              <td key={r.run_id} className="px-6 py-3 text-sm font-mono text-[var(--text_secondary)]">
                                 {val !== undefined ? val : "—"}
                               </td>
                             );
@@ -486,17 +491,17 @@ export const Training = () => {
 
               {/* Loss Curve Chart */}
               {chartData.length > 0 && (
-                <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 shadow-lg">
-                  <h3 className="text-lg font-bold text-white mb-6">Loss Curves per Epoch</h3>
+                <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg">
+                  <h3 className="text-lg font-bold text-[var(--text_primary)] mb-6">Loss Curves per Epoch</h3>
                   <div className="h-[400px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                        <XAxis dataKey="epoch" stroke="#94a3b8" />
-                        <YAxis stroke="#94a3b8" />
+                        <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
+                        <XAxis dataKey="epoch" stroke={colors.text_secondary} />
+                        <YAxis stroke={colors.text_secondary} />
                         <RechartsTooltip 
-                          contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }}
-                          itemStyle={{ color: '#f8fafc' }}
+                          contentStyle={{ backgroundColor: colors.bg_secondary, borderColor: colors.border, color: colors.text_primary }}
+                          itemStyle={{ color: colors.text_primary }}
                         />
                         <Legend />
                         {compareRuns.map((r, i) => (
@@ -523,32 +528,32 @@ export const Training = () => {
       {/* TAB 4: Training Schedule */}
       {activeTab === "schedule" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 animate-in fade-in slide-in-from-bottom-2">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 shadow-lg h-fit">
+          <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg h-fit">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-slate-900 rounded-lg text-blue-500 border border-slate-700">
+              <div className="p-2 bg-[var(--bg_primary)] rounded-lg text-blue-500 border border-[var(--border)]">
                 <Calendar className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-bold text-white">Cron Scheduler</h3>
+              <h3 className="text-lg font-bold text-[var(--text_primary)]">Cron Scheduler</h3>
             </div>
             
-            <div className="bg-slate-900 rounded-lg border border-slate-700 p-5 relative overflow-hidden">
+            <div className="bg-[var(--bg_primary)] rounded-lg border border-[var(--border)] p-5 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-              <h4 className="text-base font-bold text-white mb-2">Weekly Baseline Sync</h4>
-              <p className="text-sm text-slate-400 leading-relaxed mb-6">
+              <h4 className="text-base font-bold text-[var(--text_primary)] mb-2">Weekly Baseline Sync</h4>
+              <p className="text-sm text-[var(--text_secondary)] leading-relaxed mb-6">
                 Automated background tasks trigger the `run_incremental_retraining` pipeline natively evaluating active vectors overriding historical entropy shifts.
               </p>
               
-              <div className="bg-slate-800 rounded px-4 py-3 text-sm font-mono text-slate-300 flex items-center justify-between border border-slate-700">
+              <div className="bg-[var(--bg_secondary)] rounded px-4 py-3 text-sm font-mono text-[var(--text_secondary)] flex items-center justify-between border border-[var(--border)]">
                 <span>Every Sunday</span>
                 <span className="text-blue-400 font-bold">02:00 AM UTC</span>
               </div>
             </div>
             
-            <div className="mt-6 pt-6 border-t border-slate-700 flex flex-col gap-3">
+            <div className="mt-6 pt-6 border-t border-[var(--border)] flex flex-col gap-3">
               <button 
                 onClick={handleInitial}
                 disabled={initialMutation.isPending || (jobId && statusData?.status !== 'completed' && statusData?.status !== 'failed')}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-[var(--text_primary)] font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
               >
                 {initialMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5" />}
                 Trigger Manual Full Training
@@ -557,7 +562,7 @@ export const Training = () => {
               <button 
                 onClick={handleRetrain}
                 disabled={retrainMutation.isPending || (jobId && statusData?.status !== 'completed' && statusData?.status !== 'failed')}
-                className="w-full bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                className="w-full bg-[var(--bg_tertiary)] hover:bg-slate-600 disabled:opacity-50 text-[var(--text_primary)] font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
               >
                 {retrainMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <RotateCw className="h-5 w-5" />}
                 Trigger Manual Incremental Sync
@@ -565,15 +570,15 @@ export const Training = () => {
             </div>
           </div>
 
-          <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 shadow-lg flex flex-col">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+          <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg flex flex-col">
+            <h3 className="text-lg font-bold text-[var(--text_primary)] flex items-center gap-2 mb-4">
               <Activity className="h-5 w-5 text-green-500" /> Active Job Status
             </h3>
             
             {jobId ? (
-              <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-5">
+              <div className="flex-1 bg-[var(--bg_primary)] border border-[var(--border)] rounded-lg p-5">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm font-mono text-slate-400">Job: {jobId.substring(0,12)}...</span>
+                  <span className="text-sm font-mono text-[var(--text_secondary)]">Job: {jobId.substring(0,12)}...</span>
                   <span className={`text-xs px-2 py-1 rounded font-bold uppercase ${
                     statusData?.status === 'completed' ? 'bg-green-500/20 text-green-500' : 
                     statusData?.status === 'failed' ? 'bg-red-500/20 text-red-500' : 
@@ -586,7 +591,7 @@ export const Training = () => {
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 text-sm">
                     <Loader2 className={`h-4 w-4 ${statusData?.status !== 'completed' && statusData?.status !== 'failed' ? 'text-blue-500 animate-spin' : 'text-slate-600'}`} />
-                    <span className="text-slate-300">Step: {statusData?.current_step || statusData?.step || 'Initializing environment'}</span>
+                    <span className="text-[var(--text_secondary)]">Step: {statusData?.current_step || statusData?.step || 'Initializing environment'}</span>
                   </div>
                   
                   {statusData?.error && (
@@ -598,16 +603,16 @@ export const Training = () => {
                   {statusData?.status === 'completed' && (
                     <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
                       <h4 className="text-green-400 text-sm font-bold mb-2">Job Successful</h4>
-                      <p className="text-xs text-slate-400">Check Model Status or Experiment Runs to view new artifacts.</p>
+                      <p className="text-xs text-[var(--text_secondary)]">Check Model Status or Experiment Runs to view new artifacts.</p>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-8 flex flex-col items-center justify-center text-center">
+              <div className="flex-1 bg-[var(--bg_primary)] border border-[var(--border)] rounded-lg p-8 flex flex-col items-center justify-center text-center">
                 <Clock className="w-12 h-12 text-slate-600 mb-4" />
-                <p className="text-slate-400">No active training jobs executing natively right now.</p>
-                <p className="text-xs text-slate-500 mt-2">Trigger a manual job or wait for scheduler.</p>
+                <p className="text-[var(--text_secondary)]">No active training jobs executing natively right now.</p>
+                <p className="text-xs text-[var(--text_secondary)] mt-2">Trigger a manual job or wait for scheduler.</p>
               </div>
             )}
           </div>
