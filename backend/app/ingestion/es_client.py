@@ -16,7 +16,8 @@ INDEX_NAMES = {
     "alerts_processed": "soc-processed-alerts",
     "features":         "soc-feature-vectors",
     "feedback":         "soc-analyst-feedback",
-    "incidents":        "soc-incidents"
+    "incidents":        "soc-incidents",
+    "baselines":        "soc-entity-baselines"
 }
 
 async def get_es_client() -> AsyncElasticsearch:
@@ -150,6 +151,36 @@ async def create_soc_indices(es: AsyncElasticsearch):
             }
         )
         logger.info("es_index_created", index=incidents_index)
+
+    # 5. soc-entity-baselines
+    baselines_index = INDEX_NAMES["baselines"]
+    if not await es.indices.exists(index=baselines_index):
+        await es.indices.create(
+            index=baselines_index,
+            body={
+                "mappings": {
+                    "properties": {
+                        "entity_key": {"type": "keyword"},
+                        "last_updated": {"type": "date"},
+                        "observation_count": {"type": "integer"},
+                        "avg_conn_per_minute": {"type": "float"},
+                        "std_conn_per_minute": {"type": "float"},
+                        "avg_unique_dst_ports": {"type": "float"},
+                        "std_unique_dst_ports": {"type": "float"},
+                        "typical_protocols": {"type": "keyword"},
+                        "typical_dst_ports": {"type": "integer"},
+                        "avg_process_spawn_count": {"type": "float"},
+                        "std_process_spawn_count": {"type": "float"},
+                        "known_process_names": {"type": "keyword"},
+                        "avg_args_count": {"type": "float"},
+                        "avg_alert_count": {"type": "float"},
+                        "std_alert_count": {"type": "float"},
+                        "avg_risk_score": {"type": "float"}
+                    }
+                }
+            }
+        )
+        logger.info("es_index_created", index=baselines_index)
 
 async def close_es_client():
     """Closes the Elasticsearch singleton client."""

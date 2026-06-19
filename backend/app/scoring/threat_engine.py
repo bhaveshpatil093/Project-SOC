@@ -6,6 +6,7 @@ from typing import Dict, Any
 from app.ingestion.es_client import INDEX_NAMES, get_es_client
 from app.features.feature_merger import run_feature_pipeline, store_feature_vectors
 from app.models.model_manager import ModelManager, get_model_manager
+from app.models.baseline_learner import BaselineLearner
 from app.scoring.explainability import ExplainabilityEngine, explain_scoring_result, build_explanation_context
 from app.scoring.correlator import AlertCorrelator
 from app.ingestion.scheduler import bulk_index
@@ -22,6 +23,7 @@ class ThreatEngine:
         self.model_manager = model_manager
         self.explainability_engine = explainability_engine
         self.correlator = AlertCorrelator()
+        self.baseline_learner = BaselineLearner()
 
     async def run_scoring_cycle(self, since_minutes=5) -> dict:
         start_t = time.time()
@@ -61,6 +63,14 @@ class ThreatEngine:
                 if is_suppressed:
                     res.threat_score *= 0.1
                     res.threat_level = "low"
+                    
+                # Inject Baseline Behavior Deviations
+                baseline = await self.baseline_learner.get_baseline(self.es, res.entity_key)
+                if baseline:
+                    devs = self.baseline_learner.compute_deviation_ratios(baseline, feature_row)
+                    dev_ctx = self.baseline_learner.format_deviation_context(devs, feature_row, baseline)
+                    if dev_ctx:
+                        res.human_explanation = f"Behavior Context: {dev_ctx}\n\n{res.human_explanation or ''}".strip()
                     
                 # Bind localized SHAP explainer attributes directly over anomaly outputs
                 explained_res = explain_scoring_result(res, feature_row, self.explainability_engine)
@@ -104,6 +114,9 @@ class ThreatEngine:
                         "timestamp": datetime.datetime.utcnow().isoformat()
                     })
                     
+        # 5. Evolve baselines incrementally over latest mapped boundaries
+        await self.baseline_learner.update_all_baselines(self.es, feature_df)
+        
         cycle_time = (time.time() - start_t) * 1000
         
         return {
