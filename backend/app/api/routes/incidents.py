@@ -31,6 +31,7 @@ class IncidentResponse(BaseModel):
     is_multi_stage: bool
     status: str
     created_at: datetime
+    matched_patterns: Optional[List[Dict[str, Any]]] = None
 
 class IncidentDetailResponse(IncidentResponse):
     alerts: List[Dict[str, Any]]

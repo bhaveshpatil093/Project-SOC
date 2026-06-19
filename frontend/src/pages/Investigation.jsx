@@ -4,15 +4,18 @@ import { useQuery } from '@tanstack/react-query';
 import { Bot, Send, Trash2, ChevronRight, Activity, Zap, FileText, Share2, Search, ShieldAlert, CheckCircle, AlertTriangle, CheckSquare, Square } from 'lucide-react';
 
 import { getAlert } from '../api/alerts';
+import { getIncidentDetail } from '../api/incidents';
 import { sendMessage, clearConversation, getSlmStatus } from '../api/slm';
 import { useAlertStore } from '../store/alertStore';
 import { ThreatGauge } from '../components/common/ThreatGauge';
 import { MitrePanel } from '../components/common/MitrePanel';
+import { AttackChain } from '../components/common/AttackChain';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export const Investigation = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const alertIdParam = searchParams.get('alert_id');
+    const incidentIdParam = searchParams.get('incident_id');
     
     const [conversationId, setConversationId] = useState(null);
     const [messages, setMessages] = useState([
@@ -30,6 +33,12 @@ export const Investigation = () => {
         queryKey: ['alert', alertIdParam],
         queryFn: () => getAlert(alertIdParam),
         enabled: !!alertIdParam
+    });
+
+    const { data: incidentContext, isLoading: isIncidentLoading } = useQuery({
+        queryKey: ['incidentDetail', incidentIdParam],
+        queryFn: () => getIncidentDetail(incidentIdParam),
+        enabled: !!incidentIdParam
     });
     
     const { data: slmStatus } = useQuery({
@@ -56,7 +65,7 @@ export const Investigation = () => {
         setIsTyping(true);
         
         try {
-            const resp = await sendMessage(text, alertIdParam, conversationId);
+            const resp = await sendMessage(text, alertIdParam, incidentIdParam, conversationId);
             if (!conversationId) {
                 setConversationId(resp.conversation_id);
             }
@@ -96,20 +105,34 @@ export const Investigation = () => {
                     <Activity className="w-5 h-5 text-blue-500" /> Alert Context
                 </h2>
                 
-                {!alertIdParam ? (
+                {!alertIdParam && !incidentIdParam ? (
                     <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                        <p className="text-slate-400 mb-4 text-sm">Enter an Alert ID or select from recent incidents to bind explicit context onto the AI logic map.</p>
+                        <p className="text-slate-400 mb-4 text-sm">Enter an Alert ID or Incident ID to bind explicit context onto the AI logic map.</p>
                         <div className="flex gap-2 mb-6">
                             <input
                                 type="text"
-                                placeholder="Enter Alert ID..."
+                                placeholder="Enter Alert/Incident ID..."
                                 className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
                                 value={searchId}
                                 onChange={(e) => setSearchId(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && setSearchParams({ alert_id: searchId })}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        if (searchId.startsWith('INC-')) {
+                                            setSearchParams({ incident_id: searchId });
+                                        } else {
+                                            setSearchParams({ alert_id: searchId });
+                                        }
+                                    }
+                                }}
                             />
                             <button 
-                                onClick={() => setSearchParams({ alert_id: searchId })}
+                                onClick={() => {
+                                    if (searchId.startsWith('INC-')) {
+                                        setSearchParams({ incident_id: searchId });
+                                    } else {
+                                        setSearchParams({ alert_id: searchId });
+                                    }
+                                }}
                                 className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg"
                             >
                                 <Search className="w-4 h-4" />
@@ -132,8 +155,57 @@ export const Investigation = () => {
                             ))}
                         </div>
                     </div>
-                ) : isAlertLoading ? (
+                ) : isAlertLoading || isIncidentLoading ? (
                     <div className="flex justify-center py-10"><LoadingSpinner size="lg" /></div>
+                ) : incidentContext ? (
+                    <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 flex flex-col items-center">
+                            <ThreatGauge score={incidentContext.incident_threat_score * 100} size={120} />
+                            <h3 className="text-lg font-bold text-white mt-4">{incidentContext.entity_key}</h3>
+                            <p className="text-sm text-slate-400">Duration: {Math.round(incidentContext.duration_seconds / 60)} mins</p>
+                            
+                            <div className="mt-3 flex gap-2 items-center">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ${incidentContext.attack_stage === 'multi_stage' ? 'bg-gradient-to-r from-red-600 to-purple-600 text-white' : 'bg-slate-700 text-slate-300'}`}>
+                                    {incidentContext.attack_stage.replace('_', ' ')}
+                                </span>
+                                {incidentContext.is_multi_stage && (
+                                    <span className="text-[10px] font-black tracking-widest bg-red-500/20 text-red-400 px-2 py-0.5 rounded border border-red-500/30 flex items-center gap-1">
+                                        <Zap className="h-3 w-3" /> MULTI-STAGE
+                                    </span>
+                                )}
+                            </div>
+                            
+                            <Link to={`/incidents`} className="mt-4 text-blue-400 hover:text-blue-300 text-sm font-medium flex items-center gap-1">
+                                View in Dashboard <ChevronRight className="w-4 h-4" />
+                            </Link>
+                        </div>
+                        
+                        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                            <div className="p-4 border-b border-slate-700">
+                                <h3 className="text-sm font-bold text-white">Attack Chain Preview</h3>
+                            </div>
+                            <div className="p-2">
+                                <AttackChain chainData={incidentContext.attack_chain || []} compact={true} />
+                            </div>
+                        </div>
+
+                        {incidentContext.matched_patterns && incidentContext.matched_patterns.length > 0 && (
+                            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                                <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4">Matched Attack Patterns</h3>
+                                <div className="space-y-3">
+                                    {incidentContext.matched_patterns.map((p, idx) => (
+                                        <div key={idx} className="bg-slate-900 p-3 rounded-lg border border-red-900/50">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className="text-xs font-bold text-red-400">{p.pattern_id}</span>
+                                                <span className="text-[10px] text-slate-400">{(p.confidence * 100).toFixed(0)}% Conf</span>
+                                            </div>
+                                            <p className="text-sm text-slate-200 font-medium">{p.name}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 ) : alertContext ? (
                     <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 flex flex-col items-center">
@@ -179,7 +251,7 @@ export const Investigation = () => {
                     </div>
                 ) : (
                     <div className="bg-slate-800 rounded-xl p-6 border border-red-900/50">
-                        <p className="text-red-400 text-sm">Alert not found.</p>
+                        <p className="text-red-400 text-sm">Context not found.</p>
                         <button onClick={() => setSearchParams({})} className="mt-4 text-sm text-blue-400">Clear Selection</button>
                     </div>
                 )}
@@ -322,18 +394,40 @@ export const Investigation = () => {
                 
                 <div className="p-4 bg-slate-800 border-t border-slate-700">
                     <div className="flex flex-wrap gap-2 mb-3">
-                        <button onClick={() => handleSend(`Explain alert ${alertIdParam || 'this'} in detail`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
-                            <FileText className="w-3 h-3" /> Explain this Alert
-                        </button>
-                        <button onClick={() => handleSend(`Show me the raw logs for this entity`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
-                            <Activity className="w-3 h-3" /> Get Raw Logs
-                        </button>
-                        <button onClick={() => handleSend(`Find similar historical incidents`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
-                            <Share2 className="w-3 h-3" /> Similar Incidents
-                        </button>
-                        <button onClick={() => handleSend(`What actions should I take for this alert?`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
-                            <Zap className="w-3 h-3" /> Recommend Actions
-                        </button>
+                        {incidentIdParam ? (
+                            <>
+                                <button onClick={() => handleSend(`Explain this Incident in detail`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
+                                    <FileText className="w-3 h-3" /> Explain this Incident
+                                </button>
+                                <button onClick={() => handleSend(`Is this a Real Attack?`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
+                                    <ShieldAlert className="w-3 h-3" /> Is this a Real Attack?
+                                </button>
+                                <button onClick={() => handleSend(`What is the Attack Stage?`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
+                                    <Activity className="w-3 h-3" /> What is the Attack Stage?
+                                </button>
+                                <button onClick={() => handleSend(`Recommend Containment Steps`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
+                                    <Zap className="w-3 h-3" /> Recommend Containment Steps
+                                </button>
+                                <button onClick={() => handleSend(`Write Incident Report`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
+                                    <FileText className="w-3 h-3" /> Write Incident Report
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button onClick={() => handleSend(`Explain alert ${alertIdParam || 'this'} in detail`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
+                                    <FileText className="w-3 h-3" /> Explain this Alert
+                                </button>
+                                <button onClick={() => handleSend(`Show me the raw logs for this entity`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
+                                    <Activity className="w-3 h-3" /> Get Raw Logs
+                                </button>
+                                <button onClick={() => handleSend(`Find similar historical incidents`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
+                                    <Share2 className="w-3 h-3" /> Similar Incidents
+                                </button>
+                                <button onClick={() => handleSend(`What actions should I take for this alert?`)} className="text-xs bg-slate-900 border border-slate-600 text-slate-300 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-white flex items-center gap-1 transition-colors">
+                                    <Zap className="w-3 h-3" /> Recommend Actions
+                                </button>
+                            </>
+                        )}
                     </div>
                     
                     <div className="relative">

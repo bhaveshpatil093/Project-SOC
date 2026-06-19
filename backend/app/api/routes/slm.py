@@ -38,6 +38,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     alert_id: str | None = None
+    incident_id: str | None = None
     conversation_id: str | None = None
 
 class ChatResponse(BaseModel):
@@ -74,11 +75,13 @@ async def chat_endpoint(request: Request, req: ChatRequest, agent: SOCAgent = De
         
     if req.alert_id:
         conv.alert_id = req.alert_id
+    if req.incident_id:
+        conv.incident_id = req.incident_id # assuming conversation schema can be dynamically appended or handled
         
     history = cm.get_history_for_prompt(conv.conversation_id, max_turns=6)
     cm.add_turn(conv.conversation_id, role="user", content=req.message)
     
-    res = await agent.investigate(user_question=req.message, alert_id=req.alert_id, conversation_history=history)
+    res = await agent.investigate(user_question=req.message, alert_id=req.alert_id, incident_id=req.incident_id, conversation_history=history)
     
     resp_time = (time.time() - start_t) * 1000
     

@@ -58,6 +58,55 @@ def alert_explanation_prompt(alert: dict, rag_context: str = "", tokenizer=None)
     question = "Explain this alert for a Level-1 SOC engineer."
     return _enforce_constraints(body, question, tokenizer=tokenizer)
 
+def incident_investigation_prompt(incident: dict, alerts: list[dict], rag_context: str, pattern_matches: list[dict], tokenizer=None) -> str:
+    # Build Attack Chain Summary
+    alerts_sorted = sorted(alerts, key=lambda a: a.get("timestamp", ""))
+    attack_chain_parts = []
+    if alerts_sorted:
+        first_time = None
+        for a in alerts_sorted:
+            try:
+                import datetime
+                ts = datetime.datetime.fromisoformat(a.get("timestamp", "").replace("Z", "+00:00"))
+                if not first_time:
+                    first_time = ts
+                    delta_str = "T+0:00"
+                else:
+                    delta_m = int((ts - first_time).total_seconds() / 60)
+                    delta_str = f"T+{delta_m}m"
+                tech_str = f" ({', '.join(a.get('mitre_techniques', []))})" if a.get("mitre_techniques") else ""
+                attack_chain_parts.append(f"{delta_str} - {a.get('log_type')} - {a.get('human_explanation', 'Anomaly detected')[:100]}{tech_str}")
+            except Exception:
+                pass
+                
+    chain_str = "\n".join(attack_chain_parts) if attack_chain_parts else "No alerts retrieved."
+    
+    # Build Matched Patterns Summary
+    pattern_parts = []
+    for p in pattern_matches:
+        pattern_parts.append(f"{p.get('pattern_id', 'Unknown')}: {p.get('name', 'Unknown Pattern')} (confidence: {int(p.get('confidence', 0)*100)}%)")
+    pattern_str = "\n".join(pattern_parts) if pattern_parts else "No known patterns matched."
+
+    sections = [
+        "=== [INCIDENT SUMMARY] ===",
+        f"Incident ID: {incident.get('incident_id')} | Entity: {incident.get('entity_key')}",
+        f"Attack Stage: {incident.get('attack_stage')} | Duration: {int(incident.get('duration_seconds', 0) / 60)} minutes",
+        f"Threat Score: {incident.get('incident_threat_score')} ({incident.get('threat_level')})",
+        
+        "\n=== [ATTACK CHAIN] ===",
+        chain_str,
+        
+        "\n=== [MATCHED ATTACK PATTERNS] ===",
+        pattern_str,
+        
+        "\n=== [SIMILAR PAST INCIDENTS] ===",
+        rag_context or "No similar past incidents found."
+    ]
+    
+    body = "\n".join(sections)
+    question = "Analyze this incident as a senior SOC analyst, evaluating the kill chain and prioritizing response actions."
+    return _enforce_constraints(body, question, tokenizer=tokenizer)
+
 def triage_decision_prompt(alert: dict, entity_history: str = "", tokenizer=None) -> str:
     sections = [
         "=== Alert Details ===",

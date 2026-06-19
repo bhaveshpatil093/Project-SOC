@@ -18,7 +18,8 @@ from app.slm.prompt_templates import (
     investigation_steps_prompt,
     remediation_prompt,
     general_soc_question_prompt,
-    build_multi_turn_prompt
+    build_multi_turn_prompt,
+    incident_investigation_prompt
 )
 from app.slm.response_parser import parse_slm_response, format_for_display
 from app.slm.evaluator import get_slm_evaluator
@@ -211,13 +212,40 @@ class SOCAgent:
             "Thought:{agent_scratchpad}"
         )
 
-    async def investigate(self, user_question: str, alert_id: str = None, conversation_history: list[dict] = None) -> dict:
+    async def investigate(self, user_question: str, alert_id: str = None, incident_id: str = None, conversation_history: list[dict] = None) -> dict:
         alert = {}
+        incident = {}
         rag_context = ""
         tokenizer = getattr(self.slm_engine, "tokenizer", None)
         
-        if alert_id:
-            te = get_threat_engine()
+        te = get_threat_engine()
+        
+        if incident_id:
+            # We fetch the incident from ES directly
+            from app.api.routes.incidents import get_incident_detail
+            try:
+                # get_incident_detail is not async directly, wait it is in routes but it uses async ES
+                # we'll fetch from ES locally here
+                es = await get_es_client()
+                from app.ingestion.es_client import INDEX_NAMES
+                resp = await es.get(index=INDEX_NAMES["incidents"], id=incident_id)
+                incident = resp.get("_source", {})
+                
+                # Fetch alerts
+                alert_ids = incident.get("alert_ids", [])
+                alerts_query = {"query": {"terms": {"_id": alert_ids}}, "size": 100}
+                al_resp = await es.search(index=INDEX_NAMES["alerts_processed"], body=alerts_query, ignore_unavailable=True)
+                inc_alerts = [h["_source"] for h in al_resp.get("hits", {}).get("hits", [])]
+                
+                # RAG
+                desc = " ".join(incident.get("mitre_tactics", [])) + " " + " ".join(incident.get("log_types_involved", []))
+                rag_results = await self.rag_pipeline.retrieve_similar(desc, n_results=3)
+                rag_context = self.rag_pipeline.build_rag_context(rag_results, incident)
+                
+            except Exception as e:
+                logger.error("failed_to_fetch_incident_context", incident_id=incident_id, error=str(e))
+                
+        elif alert_id:
             alert = await te.get_alert(alert_id)
             if alert:
                 desc = alert.get("human_explanation", "") or alert.get("top_rule", "")
@@ -227,7 +255,16 @@ class SOCAgent:
         # Intent Matching explicitly bound against template router
         q_lower = user_question.lower()
         q_type = "general"
-        if alert:
+        if incident:
+            input_text = incident_investigation_prompt(
+                incident=incident,
+                alerts=inc_alerts,
+                rag_context=rag_context,
+                pattern_matches=incident.get("matched_patterns", []),
+                tokenizer=tokenizer
+            )
+            q_type = "investigation"
+        elif alert:
             if any(k in q_lower for k in ["explain", "what is"]):
                 input_text = alert_explanation_prompt(alert, rag_context, tokenizer)
                 q_type = "explanation"

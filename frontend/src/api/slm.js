@@ -1,8 +1,9 @@
 import { apiClient } from './client';
 
-export const sendMessage = async (message, alert_id, conversation_id) => {
+export const sendMessage = async (message, alert_id, incident_id, conversation_id) => {
     const payload = { message };
     if (alert_id) payload.alert_id = alert_id;
+    if (incident_id) payload.incident_id = incident_id;
     if (conversation_id) payload.conversation_id = conversation_id;
     
     const response = await apiClient.post('/api/slm/chat', payload);
