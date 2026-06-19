@@ -331,33 +331,31 @@ export const Incidents = () => {
               </select>
             </div>
           </div>
+          <div className="flex-1 overflow-y-auto">
+            {isLoading ? (
+              <div className="p-8 flex justify-center"><LoadingSpinner /></div>
+            ) : isError ? (
+              <div className="p-4"><ErrorBanner message="Failed to load incidents" /></div>
+            ) : incidents.length === 0 ? (
+              <div className="p-8 text-center text-slate-500 text-sm">
+                No incidents match current filters.
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-800/50">
+                {incidents.map(inc => (
+                  <IncidentListCard 
+                    key={inc.incident_id}
+                    incident={inc}
+                    isSelected={selectedIncidentId === inc.incident_id}
+                    onClick={() => setSelectedIncidentId(inc.incident_id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {isLoading ? (
-            <div className="p-8 flex justify-center"><LoadingSpinner /></div>
-          ) : isError ? (
-            <div className="p-4"><ErrorBanner message="Failed to load incidents" /></div>
-          ) : incidents.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-sm">
-              No incidents match current filters.
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-800/50">
-              {incidents.map(inc => (
-                <IncidentListCard 
-                  key={inc.incident_id}
-                  incident={inc}
-                  isSelected={selectedIncidentId === inc.incident_id}
-                  onClick={() => setSelectedIncidentId(inc.incident_id)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Right Panel: Incident Details */}
+        {/* Right Panel: Incident Details */}
       <div className="flex-1 bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden hidden md:block">
         {selectedIncidentId ? (
           <IncidentDetailPanel incidentId={selectedIncidentId} />

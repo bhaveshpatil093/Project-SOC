@@ -5,7 +5,9 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export const Badge = ({ children, className, variant = "default" }) => {
+import React from "react";
+
+export const Badge = React.memo(({ children, className, variant = "default" }) => {
   const v = (variant || "default").toLowerCase();
   
   const variants = {
@@ -27,4 +29,4 @@ export const Badge = ({ children, className, variant = "default" }) => {
       {children}
     </span>
   );
-};
+});

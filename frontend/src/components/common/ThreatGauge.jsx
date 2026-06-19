@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-export const ThreatGauge = ({ 
+export const ThreatGauge = React.memo(({ 
   score = 0, 
   size = 200, 
   showLabel = true, 
@@ -107,4 +107,4 @@ export const ThreatGauge = ({
       </div>
     </div>
   );
-};
+});

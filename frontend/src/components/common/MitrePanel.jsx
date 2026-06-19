@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { getMitreColor } from '../../utils/colors';
 import { Shield } from 'lucide-react';
 
-export const MitrePanel = ({ tactics = [], techniques = [] }) => {
+export const MitrePanel = React.memo(({ tactics = [], techniques = [] }) => {
   if ((!tactics || tactics.length === 0) && (!techniques || techniques.length === 0)) {
     return (
       <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 text-center text-slate-500">
@@ -61,7 +61,7 @@ export const MitrePanel = ({ tactics = [], techniques = [] }) => {
       )}
     </div>
   );
-};
+});
 
 MitrePanel.propTypes = {
   tactics: PropTypes.arrayOf(PropTypes.string),

@@ -3,9 +3,10 @@ import * as d3 from 'd3';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Filter as FilterIcon } from 'lucide-react';
 
-export const CorrelationGraph = ({ incidents = [], alerts = [], maxNodes = 50, onNodeClick }) => {
+export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNodes = 500, onNodeClick }) => {
   const containerRef = useRef(null);
   const svgRef = useRef(null);
+  const canvasRef = useRef(null);
   const navigate = useNavigate();
 
   const [minLevel, setMinLevel] = useState('all');
@@ -111,7 +112,6 @@ export const CorrelationGraph = ({ incidents = [], alerts = [], maxNodes = 50, o
     // Performance Guard Cluster
     if (nodes.length > maxNodes) {
       console.warn(`Graph nodes (${nodes.length}) > ${maxNodes}. Proceeding with subset.`);
-      // Just slice for basic safety or aggregate (complex logic skipped for simplicity, slicing by severity)
       nodes.sort((a, b) => (b.score || 0) - (a.score || 0));
       const keepIds = new Set(nodes.slice(0, maxNodes).map(n => n.id));
       nodes = nodes.filter(n => keepIds.has(n.id));
@@ -131,151 +131,268 @@ export const CorrelationGraph = ({ incidents = [], alerts = [], maxNodes = 50, o
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
 
+    const useCanvas = graphData.nodes.length > 100;
+
     const svg = d3.select(svgRef.current);
+    const canvas = canvasRef.current;
+    
     svg.selectAll("*").remove();
+    const context = canvas ? canvas.getContext("2d") : null;
+
+    if (useCanvas && canvas) {
+      canvas.width = width;
+      canvas.height = height;
+      svg.style("display", "none");
+      d3.select(canvas).style("display", "block");
+    } else {
+      if (canvas) d3.select(canvas).style("display", "none");
+      svg.style("display", "block");
+    }
 
     // Setup zoom
-    const g = svg.append("g");
+    let transform = d3.zoomIdentity;
     const zoom = d3.zoom()
       .scaleExtent([0.1, 4])
-      .on("zoom", (e) => g.attr("transform", e.transform));
-    svg.call(zoom);
+      .on("zoom", (e) => {
+        transform = e.transform;
+        if (useCanvas) tick(); // manually re-render canvas on zoom
+        else svg.select("g").attr("transform", e.transform);
+      });
+      
+    if (useCanvas) {
+      d3.select(canvas).call(zoom);
+    } else {
+      svg.call(zoom);
+    }
+
+    const g = useCanvas ? null : svg.append("g");
 
     // Deep copy for D3
     const nodes = graphData.nodes.map(d => Object.create(d));
     const links = graphData.links.map(d => Object.create(d));
 
+    // Throttle force simulation ticks with alpha decay = 0.02
     const sim = d3.forceSimulation(nodes)
       .force("link", d3.forceLink(links).id(d => d.id).distance(60))
       .force("charge", d3.forceManyBody().strength(-300))
       .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collision", d3.forceCollide().radius(d => d.radius + 10));
+      .force("collision", d3.forceCollide().radius(d => d.radius + 10))
+      .alphaDecay(0.02);
 
     setSimulation(sim);
 
-    // Draw Links
-    const link = g.append("g")
-      .attr("stroke-opacity", 0.6)
-      .selectAll("line")
-      .data(links)
-      .join("line")
-      .attr("stroke", d => {
-        if (d.type === 'alert-incident') return '#ef4444'; // red
-        if (d.type === 'alert-alert') return '#f97316'; // orange
-        return '#475569'; // slate-600
-      })
-      .attr("stroke-width", d => d.type === 'alert-incident' ? 3 : 1.5)
-      .attr("stroke-dasharray", d => d.type === 'alert-alert' ? "4,4" : "none");
+    let linkElements, nodeElements;
 
-    // Hexagon path generator
-    const hexPath = (r) => {
-      const a = (2 * Math.PI) / 6;
-      let path = "";
-      for (let i = 0; i < 6; i++) {
-        const x = r * Math.sin(a * i);
-        const y = -r * Math.cos(a * i);
-        path += (i === 0 ? "M" : "L") + x + "," + y;
-      }
-      path += "Z";
-      return path;
-    };
+    if (!useCanvas) {
+      // Draw Links (SVG)
+      linkElements = g.append("g")
+        .attr("stroke-opacity", 0.6)
+        .selectAll("line")
+        .data(links)
+        .join("line")
+        .attr("stroke", d => {
+          if (d.type === 'alert-incident') return '#ef4444'; 
+          if (d.type === 'alert-alert') return '#f97316'; 
+          return '#475569'; 
+        })
+        .attr("stroke-width", d => d.type === 'alert-incident' ? 3 : 1.5)
+        .attr("stroke-dasharray", d => d.type === 'alert-alert' ? "4,4" : "none");
 
-    // Draw Nodes
-    const node = g.append("g")
-      .selectAll("g")
-      .data(nodes)
-      .join("g")
-      .call(d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended));
+      // Hexagon path generator
+      const hexPath = (r) => {
+        const a = (2 * Math.PI) / 6;
+        let path = "";
+        for (let i = 0; i < 6; i++) {
+          const x = r * Math.sin(a * i);
+          const y = -r * Math.cos(a * i);
+          path += (i === 0 ? "M" : "L") + x + "," + y;
+        }
+        path += "Z";
+        return path;
+      };
 
-    // Shapes
-    node.each(function(d) {
-      const el = d3.select(this);
-      if (d.type === 'incident') {
-        el.append("path")
-          .attr("d", hexPath(d.radius))
-          .attr("fill", "#7f1d1d")
-          .attr("stroke", "#ef4444")
-          .attr("stroke-width", 2);
-      } else {
-        el.append("circle")
-          .attr("r", d.radius)
-          .attr("fill", d => {
-            if (d.type === 'host') return '#1e3a8a';
-            if (d.type === 'user') return '#4c1d95';
-            if (d.type === 'alert') {
-              if (d.score >= 0.8) return '#991b1b';
-              if (d.score >= 0.6) return '#9a3412';
-              if (d.score >= 0.4) return '#854d0e';
-              return '#1e40af';
-            }
-            return '#334155';
-          })
-          .attr("stroke", d => {
-            if (d.type === 'host') return '#3b82f6';
-            if (d.type === 'user') return '#8b5cf6';
-            if (d.type === 'alert') {
-              if (d.score >= 0.8) return '#ef4444';
-              if (d.score >= 0.6) return '#f97316';
-              return '#3b82f6';
-            }
-            return '#64748b';
-          })
-          .attr("stroke-width", 2);
-      }
-    });
+      // Draw Nodes (SVG)
+      nodeElements = g.append("g")
+        .selectAll("g")
+        .data(nodes)
+        .join("g")
+        .call(d3.drag()
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended));
 
-    // Labels
-    node.append("text")
-      .attr("x", d => d.radius + 5)
-      .attr("y", 4)
-      .text(d => d.label)
-      .attr("font-size", "10px")
-      .attr("fill", "#94a3b8")
-      .attr("font-family", "monospace")
-      .attr("pointer-events", "none");
-
-    node.on("mouseover", (event, d) => {
-      setTooltip({
-        show: true,
-        x: event.pageX,
-        y: event.pageY,
-        content: d
+      // Shapes
+      nodeElements.each(function(d) {
+        const el = d3.select(this);
+        if (d.type === 'incident') {
+          el.append("path")
+            .attr("d", hexPath(d.radius))
+            .attr("fill", "#7f1d1d")
+            .attr("stroke", "#ef4444")
+            .attr("stroke-width", 2);
+        } else {
+          el.append("circle")
+            .attr("r", d.radius)
+            .attr("fill", d => {
+              if (d.type === 'host') return '#1e3a8a';
+              if (d.type === 'user') return '#4c1d95';
+              if (d.type === 'alert') {
+                if (d.score >= 0.8) return '#991b1b';
+                if (d.score >= 0.6) return '#9a3412';
+                if (d.score >= 0.4) return '#854d0e';
+                return '#1e40af';
+              }
+              return '#334155';
+            })
+            .attr("stroke", d => {
+              if (d.type === 'host') return '#3b82f6';
+              if (d.type === 'user') return '#8b5cf6';
+              if (d.type === 'alert') {
+                if (d.score >= 0.8) return '#ef4444';
+                if (d.score >= 0.6) return '#f97316';
+                return '#3b82f6';
+              }
+              return '#64748b';
+            })
+            .attr("stroke-width", 2);
+        }
       });
-      d3.select(event.currentTarget).select("circle, path")
-        .attr("stroke", "#ffffff")
-        .attr("stroke-width", 3);
-    })
-    .on("mouseout", (event, d) => {
-      setTooltip({ show: false, x: 0, y: 0, content: null });
-      d3.select(event.currentTarget).select("circle, path")
-        .attr("stroke-width", 2)
-        .attr("stroke", d.type === 'incident' ? "#ef4444" : (
-          d.type === 'host' ? '#3b82f6' :
-          d.type === 'user' ? '#8b5cf6' :
-          d.score >= 0.8 ? '#ef4444' :
-          d.score >= 0.6 ? '#f97316' : '#3b82f6'
-        ));
-    })
-    .on("click", (event, d) => {
-      if (onNodeClick) {
-        onNodeClick(d);
-      } else {
-        if (d.type === 'alert') navigate(`/alerts/${d.id}`);
-        if (d.type === 'incident') navigate(`/incidents`); // or detail if route existed
-      }
-    });
 
-    sim.on("tick", () => {
-      link
-        .attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y);
-      node.attr("transform", d => `translate(${d.x},${d.y})`);
-    });
+      // Labels
+      nodeElements.append("text")
+        .attr("x", d => d.radius + 5)
+        .attr("y", 4)
+        .text(d => d.label)
+        .attr("font-size", "10px")
+        .attr("fill", "#94a3b8")
+        .attr("font-family", "monospace")
+        .attr("pointer-events", "none");
+
+      nodeElements.on("mouseover", (event, d) => {
+        setTooltip({
+          show: true,
+          x: event.pageX,
+          y: event.pageY,
+          content: d
+        });
+        d3.select(event.currentTarget).select("circle, path")
+          .attr("stroke", "#ffffff")
+          .attr("stroke-width", 3);
+      })
+      .on("mouseout", (event, d) => {
+        setTooltip({ show: false, x: 0, y: 0, content: null });
+        d3.select(event.currentTarget).select("circle, path")
+          .attr("stroke-width", 2)
+          .attr("stroke", d.type === 'incident' ? "#ef4444" : (
+            d.type === 'host' ? '#3b82f6' :
+            d.type === 'user' ? '#8b5cf6' :
+            d.score >= 0.8 ? '#ef4444' :
+            d.score >= 0.6 ? '#f97316' : '#3b82f6'
+          ));
+      })
+      .on("click", (event, d) => {
+        if (onNodeClick) {
+          onNodeClick(d);
+        } else {
+          if (d.type === 'alert') navigate(`/alerts/${d.id}`);
+          if (d.type === 'incident') navigate(`/incidents`);
+        }
+      });
+    } else {
+      // Canvas interaction handlers
+      d3.select(canvas)
+        .call(d3.drag()
+          .container(canvas)
+          .subject(event => {
+            const [x, y] = transform.invert([event.x, event.y]);
+            return sim.find(x, y, 30);
+          })
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended));
+    }
+
+    function tick() {
+      if (useCanvas && context) {
+        context.save();
+        context.clearRect(0, 0, width, height);
+        context.translate(transform.x, transform.y);
+        context.scale(transform.k, transform.k);
+        
+        // Draw links
+        context.globalAlpha = 0.6;
+        links.forEach(d => {
+          context.beginPath();
+          context.moveTo(d.source.x, d.source.y);
+          context.lineTo(d.target.x, d.target.y);
+          if (d.type === 'alert-incident') {
+            context.strokeStyle = '#ef4444';
+            context.lineWidth = 3;
+            context.setLineDash([]);
+          } else if (d.type === 'alert-alert') {
+            context.strokeStyle = '#f97316';
+            context.lineWidth = 1.5;
+            context.setLineDash([4, 4]);
+          } else {
+            context.strokeStyle = '#475569';
+            context.lineWidth = 1.5;
+            context.setLineDash([]);
+          }
+          context.stroke();
+        });
+        
+        // Draw nodes
+        context.globalAlpha = 1.0;
+        context.setLineDash([]);
+        nodes.forEach(d => {
+          context.beginPath();
+          if (d.type === 'incident') {
+            const a = (2 * Math.PI) / 6;
+            for (let i = 0; i < 6; i++) {
+              const x = d.x + d.radius * Math.sin(a * i);
+              const y = d.y - d.radius * Math.cos(a * i);
+              if (i === 0) context.moveTo(x, y);
+              else context.lineTo(x, y);
+            }
+            context.closePath();
+            context.fillStyle = "#7f1d1d";
+            context.strokeStyle = "#ef4444";
+            context.lineWidth = 2;
+          } else {
+            context.arc(d.x, d.y, d.radius, 0, 2 * Math.PI);
+            if (d.type === 'host') { context.fillStyle = '#1e3a8a'; context.strokeStyle = '#3b82f6'; }
+            else if (d.type === 'user') { context.fillStyle = '#4c1d95'; context.strokeStyle = '#8b5cf6'; }
+            else if (d.type === 'alert') {
+              if (d.score >= 0.8) { context.fillStyle = '#991b1b'; context.strokeStyle = '#ef4444'; }
+              else if (d.score >= 0.6) { context.fillStyle = '#9a3412'; context.strokeStyle = '#f97316'; }
+              else if (d.score >= 0.4) { context.fillStyle = '#854d0e'; context.strokeStyle = '#3b82f6'; }
+              else { context.fillStyle = '#1e40af'; context.strokeStyle = '#3b82f6'; }
+            } else {
+              context.fillStyle = '#334155'; context.strokeStyle = '#64748b';
+            }
+            context.lineWidth = 2;
+          }
+          context.fill();
+          context.stroke();
+          
+          // Labels
+          context.fillStyle = "#94a3b8";
+          context.font = "10px monospace";
+          context.fillText(d.label, d.x + d.radius + 5, d.y + 4);
+        });
+        
+        context.restore();
+      } else if (!useCanvas) {
+        linkElements
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+        nodeElements.attr("transform", d => `translate(${d.x},${d.y})`);
+      }
+    }
+
+    sim.on("tick", tick);
 
     // Drag handlers
     function dragstarted(event) {
@@ -335,9 +452,10 @@ export const CorrelationGraph = ({ incidents = [], alerts = [], maxNodes = 50, o
         </div>
       </div>
 
-      {/* SVG Container */}
-      <div ref={containerRef} className="flex-1 w-full h-full cursor-grab active:cursor-grabbing">
-        <svg ref={svgRef} className="w-full h-full"></svg>
+      {/* Rendering Container */}
+      <div ref={containerRef} className="flex-1 w-full h-full cursor-grab active:cursor-grabbing relative">
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ display: 'none' }}></canvas>
+        <svg ref={svgRef} className="absolute inset-0 w-full h-full"></svg>
       </div>
 
       {/* Tooltip */}
@@ -354,4 +472,4 @@ export const CorrelationGraph = ({ incidents = [], alerts = [], maxNodes = 50, o
       )}
     </div>
   );
-};
+});
