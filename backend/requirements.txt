@@ -35,3 +35,6 @@ python-multipart>=0.0.9
 slowapi==0.1.9
 slowapi==0.1.9
 psutil==5.9.8
+
+requests
+websockets
