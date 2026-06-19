@@ -65,7 +65,7 @@ export const EntityTimeline = ({ entityKey, alerts = [], currentAlertId, maxItem
               <div key={alert.id || idx} className="relative group">
                 {/* Dot */}
                 <div 
-                  className={`absolute -left-[29px] top-1.5 h-3 w-3 rounded-full border-2 border-slate-900 ${isCurrent ? 'ring-2 ring-blue-500 scale-125' : ''}`}
+                  className={`absolute -left-[29px] top-1.5 h-3 w-3 rounded-full border-2 border-[var(--border)] ${isCurrent ? 'ring-2 ring-blue-500 scale-125' : ''}`}
                   style={{ backgroundColor: dotColor }}
                 />
                 <div className={`flex items-center gap-3 text-sm ${isCurrent ? 'bg-[var(--bg_secondary)]/80 p-2 rounded-lg -ml-2 border border-[var(--border)]' : ''}`}>
@@ -85,12 +85,12 @@ export const EntityTimeline = ({ entityKey, alerts = [], currentAlertId, maxItem
             <div key={alert.id || idx} className="relative group">
               {/* Dot on the timeline */}
               <div 
-                className={`absolute -left-[31px] top-4 h-4 w-4 rounded-full border-[3px] border-slate-900 z-10 transition-transform ${isCurrent ? 'ring-2 ring-blue-500 scale-125 ring-offset-2 ring-offset-slate-900' : 'group-hover:scale-110'}`}
+                className={`absolute -left-[31px] top-4 h-4 w-4 rounded-full border-[3px] border-[var(--border)] z-10 transition-transform ${isCurrent ? 'ring-2 ring-blue-500 scale-125 ring-offset-2 ring-offset-[var(--bg_primary)]' : 'group-hover:scale-110'}`}
                 style={{ backgroundColor: dotColor }}
               />
 
               {/* Connecting bracket for attack chains (visually implied by proximity and the orange banner above, but we highlight the card border if it's high/crit) */}
-              <div className={`ml-2 bg-[var(--bg_secondary)]/80 rounded-xl border ${isCurrent ? 'border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]' : 'border-[var(--border)]'} p-4 transition-all hover:border-slate-500`}>
+              <div className={`ml-2 bg-[var(--bg_secondary)]/80 rounded-xl border ${isCurrent ? 'border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]' : 'border-[var(--border)]'} p-4 transition-all hover:border-[var(--border)]`}>
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-lg bg-[var(--bg_primary)] text-[var(--text_secondary)] border border-[var(--border)]">

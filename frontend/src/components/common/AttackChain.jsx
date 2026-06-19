@@ -42,7 +42,7 @@ export const AttackChain = React.memo(({ chainData }) => {
           <React.Fragment key={idx}>
             {/* Connection Line to previous node */}
             {idx > 0 && (
-              <div className={`flex flex-col items-center justify-center w-24 -mt-8 ${stage.isFast ? 'text-red-500' : 'text-slate-600'}`}>
+              <div className={`flex flex-col items-center justify-center w-24 -mt-8 ${stage.isFast ? 'text-red-500' : 'text-[var(--text_secondary)]'}`}>
                 <span className="text-xs font-mono font-medium bg-[var(--bg_primary)] px-2 rounded-full z-10">{stage.isFast ? 'FAST' : ''}</span>
                 <div className={`h-1 w-full ${stage.isFast ? 'bg-red-500/50' : 'bg-[var(--bg_tertiary)]'} -mt-2`} />
               </div>
@@ -50,7 +50,7 @@ export const AttackChain = React.memo(({ chainData }) => {
             
             {/* Node */}
             <div className="relative flex flex-col items-center w-36">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-slate-900 z-10 shadow-lg ${getScoreColor(stage.score)}`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center border-4 border-[var(--border)] z-10 shadow-lg ${getScoreColor(stage.score)}`}>
                 {getLogIcon(stage.log_type)}
               </div>
               

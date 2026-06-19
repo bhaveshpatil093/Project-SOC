@@ -55,7 +55,7 @@ const TabSubmitFeedback = () => {
     const l = (label || "").toUpperCase();
     if (l === "TP") return "bg-green-500/5 hover:bg-green-500/10 border-l-2 border-green-500";
     if (l === "FP") return "bg-red-500/5 hover:bg-red-500/10 border-l-2 border-red-500";
-    if (l === "BENIGN") return "bg-slate-500/5 hover:bg-slate-500/10 border-l-2 border-slate-500";
+    if (l === "BENIGN") return "bg-[var(--text_secondary)]/5 hover:bg-[var(--text_secondary)]/10 border-l-2 border-[var(--border)]";
     return "hover:bg-[var(--bg_tertiary)]";
   };
 
@@ -112,15 +112,15 @@ const TabSubmitFeedback = () => {
           <div>
             <label className="block text-sm font-medium text-[var(--text_secondary)] mb-3">Verdict Label</label>
             <div className="flex flex-wrap gap-4">
-              <label className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'TP' ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-[var(--bg_primary)] border-[var(--border)] text-[var(--text_secondary)] hover:border-slate-500'}`}>
+              <label className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'TP' ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-[var(--bg_primary)] border-[var(--border)] text-[var(--text_secondary)] hover:border-[var(--border)]'}`}>
                 <input type="radio" name="label" value="TP" checked={form.label === "TP"} onChange={() => setForm({...form, label: "TP"})} className="hidden" />
                 <CheckCircle className="h-4 w-4" /> True Positive (Real Threat)
               </label>
-              <label className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'FP' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-[var(--bg_primary)] border-[var(--border)] text-[var(--text_secondary)] hover:border-slate-500'}`}>
+              <label className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'FP' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-[var(--bg_primary)] border-[var(--border)] text-[var(--text_secondary)] hover:border-[var(--border)]'}`}>
                 <input type="radio" name="label" value="FP" checked={form.label === "FP"} onChange={() => setForm({...form, label: "FP"})} className="hidden" />
                 <ShieldOff className="h-4 w-4" /> False Positive (Safe/Noise)
               </label>
-              <label className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'Benign' ? 'bg-slate-500/20 border-slate-400 text-[var(--text_primary)]' : 'bg-[var(--bg_primary)] border-[var(--border)] text-[var(--text_secondary)] hover:border-slate-500'}`}>
+              <label className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'Benign' ? 'bg-[var(--text_secondary)]/20 border-[var(--border)] text-[var(--text_primary)]' : 'bg-[var(--bg_primary)] border-[var(--border)] text-[var(--text_secondary)] hover:border-[var(--border)]'}`}>
                 <input type="radio" name="label" value="Benign" checked={form.label === "Benign"} onChange={() => setForm({...form, label: "Benign"})} className="hidden" />
                 <AlertTriangle className="h-4 w-4" /> Benign (Expected Behavior)
               </label>
@@ -178,7 +178,7 @@ const TabSubmitFeedback = () => {
                 <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">Notes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/30">
+            <tbody className="divide-y divide-[var(--border)]/30">
               {isLoading ? (
                 <tr><td colSpan="6" className="px-6 py-12"><LoadingSpinner /></td></tr>
               ) : isError ? (
@@ -329,7 +329,7 @@ const TabSuppressionRules = () => {
                 <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/30">
+            <tbody className="divide-y divide-[var(--border)]/30">
               {isLoading ? (
                 <tr><td colSpan="6" className="px-6 py-16"><LoadingSpinner /></td></tr>
               ) : isError ? (
@@ -337,7 +337,7 @@ const TabSuppressionRules = () => {
               ) : rules.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-16 text-center">
-                    <Shield className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                    <Shield className="h-12 w-12 text-[var(--text_secondary)] mx-auto mb-4" />
                     <p className="text-[var(--text_secondary)] font-medium text-lg">No suppression rules active.</p>
                     <p className="text-[var(--text_secondary)] mt-2">False positive labels logged will generate rules automatically.</p>
                   </td>

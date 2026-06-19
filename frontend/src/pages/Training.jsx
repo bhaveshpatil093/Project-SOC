@@ -220,7 +220,7 @@ export const Training = () => {
             <button 
               onClick={handleInitial}
               disabled={initialMutation.isPending}
-              className="w-full mt-4 bg-[var(--bg_tertiary)] hover:bg-slate-600 text-[var(--text_primary)] text-sm py-2 rounded-lg transition-colors"
+              className="w-full mt-4 bg-[var(--bg_tertiary)] hover:bg-[var(--bg_tertiary)] text-[var(--text_primary)] text-sm py-2 rounded-lg transition-colors"
             >
               Retrain Baseline
             </button>
@@ -290,7 +290,7 @@ export const Training = () => {
             <button 
               onClick={handleInitial}
               disabled={initialMutation.isPending}
-              className="w-full mt-4 bg-[var(--bg_tertiary)] hover:bg-slate-600 text-[var(--text_primary)] text-sm py-2 rounded-lg transition-colors"
+              className="w-full mt-4 bg-[var(--bg_tertiary)] hover:bg-[var(--bg_tertiary)] text-[var(--text_primary)] text-sm py-2 rounded-lg transition-colors"
             >
               Retrain Baseline
             </button>
@@ -336,7 +336,7 @@ export const Training = () => {
                     <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase">Final Loss / Cont</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/30">
+                <tbody className="divide-y divide-[var(--border)]/30">
                   {runsLoading ? (
                     <tr><td colSpan="6" className="px-6 py-8"><LoadingSpinner /></td></tr>
                   ) : runs.length === 0 ? (
@@ -350,7 +350,7 @@ export const Training = () => {
                               type="checkbox" 
                               checked={selectedRuns.includes(run.run_id)}
                               onChange={() => toggleRunSelection(run.run_id)}
-                              className="w-4 h-4 rounded border-[var(--border)] bg-[var(--bg_primary)] text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
+                              className="w-4 h-4 rounded border-[var(--border)] bg-[var(--bg_primary)] text-blue-500 focus:ring-blue-500 focus:ring-offset-[var(--bg_secondary)]"
                             />
                           </td>
                           <td className="px-6 py-4">
@@ -455,7 +455,7 @@ export const Training = () => {
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-700/30">
+                    <tbody className="divide-y divide-[var(--border)]/30">
                       {/* Collect all metric keys */}
                       {Array.from(new Set(compareRuns.flatMap(r => Object.keys(r.metrics || {})))).map(metricKey => (
                         <tr key={`m_${metricKey}`} className="hover:bg-[var(--bg_tertiary)]/50">
@@ -562,7 +562,7 @@ export const Training = () => {
               <button 
                 onClick={handleRetrain}
                 disabled={retrainMutation.isPending || (jobId && statusData?.status !== 'completed' && statusData?.status !== 'failed')}
-                className="w-full bg-[var(--bg_tertiary)] hover:bg-slate-600 disabled:opacity-50 text-[var(--text_primary)] font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                className="w-full bg-[var(--bg_tertiary)] hover:bg-[var(--bg_tertiary)] disabled:opacity-50 text-[var(--text_primary)] font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
               >
                 {retrainMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <RotateCw className="h-5 w-5" />}
                 Trigger Manual Incremental Sync
@@ -590,7 +590,7 @@ export const Training = () => {
                 
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 text-sm">
-                    <Loader2 className={`h-4 w-4 ${statusData?.status !== 'completed' && statusData?.status !== 'failed' ? 'text-blue-500 animate-spin' : 'text-slate-600'}`} />
+                    <Loader2 className={`h-4 w-4 ${statusData?.status !== 'completed' && statusData?.status !== 'failed' ? 'text-blue-500 animate-spin' : 'text-[var(--text_secondary)]'}`} />
                     <span className="text-[var(--text_secondary)]">Step: {statusData?.current_step || statusData?.step || 'Initializing environment'}</span>
                   </div>
                   
@@ -610,7 +610,7 @@ export const Training = () => {
               </div>
             ) : (
               <div className="flex-1 bg-[var(--bg_primary)] border border-[var(--border)] rounded-lg p-8 flex flex-col items-center justify-center text-center">
-                <Clock className="w-12 h-12 text-slate-600 mb-4" />
+                <Clock className="w-12 h-12 text-[var(--text_secondary)] mb-4" />
                 <p className="text-[var(--text_secondary)]">No active training jobs executing natively right now.</p>
                 <p className="text-xs text-[var(--text_secondary)] mt-2">Trigger a manual job or wait for scheduler.</p>
               </div>

@@ -50,7 +50,7 @@ const IncidentListCard = ({ incident, isSelected, onClick }) => {
         <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase font-bold tracking-wider ${getStageBadge(incident.attack_stage)}`}>
           {incident.attack_stage.replace('_', ' ')}
         </span>
-        <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${incident.status === 'active' ? 'bg-blue-500/20 text-blue-400' : incident.status === 'escalated' ? 'bg-orange-500/20 text-orange-400' : 'bg-slate-500/20 text-[var(--text_secondary)]'}`}>
+        <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold ${incident.status === 'active' ? 'bg-blue-500/20 text-blue-400' : incident.status === 'escalated' ? 'bg-orange-500/20 text-orange-400' : 'bg-[var(--text_secondary)]/20 text-[var(--text_secondary)]'}`}>
           {incident.status}
         </span>
       </div>
@@ -94,7 +94,7 @@ const MitrePanel = ({ tactics, techniques }) => (
               {t}
             </span>
           ))}
-          {tactics.length === 0 && <span className="text-xs text-slate-600">None mapped</span>}
+          {tactics.length === 0 && <span className="text-xs text-[var(--text_secondary)]">None mapped</span>}
         </div>
       </div>
       <div>
@@ -105,7 +105,7 @@ const MitrePanel = ({ tactics, techniques }) => (
               {t}
             </span>
           ))}
-          {techniques.length === 0 && <span className="text-xs text-slate-600">None mapped</span>}
+          {techniques.length === 0 && <span className="text-xs text-[var(--text_secondary)]">None mapped</span>}
         </div>
       </div>
     </div>
@@ -341,7 +341,7 @@ export const Incidents = () => {
                 No incidents match current filters.
               </div>
             ) : (
-              <div className="divide-y divide-slate-800/50">
+              <div className="divide-y divide-[var(--border)]/50">
                 {incidents.map(inc => (
                   <IncidentListCard 
                     key={inc.incident_id}
@@ -361,7 +361,7 @@ export const Incidents = () => {
           <IncidentDetailPanel incidentId={selectedIncidentId} />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-[var(--text_secondary)]">
-            <Network className="h-16 w-16 text-slate-800 mb-4" />
+            <Network className="h-16 w-16 text-[var(--text_primary)] mb-4" />
             <p className="text-lg">Select an incident to view the full attack chain</p>
           </div>
         )}

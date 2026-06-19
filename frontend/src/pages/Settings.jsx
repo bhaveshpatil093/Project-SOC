@@ -111,7 +111,7 @@ export const Settings = () => {
   };
 
   const ActionBox = ({ title, icon: Icon, description, mutation, type }) => (
-    <div className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl p-6 flex flex-col items-start transition-all hover:border-slate-500">
+    <div className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl p-6 flex flex-col items-start transition-all hover:border-[var(--border)]">
       <div className="p-3 bg-blue-500/10 text-blue-500 rounded-lg mb-4">
         <Icon className="h-6 w-6" />
       </div>
@@ -424,7 +424,7 @@ export const Settings = () => {
             </h3>
           </div>
           <table className="w-full text-left whitespace-nowrap">
-            <tbody className="divide-y divide-slate-700/30 text-sm">
+            <tbody className="divide-y divide-[var(--border)]/30 text-sm">
               <tr className="hover:bg-[var(--bg_tertiary)]/30">
                 <td className="px-6 py-4 font-medium text-[var(--text_secondary)]">Window Size (minutes)</td>
                 <td className="px-6 py-4 font-mono text-blue-400">5</td>

@@ -191,7 +191,7 @@ const LiveAlertFeed = () => {
       
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {displayedAlerts.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-600 space-y-2">
+          <div className="h-full flex flex-col items-center justify-center text-[var(--text_secondary)] space-y-2">
              <ShieldAlert className="h-8 w-8 opacity-20" />
              <p className="text-xs">Waiting for live alerts...</p>
           </div>
@@ -364,7 +364,7 @@ export const Dashboard = () => {
                     <th className="px-6 py-4 text-sm font-semibold text-[var(--text_secondary)]">Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700">
+                <tbody className="divide-y divide-[var(--border)]">
                   {topHosts.length > 0 ? (
                     topHosts.map((host, idx) => (
                       <tr 

@@ -9,7 +9,7 @@ export const StatCard = ({ title, value, subtitle, icon: Icon, color = "blue", l
     green: "bg-green-500/10 text-green-500 border-green-500/50",
     orange: "bg-orange-500/10 text-orange-500 border-orange-500/50",
     purple: "bg-purple-500/10 text-purple-500 border-purple-500/50",
-    slate: "bg-slate-500/10 text-[var(--text_secondary)] border-slate-500/50",
+    slate: "bg-[var(--text_secondary)]/10 text-[var(--text_secondary)] border-[var(--border)]",
   };
   
   const textColors = {
@@ -22,7 +22,7 @@ export const StatCard = ({ title, value, subtitle, icon: Icon, color = "blue", l
   };
 
   return (
-    <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 flex items-center justify-between shadow-lg transition-transform hover:-translate-y-1 hover:border-slate-500">
+    <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 flex items-center justify-between shadow-lg transition-transform hover:-translate-y-1 hover:border-[var(--border)]">
       <div>
         <h3 className="text-[var(--text_secondary)] text-sm font-semibold uppercase tracking-wider mb-2">{title}</h3>
         {loading ? (

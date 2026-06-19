@@ -52,7 +52,7 @@ export const DataTable = ({ columns, data, loading, emptyMessage }) => {
                   <div className="flex items-center gap-1.5">
                     {col.label}
                     {col.sortable && (
-                      <span className="text-slate-600">
+                      <span className="text-[var(--text_secondary)]">
                         {sortKey === col.key ? (
                           sortOrder === 'asc' ? <ArrowUp className="h-3 w-3 text-blue-400" /> : <ArrowDown className="h-3 w-3 text-blue-400" />
                         ) : (
@@ -65,7 +65,7 @@ export const DataTable = ({ columns, data, loading, emptyMessage }) => {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-700/50">
+          <tbody className="divide-y divide-[var(--border)]/50">
             {loading ? (
               <tr>
                 <td colSpan={columns.length} className="px-6 py-16">

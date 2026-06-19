@@ -241,7 +241,7 @@ export const Alerts = () => {
           <input type="text" name="user_name" value={filters.user_name} onChange={handleFilterChange} placeholder="Enter username..." className="w-full bg-[var(--bg_primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text_primary)] focus:outline-none focus:border-blue-500 transition-colors" />
         </div>
         <div className="flex items-end">
-          <button onClick={clearFilters} className="bg-[var(--bg_tertiary)] hover:bg-slate-600 text-[var(--text_primary)] p-2 rounded-lg transition-colors h-[38px] w-[38px] flex items-center justify-center" title="Clear Filters">
+          <button onClick={clearFilters} className="bg-[var(--bg_tertiary)] hover:bg-[var(--bg_tertiary)] text-[var(--text_primary)] p-2 rounded-lg transition-colors h-[38px] w-[38px] flex items-center justify-center" title="Clear Filters">
             <FilterX className="h-4 w-4" />
           </button>
         </div>

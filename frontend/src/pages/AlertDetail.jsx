@@ -165,7 +165,7 @@ export const AlertDetail = () => {
           <div className="space-y-4 overflow-y-auto flex-1">
             {alert.mitre_technique_ids && alert.mitre_technique_ids.length > 0 ? (
               alert.mitre_technique_ids.map((technique, idx) => (
-                <div key={idx} className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-lg p-4 hover:border-slate-500 transition-colors group">
+                <div key={idx} className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-lg p-4 hover:border-[var(--border)] transition-colors group">
                   <div className="flex justify-between items-start">
                     <div>
                       <span className="text-sm font-bold text-red-400 font-mono">{technique}</span>
@@ -214,7 +214,7 @@ export const AlertDetail = () => {
             </div>
             {(!isMobile || showTimeline) && (
               <div className="p-4 md:p-6 pt-0 xl:pt-6 max-h-[600px] overflow-y-auto">
-                <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-700 before:to-transparent">
+                <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-[var(--border)] before:to-transparent">
               {timeline.length > 0 ? timeline.map((tItem, idx) => {
                 const isCurrent = (tItem._id || tItem.id) === (alert._id || alert.id);
                 return (
@@ -257,7 +257,7 @@ export const AlertDetail = () => {
                     <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)]">Impact</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700/50">
+                <tbody className="divide-y divide-[var(--border)]/50">
                   {alert.triggered_rules && alert.triggered_rules.length > 0 ? (
                     alert.triggered_rules.map((rule, idx) => {
                       const isObj = typeof rule === 'object';

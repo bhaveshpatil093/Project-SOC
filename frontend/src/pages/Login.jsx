@@ -33,7 +33,7 @@ export const Login = () => {
   return (
     <div className="min-h-screen bg-[var(--bg_primary)] flex flex-col items-center justify-center relative overflow-hidden">
       {/* Background decorations */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-slate-950"></div>
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[var(--bg_primary)] via-[var(--bg_secondary)] to-[var(--bg_secondary)]"></div>
       <div className="absolute -top-[500px] -right-[500px] w-[1000px] h-[1000px] rounded-full bg-blue-500/5 blur-3xl"></div>
       
       <div className="z-10 w-full max-w-md p-8">
@@ -61,7 +61,7 @@ export const Login = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className={`w-full bg-[var(--bg_primary)]/50 border ${fieldErrors.username ? 'border-red-500' : 'border-[var(--border)]'} rounded-xl px-4 py-3 text-[var(--text_primary)] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all`}
+                className={`w-full bg-[var(--bg_primary)]/50 border ${fieldErrors.username ? 'border-red-500' : 'border-[var(--border)]'} rounded-xl px-4 py-3 text-[var(--text_primary)] placeholder-[var(--text_secondary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all`}
                 placeholder="Enter your tracking designation"
               />
               {fieldErrors.username && <p className="text-xs text-red-400 mt-1">{fieldErrors.username}</p>}
@@ -74,7 +74,7 @@ export const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className={`w-full bg-[var(--bg_primary)]/50 border ${fieldErrors.password ? 'border-red-500' : 'border-[var(--border)]'} rounded-xl px-4 py-3 text-[var(--text_primary)] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all`}
+                className={`w-full bg-[var(--bg_primary)]/50 border ${fieldErrors.password ? 'border-red-500' : 'border-[var(--border)]'} rounded-xl px-4 py-3 text-[var(--text_primary)] placeholder-[var(--text_secondary)] focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all`}
                 placeholder="••••••••"
               />
               {fieldErrors.password && <p className="text-xs text-red-400 mt-1">{fieldErrors.password}</p>}
@@ -83,7 +83,7 @@ export const Login = () => {
             <button 
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-[var(--text_primary)] font-medium rounded-xl px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-blue-900/20"
+              className="w-full bg-blue-600 hover:bg-blue-500 text-[var(--text_primary)] font-medium rounded-xl px-4 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[var(--bg_primary)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg shadow-blue-900/20"
             >
               {isSubmitting ? (
                 <>
