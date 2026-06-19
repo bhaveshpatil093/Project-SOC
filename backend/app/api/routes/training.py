@@ -45,3 +45,97 @@ async def get_training_status():
     """Generates complete model versioning mapping cleanly leveraging underlying MLFlow experiment log pipelines."""
     history = get_model_versions()
     return {"versions": history}
+
+# --- MLflow Endpoints ---
+
+import mlflow
+from mlflow.tracking import MlflowClient
+
+@router.get("/mlflow/experiments", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+async def list_experiments():
+    client = MlflowClient()
+    experiments = client.search_experiments()
+    return [
+        {
+            "experiment_id": exp.experiment_id,
+            "name": exp.name,
+            "artifact_location": exp.artifact_location,
+            "lifecycle_stage": exp.lifecycle_stage
+        }
+        for exp in experiments
+    ]
+
+@router.get("/mlflow/runs/{experiment_id}", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+async def list_runs(experiment_id: str):
+    client = MlflowClient()
+    runs = client.search_runs(experiment_ids=[experiment_id])
+    return [
+        {
+            "run_id": run.info.run_id,
+            "status": run.info.status,
+            "start_time": run.info.start_time,
+            "end_time": run.info.end_time,
+            "metrics": run.data.metrics,
+            "params": run.data.params,
+            "tags": run.data.tags
+        }
+        for run in runs
+    ]
+
+@router.get("/mlflow/runs/detail/{run_id}", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+async def get_run_details(run_id: str):
+    client = MlflowClient()
+    run = client.get_run(run_id)
+    
+    # Try to fetch metric history if possible
+    metric_history = {}
+    for key in run.data.metrics.keys():
+        try:
+            history = client.get_metric_history(run_id, key)
+            metric_history[key] = [{"step": h.step, "value": h.value, "timestamp": h.timestamp} for h in history]
+        except:
+            pass
+            
+    return {
+        "run_id": run.info.run_id,
+        "status": run.info.status,
+        "start_time": run.info.start_time,
+        "end_time": run.info.end_time,
+        "metrics": run.data.metrics,
+        "params": run.data.params,
+        "tags": run.data.tags,
+        "metric_history": metric_history
+    }
+
+@router.get("/mlflow/compare", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+async def compare_runs(run_ids: str):
+    ids = [i.strip() for i in run_ids.split(",") if i.strip()]
+    if not ids:
+        raise HTTPException(status_code=400, detail="No run IDs provided")
+        
+    client = MlflowClient()
+    runs = []
+    for rid in ids:
+        try:
+            run = client.get_run(rid)
+            
+            # Fetch history for loss if available
+            loss_history = []
+            try:
+                hist = client.get_metric_history(rid, "loss")
+                loss_history = [{"step": h.step, "value": h.value} for h in hist]
+            except:
+                pass
+                
+            runs.append({
+                "run_id": run.info.run_id,
+                "name": run.data.tags.get("mlflow.runName", run.info.run_id[:8]),
+                "status": run.info.status,
+                "metrics": run.data.metrics,
+                "params": run.data.params,
+                "loss_history": loss_history
+            })
+        except:
+            continue
+            
+    return {"runs": runs}
