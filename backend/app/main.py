@@ -42,12 +42,16 @@ async def lifespan(app: FastAPI):
 
     # Load and bind the standalone RAG Pipeline mapping memory vectors locally
     try:
-        from app.slm.rag_pipeline import _rag_pipeline, reindex_all
+        from app.slm.rag_pipeline import _rag_pipeline
         await _rag_pipeline.initialize()
         
-        # Fire background task tracking historical RAG payload indices explicitly
         es = await get_es_client()
-        asyncio.create_task(reindex_all(es))
+        stats = await _rag_pipeline.get_index_stats()
+        n_docs = stats.get("total_indexed", 0)
+        
+        if n_docs < 10:
+            print(f"RAG auto-reindex triggered: found only {n_docs} indexed alerts")
+            asyncio.create_task(_rag_pipeline.reindex_from_elasticsearch(es))
     except Exception as e:
         print(f"Warning: Failed to initialize RAG Engine bounds cleanly: {e}")
 

@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api/client";
 import { triggerScoring } from "../api/alerts";
+import { getModelInfo, reloadModel, getRagStats, reindexRag, clearRagIndex, getSlmMetrics } from "../api/slm";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
-import { Server, Database, Activity, GitCommit, RefreshCw, CheckCircle, Play, XCircle, Bot, MonitorDot } from "lucide-react";
+import { Server, Database, Activity, GitCommit, RefreshCw, CheckCircle, Play, XCircle, Bot, MonitorDot, Cpu, Network, LineChart, Zap } from "lucide-react";
 import { formatDate } from "../utils/formatters";
 
 export const Settings = () => {
@@ -25,13 +26,32 @@ export const Settings = () => {
     refetchInterval: 30000,
   });
 
-  // Since feature/scoring endpoints don't explicitly have status getters defined in the prompt, 
-  // we infer their "live" capability from the backend general health for the UI shell.
+  const { data: slmModelInfo, isLoading: slmLoading, refetch: refetchSlm } = useQuery({
+    queryKey: ["slmModelInfo"],
+    queryFn: getModelInfo,
+    refetchInterval: 30000,
+  });
+
+  const { data: ragStats, isLoading: ragLoading, refetch: refetchRag } = useQuery({
+    queryKey: ["ragStats"],
+    queryFn: getRagStats,
+    refetchInterval: 30000,
+  });
+
+  const { data: slmMetrics, isLoading: metricsLoading, refetch: refetchMetrics } = useQuery({
+    queryKey: ["slmMetrics"],
+    queryFn: () => getSlmMetrics(24),
+    refetchInterval: 30000,
+  });
+
   const isHealthy = health?.status === "ok";
 
   const refreshStatus = () => {
     queryClient.invalidateQueries({ queryKey: ["health"] });
     queryClient.invalidateQueries({ queryKey: ["ingestionStatus"] });
+    refetchSlm();
+    refetchRag();
+    refetchMetrics();
   };
 
   // Mutations
@@ -58,6 +78,33 @@ export const Settings = () => {
       setActionResult({ type: "scoring", msg: `Scored ${res.scored || 0} entities, triggered ${res.alerts_above_threshold || 0} alerts.` });
     },
     onError: (err) => setActionResult({ type: "scoring", err: err.message })
+  });
+
+  const reloadModelMutation = useMutation({
+    mutationFn: (model) => reloadModel(model),
+    onSuccess: (res) => {
+      setActionResult({ type: "slm", msg: `Successfully reloaded SLM Engine onto ${res.model_name}` });
+      refetchSlm();
+    },
+    onError: (err) => setActionResult({ type: "slm", err: err.message })
+  });
+
+  const reindexRagMutation = useMutation({
+    mutationFn: reindexRag,
+    onSuccess: (res) => {
+      setActionResult({ type: "rag", msg: `RAG re-index job started globally. Job ID: ${res.job_id}` });
+      setTimeout(refetchRag, 5000);
+    },
+    onError: (err) => setActionResult({ type: "rag", err: err.message })
+  });
+
+  const clearRagMutation = useMutation({
+    mutationFn: clearRagIndex,
+    onSuccess: (res) => {
+      setActionResult({ type: "rag", msg: res.message });
+      refetchRag();
+    },
+    onError: (err) => setActionResult({ type: "rag", err: err.message })
   });
 
   const handleAction = (mutationObj, type) => {
@@ -176,6 +223,202 @@ export const Settings = () => {
           <div>
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Scoring & AI Engine</h3>
             <p className="text-xs text-slate-300">FastAPI ML Dependency Runtime</p>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION SLM MODEL PANEL */}
+      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Cpu className="h-5 w-5 text-blue-400" />
+            SLM Engine Configuration
+          </h2>
+          {slmLoading || reloadModelMutation.isPending ? (
+            <span className="flex items-center gap-2 text-sm text-slate-400">
+              <RefreshCw className="w-4 h-4 animate-spin text-blue-500" /> Hot-reloading tensors...
+            </span>
+          ) : (
+            <span className={`text-xs font-bold px-2 py-1 rounded-full border ${slmModelInfo?.is_finetuned ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' : 'bg-slate-700/50 text-slate-400 border-slate-600'}`}>
+              {slmModelInfo?.is_finetuned ? 'Fine-Tuned Adapter Active' : 'Base Model Active'}
+            </span>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Current Model</h4>
+            <p className="text-sm text-slate-200 truncate" title={slmModelInfo?.model_name || 'Loading...'}>{slmModelInfo?.model_name || 'Loading...'}</p>
+          </div>
+          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Hardware Device</h4>
+            <p className="text-sm text-slate-200 uppercase font-mono">{slmModelInfo?.device || 'N/A'}</p>
+          </div>
+          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">VRAM Footprint</h4>
+            <p className="text-sm text-slate-200">{slmModelInfo?.estimated_memory_mb ? `${Math.round(slmModelInfo.estimated_memory_mb)} MB` : 'N/A'}</p>
+          </div>
+          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Load Latency</h4>
+            <p className="text-sm text-slate-200">{slmModelInfo?.load_time_seconds ? `${slmModelInfo.load_time_seconds.toFixed(2)}s` : 'N/A'}</p>
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          <button 
+            onClick={() => {
+              setActionResult(null);
+              reloadModelMutation.mutate("base");
+            }}
+            disabled={reloadModelMutation.isPending || slmLoading}
+            className="flex-1 bg-slate-900 hover:bg-slate-700 border border-slate-600 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+          >
+            Switch to Base Model
+          </button>
+          <button 
+            onClick={() => {
+              setActionResult(null);
+              reloadModelMutation.mutate("finetuned");
+            }}
+            disabled={reloadModelMutation.isPending || slmLoading}
+            className="flex-1 bg-blue-600 hover:bg-blue-500 border border-blue-500 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-[0_0_15px_rgba(59,130,246,0.3)] disabled:opacity-50"
+          >
+            Switch to Fine-tuned Model
+          </button>
+        </div>
+        
+        {actionResult?.type === "slm" && actionResult?.msg && (
+          <div className="w-full mt-4 bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-4 py-3 rounded-lg flex items-start gap-2">
+            <CheckCircle className="h-5 w-5 shrink-0" />
+            <span>{actionResult.msg}</span>
+          </div>
+        )}
+        {actionResult?.type === "slm" && actionResult?.err && (
+          <div className="w-full mt-4 bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg flex items-start gap-2">
+            <XCircle className="h-5 w-5 shrink-0" />
+            <span>{actionResult.err}</span>
+          </div>
+        )}
+      </div>
+
+      {/* SECTION RAG PIPELINE PANEL */}
+      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Network className="h-5 w-5 text-purple-400" />
+            RAG Vector Database
+          </h2>
+          {ragLoading || reindexRagMutation.isPending ? (
+            <span className="flex items-center gap-2 text-sm text-slate-400">
+              <RefreshCw className="w-4 h-4 animate-spin text-purple-500" /> Syncing blocks...
+            </span>
+          ) : (
+            <span className="text-xs font-bold px-2 py-1 rounded-full border bg-purple-500/10 text-purple-400 border-purple-500/30">
+              ChromaDB Active
+            </span>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Total Indexed Alerts</h4>
+            <p className="text-lg text-slate-200 font-mono font-bold text-purple-400">{ragStats?.total_indexed ?? 'Loading...'}</p>
+          </div>
+          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Embedding Model</h4>
+            <p className="text-sm text-slate-200">{ragStats?.embedding_model || 'Loading...'}</p>
+          </div>
+          <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+            <h4 className="text-xs text-slate-500 uppercase font-semibold mb-1">Persist Directory</h4>
+            <p className="text-xs text-slate-200 font-mono break-all">{ragStats?.persist_dir || 'Loading...'}</p>
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          <button 
+            onClick={() => {
+              if (window.confirm("Are you sure you want to completely destroy the RAG index? This cannot be undone.")) {
+                setActionResult(null);
+                clearRagMutation.mutate();
+              }
+            }}
+            disabled={clearRagMutation.isPending || ragLoading}
+            className="flex-1 bg-slate-900 hover:bg-red-900/40 border border-red-500/30 text-red-400 font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+          >
+            Clear Index
+          </button>
+          <button 
+            onClick={() => {
+              setActionResult(null);
+              reindexRagMutation.mutate();
+            }}
+            disabled={reindexRagMutation.isPending || ragLoading}
+            className="flex-1 bg-purple-600 hover:bg-purple-500 border border-purple-500 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-[0_0_15px_rgba(168,85,247,0.3)] disabled:opacity-50"
+          >
+            <Database className="w-4 h-4" /> Re-index All Alerts
+          </button>
+        </div>
+        
+        {actionResult?.type === "rag" && actionResult?.msg && (
+          <div className="w-full mt-4 bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-4 py-3 rounded-lg flex items-start gap-2">
+            <CheckCircle className="h-5 w-5 shrink-0" />
+            <span>{actionResult.msg}</span>
+          </div>
+        )}
+        {actionResult?.type === "rag" && actionResult?.err && (
+          <div className="w-full mt-4 bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-lg flex items-start gap-2">
+            <XCircle className="h-5 w-5 shrink-0" />
+            <span>{actionResult.err}</span>
+          </div>
+        )}
+      </div>
+
+      {/* SECTION SLM PERFORMANCE METRICS */}
+      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <LineChart className="h-5 w-5 text-green-400" />
+            SLM Quality & Performance Analytics
+          </h2>
+          <span className="text-xs font-bold text-slate-400 border border-slate-700 bg-slate-900 px-2 py-1 rounded-full">
+            Last 24 Hours
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col items-center justify-center text-center">
+            <h4 className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-2">Total Queries</h4>
+            <div className="text-3xl font-black text-white">{slmMetrics?.total_queries ?? '-'}</div>
+            <p className="text-xs text-slate-400 mt-2">Investigative Traces</p>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col items-center justify-center text-center">
+            <h4 className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-2">Avg Latency</h4>
+            <div className="text-3xl font-black text-blue-400">
+              {slmMetrics?.avg_response_time ? `${Math.round(slmMetrics.avg_response_time)}` : '-'}
+              <span className="text-sm text-slate-500 ml-1">ms</span>
+            </div>
+            <p className="text-xs text-slate-400 mt-2">Time to First Token Target</p>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col items-center justify-center text-center">
+            <h4 className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-2">Throughput</h4>
+            <div className="text-3xl font-black text-orange-400 flex items-center justify-center gap-1">
+              <Zap className="h-5 w-5" />
+              {slmMetrics?.avg_tokens_per_sec ? `${slmMetrics.avg_tokens_per_sec.toFixed(1)}` : '-'}
+            </div>
+            <p className="text-xs text-slate-400 mt-2">Tokens Per Second (TPS)</p>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col items-center justify-center text-center">
+            <h4 className="text-xs text-slate-500 uppercase font-bold tracking-wider mb-2">Avg Quality Score</h4>
+            <div className="text-3xl font-black text-green-400">
+              {slmMetrics?.avg_quality_score ? `${(slmMetrics.avg_quality_score * 100).toFixed(0)}` : '-'}
+              <span className="text-sm text-slate-500 ml-1">%</span>
+            </div>
+            <div className="w-full bg-slate-800 rounded-full h-1.5 mt-3">
+              <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${(slmMetrics?.avg_quality_score || 0) * 100}%` }}></div>
+            </div>
           </div>
         </div>
       </div>

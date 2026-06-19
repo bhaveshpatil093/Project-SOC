@@ -16,14 +16,14 @@ from app.slm.rag_pipeline import get_rag_pipeline
 from app.slm.agent import SOCAgent
 from app.scoring.threat_engine import get_threat_engine
 from app.ingestion.es_client import get_es_client
+from app.slm.conversation_manager import get_conversation_manager
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# In-memory conversation store isolating chat histories natively
-# Format: { "conv_id": {"messages": [...], "started_at": ..., "last_alert_id": ...} }
-CONVERSATIONS = {}
+class ReloadRequest(BaseModel):
+    model: str # "auto" | "base" | "finetuned"
 
 class ChatMessage(BaseModel):
     role: str
@@ -41,70 +41,68 @@ class ChatResponse(BaseModel):
     sources: list[str]
     tools_used: list[str]
     response_time_ms: float
+    parsed_response: dict | None = None
 
-def get_soc_agent() -> SOCAgent:
+async def get_soc_agent() -> SOCAgent:
     slm = get_slm_engine()
     if not slm.is_loaded():
         raise HTTPException(status_code=503, detail="SLM Engine is currently offline or loading.")
     rag = get_rag_pipeline()
-    return SOCAgent(slm_engine=slm, rag_pipeline=rag, es=None)
+    es = await get_es_client()
+    return SOCAgent(slm_engine=slm, rag_pipeline=rag, es=es)
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest, agent: SOCAgent = Depends(get_soc_agent)):
     start_t = time.time()
+    cm = get_conversation_manager()
     
-    conv_id = req.conversation_id or str(uuid.uuid4())
-    
-    if conv_id not in CONVERSATIONS:
-        CONVERSATIONS[conv_id] = {
-            "started_at": datetime.utcnow(),
-            "messages": [],
-            "last_alert_id": req.alert_id
-        }
-    
-    conv = CONVERSATIONS[conv_id]
+    conv = None
+    if req.conversation_id:
+        conv = cm.get_conversation(req.conversation_id)
+        
+    if not conv:
+        conv = cm.create_conversation(alert_id=req.alert_id)
+        
     if req.alert_id:
-        conv["last_alert_id"] = req.alert_id
+        conv.alert_id = req.alert_id
         
-    user_msg = ChatMessage(role="user", content=req.message, timestamp=datetime.utcnow())
-    conv["messages"].append(user_msg.model_dump())
-    
-    if len(conv["messages"]) > 20:
-        conv["messages"] = conv["messages"][-20:]
-        
-    history = conv["messages"][:-1]
+    history = cm.get_history_for_prompt(conv.conversation_id, max_turns=6)
+    cm.add_turn(conv.conversation_id, role="user", content=req.message)
     
     res = await agent.investigate(user_question=req.message, alert_id=req.alert_id, conversation_history=history)
     
-    asst_msg = ChatMessage(role="assistant", content=res.get("answer", ""), timestamp=datetime.utcnow())
-    conv["messages"].append(asst_msg.model_dump())
-    
     resp_time = (time.time() - start_t) * 1000
     
+    asst_turn = cm.add_turn(
+        conv.conversation_id, 
+        role="assistant", 
+        content=res.get("answer", ""), 
+        parsed_response=res.get("parsed"),
+        alert_id=req.alert_id,
+        tools_used=res.get("tools_used", []),
+        response_time_ms=resp_time
+    )
+    
+    asst_msg = ChatMessage(role="assistant", content=res.get("answer", ""), timestamp=asst_turn.timestamp)
+    
     return ChatResponse(
-        conversation_id=conv_id,
+        conversation_id=conv.conversation_id,
         message=asst_msg,
         sources=res.get("sources", []),
         tools_used=res.get("tools_used", []),
-        response_time_ms=resp_time
+        response_time_ms=resp_time,
+        parsed_response=res.get("parsed")
     )
 
 @router.get("/conversations")
 async def list_conversations():
-    res = []
-    for cid, data in CONVERSATIONS.items():
-        res.append({
-            "id": cid,
-            "started_at": data["started_at"],
-            "message_count": len(data["messages"]),
-            "last_alert_id": data["last_alert_id"]
-        })
-    return sorted(res, key=lambda x: x["started_at"], reverse=True)
+    cm = get_conversation_manager()
+    return cm.list_conversations()
 
 @router.delete("/conversations/{conversation_id}")
 async def clear_conversation(conversation_id: str):
-    if conversation_id in CONVERSATIONS:
-        del CONVERSATIONS[conversation_id]
+    cm = get_conversation_manager()
+    cm.delete_conversation(conversation_id)
     return {"status": "cleared"}
 
 @router.post("/explain/{alert_id}")
@@ -125,12 +123,79 @@ async def slm_status():
         except:
             pass
             
-    return {
-        "model_loaded": slm.is_loaded(),
-        "model_name": slm.model_name,
-        "device": slm.device,
-        "rag_indexed_count": indexed
-    }
+    info = slm.get_model_info()
+    info["rag_indexed_count"] = indexed
+    return info
+
+@router.post("/reload-model")
+async def reload_model(req: ReloadRequest):
+    slm = get_slm_engine()
+    try:
+        res = await asyncio.wait_for(slm.reload(req.model), timeout=120.0)
+        return res
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Model reload timed out.")
+
+@router.get("/model-info")
+async def model_info():
+    slm = get_slm_engine()
+    return slm.get_model_info()
+
+@router.post("/rag/reindex")
+async def rag_reindex(background_tasks: BackgroundTasks):
+    import uuid
+    from app.ingestion.es_client import get_es_client
+    
+    rag = get_rag_pipeline()
+    job_id = str(uuid.uuid4())
+    
+    async def run_reindex():
+        try:
+            es = await get_es_client()
+            res = await rag.reindex_from_elasticsearch(es)
+            logger.info(f"RAG Reindex Background Task [{job_id}] Completed: {res}")
+        except Exception as e:
+            logger.error(f"RAG Reindex Task [{job_id}] Failed: {e}")
+            
+    background_tasks.add_task(run_reindex)
+    
+    return {"job_id": job_id, "status": "started"}
+
+@router.get("/rag/stats")
+async def rag_stats():
+    rag = get_rag_pipeline()
+    return await rag.get_index_stats()
+
+@router.delete("/rag/clear")
+async def rag_clear(confirm: str = None):
+    if confirm != "yes":
+        raise HTTPException(status_code=400, detail="Must pass ?confirm=yes to safely execute destruction of the RAG ChromaDB vectors.")
+    rag = get_rag_pipeline()
+    rag.clear_index()
+    return {"status": "cleared", "message": "ChromaDB mapped index fully destroyed successfully."}
+
+@router.get("/metrics")
+async def get_slm_metrics(since_hours: int = 24):
+    from app.slm.evaluator import get_slm_evaluator
+    from app.ingestion.es_client import get_es_client
+    
+    es = await get_es_client()
+    evaluator = get_slm_evaluator()
+    
+    return await evaluator.get_aggregate_stats(es, since_hours=since_hours)
+
+@router.get("/cache/stats")
+async def cache_stats():
+    from app.slm.cache import get_slm_cache
+    cache = get_slm_cache()
+    return cache.get_combined_stats()
+
+@router.delete("/cache/clear")
+async def cache_clear():
+    from app.slm.cache import get_slm_cache
+    cache = get_slm_cache()
+    cache.clear()
+    return {"status": "cleared", "message": "Exact and Semantic SLM caches completely destroyed."}
 
 @router.post("/chat/stream")
 async def chat_stream(req: Request):

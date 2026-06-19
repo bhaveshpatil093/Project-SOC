@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 import asyncio
 from typing import List, Dict, Any
@@ -18,18 +19,71 @@ class RAGPipeline:
     async def initialize(self):
         logger.info("Initializing RAG Pipeline with all-MiniLM-L6-v2...")
         
-        # Load embedding model seamlessly off the main thread bounds
         loop = asyncio.get_event_loop()
         def _load_model():
             return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
             
         self.model = await loop.run_in_executor(None, _load_model)
         
-        # Initialize ChromaDB persistent client cleanly mapping onto disk boundaries
         os.makedirs(self.persist_dir, exist_ok=True)
         self.client = chromadb.PersistentClient(path=self.persist_dir, settings=Settings(anonymized_telemetry=False))
         self.collection = self.client.get_or_create_collection("soc_alerts")
-        logger.info("RAG Pipeline initialization seamlessly completed.")
+        
+        n_docs = self.collection.count()
+        logger.info(f"ChromaDB initialized: {n_docs} alerts already indexed in collection 'soc_alerts'")
+
+    def clear_index(self):
+        logger.warning(f"CAUTION: Deleting entire ChromaDB collection 'soc_alerts' at {self.persist_dir}")
+        try:
+            self.client.delete_collection("soc_alerts")
+        except:
+            pass
+        self.collection = self.client.get_or_create_collection("soc_alerts")
+
+    async def get_index_stats(self) -> dict:
+        n_docs = self.collection.count() if self.collection else 0
+        return {
+            "total_indexed": n_docs,
+            "collection_name": "soc_alerts",
+            "persist_dir": self.persist_dir,
+            "embedding_model": "all-MiniLM-L6-v2"
+        }
+
+    async def retrieve_by_entity(self, entity_key: str, n: int = 10) -> list[dict]:
+        if not self.collection:
+            return []
+        
+        results = self.collection.get(
+            where={"entity_key": entity_key},
+            limit=n
+        )
+        
+        out = []
+        if results and results.get("documents"):
+            for i in range(len(results["documents"])):
+                out.append({
+                    "document": results["documents"][i],
+                    "metadata": results["metadatas"][i]
+                })
+        return out
+
+    async def retrieve_by_tactic(self, tactic: str, n: int = 5) -> list[dict]:
+        if not self.collection:
+            return []
+            
+        results = self.collection.get(
+            where={"mitre_tactics": {"$contains": tactic}},
+            limit=n
+        )
+        
+        out = []
+        if results and results.get("documents"):
+            for i in range(len(results["documents"])):
+                out.append({
+                    "document": results["documents"][i],
+                    "metadata": results["metadatas"][i]
+                })
+        return out
 
     def embed_text(self, text: str) -> list[float]:
         if self.model is None:
@@ -49,12 +103,11 @@ class RAGPipeline:
         rules = alert.get("top_rule", "None")
 
         doc_text = f"Alert on {host} for {user}. Threat: {level} ({score:.0f}). MITRE: {tactics}. Explanation: {explanation}. Rules: {rules}."
-        
         doc_id = alert.get("id") or alert.get("_id", str(hash(doc_text)))
         
         embedding = await asyncio.get_event_loop().run_in_executor(None, self.embed_text, doc_text)
         
-        self.collection.add(
+        self.collection.upsert(
             ids=[doc_id],
             embeddings=[embedding],
             documents=[doc_text],
@@ -100,7 +153,51 @@ class RAGPipeline:
             })
             
         embeddings = await asyncio.get_event_loop().run_in_executor(None, lambda: self.model.encode(texts).tolist())
-        self.collection.add(ids=ids, embeddings=embeddings, documents=texts, metadatas=metas)
+        self.collection.upsert(ids=ids, embeddings=embeddings, documents=texts, metadatas=metas)
+
+    async def reindex_from_elasticsearch(self, es, since_days: int = 30) -> dict:
+        from app.ingestion.es_client import INDEX_NAMES
+        
+        start_t = time.time()
+        
+        query = {
+            "query": {
+                "bool": {
+                    "must": [
+                        {"range": {"timestamp": {"gte": f"now-{since_days}d"}}},
+                        {"range": {"threat_score": {"gt": 0.3}}}
+                    ]
+                }
+            },
+            "size": 10000,
+            "sort": [{"timestamp": {"order": "asc"}}]
+        }
+        
+        try:
+            resp = await es.search(index=INDEX_NAMES["alerts_processed"], body=query)
+            hits = resp.get("hits", {}).get("hits", [])
+        except Exception as e:
+            logger.error(f"Error fetching alerts for reindexing: {e}")
+            return {"indexed": 0, "skipped": 0, "errors": 1, "time_seconds": time.time() - start_t}
+            
+        total_indexed = 0
+        skipped = 0
+        
+        chunk_size = 100
+        for i in range(0, len(hits), chunk_size):
+            chunk = hits[i:i+chunk_size]
+            alerts = [{"id": h["_id"], **h["_source"]} for h in chunk]
+            
+            if alerts:
+                await self.index_batch(alerts)
+                total_indexed += len(alerts)
+                
+        return {
+            "indexed": total_indexed,
+            "skipped": skipped,
+            "errors": 0,
+            "time_seconds": round(time.time() - start_t, 2)
+        }
 
     async def retrieve_similar(self, query: str, n_results: int = 5, filter_entity: str = None) -> list[dict]:
         if self.collection is None:
@@ -151,16 +248,3 @@ _rag_pipeline = RAGPipeline()
 
 def get_rag_pipeline() -> RAGPipeline:
     return _rag_pipeline
-
-async def reindex_all(es):
-    """Fetches all existing alerts from ES and re-indexes them into ChromaDB seamlessly mapping historical timelines."""
-    from app.ingestion.es_client import INDEX_NAMES
-    try:
-        resp = await es.search(index=INDEX_NAMES["alerts_processed"], body={"query": {"match_all": {}}}, size=1000)
-        hits = resp.get("hits", {}).get("hits", [])
-        alerts = [{"id": h["_id"], **h["_source"]} for h in hits]
-        if alerts:
-            await _rag_pipeline.index_batch(alerts)
-            logger.info(f"Re-indexed {len(alerts)} historical alerts seamlessly into RAG vector store.")
-    except Exception as e:
-        logger.error(f"Failed to reindex alerts into RAG mapping boundaries: {e}")

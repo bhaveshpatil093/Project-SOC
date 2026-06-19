@@ -25,3 +25,6 @@ shap
 accelerate
 bitsandbytes
 chromadb
+peft
+trl
+datasets

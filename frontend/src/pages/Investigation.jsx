@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Bot, Send, Trash2, ChevronRight, Activity, Zap, FileText, Share2, Search } from 'lucide-react';
+import { Bot, Send, Trash2, ChevronRight, Activity, Zap, FileText, Share2, Search, ShieldAlert, CheckCircle, AlertTriangle, CheckSquare, Square } from 'lucide-react';
 
 import { getAlert } from '../api/alerts';
 import { sendMessage, clearConversation, getSlmStatus } from '../api/slm';
@@ -65,7 +65,8 @@ export const Investigation = () => {
                 role: 'assistant',
                 content: resp.message.content,
                 sources: resp.sources,
-                tools: resp.tools_used
+                tools: resp.tools_used,
+                parsed: resp.parsed_response
             }]);
         } catch (error) {
             setMessages(prev => [...prev, {
@@ -220,7 +221,76 @@ export const Investigation = () => {
                                     ? 'bg-blue-600 text-white rounded-tr-sm' 
                                     : 'bg-slate-700 text-slate-200 rounded-tl-sm'
                             }`}>
-                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                {msg.role === 'user' ? (
+                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                ) : (
+                                    msg.parsed ? (
+                                        <div className="flex flex-col gap-4 text-sm">
+                                            {msg.parsed.verdict && msg.parsed.verdict !== "UNKNOWN" && (
+                                                <div className="flex gap-2 items-center">
+                                                    {msg.parsed.verdict === "TRUE_POSITIVE" ? (
+                                                        <span className="flex items-center gap-1 bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded-md font-bold text-[10px] uppercase"><ShieldAlert className="w-3 h-3"/> TRUE POSITIVE</span>
+                                                    ) : (
+                                                        <span className="flex items-center gap-1 bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-1 rounded-md font-bold text-[10px] uppercase"><CheckCircle className="w-3 h-3"/> FALSE POSITIVE</span>
+                                                    )}
+                                                    {msg.parsed.urgency && (
+                                                        <span className={`px-2 py-1 rounded-md font-bold text-[10px] uppercase border ${msg.parsed.urgency === 'IMMEDIATE' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-slate-700 text-slate-300 border-slate-600'}`}>{msg.parsed.urgency}</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            
+                                            {msg.parsed.summary && (
+                                                <blockquote className="border-l-4 border-blue-500 pl-3 italic text-slate-200 bg-slate-800/50 py-2 pr-2 rounded-r-md">
+                                                    {msg.parsed.summary}
+                                                </blockquote>
+                                            )}
+                                            
+                                            {msg.parsed.evidence_points && msg.parsed.evidence_points.length > 0 && (
+                                                <div>
+                                                    <h4 className="font-semibold text-white mb-2 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 text-yellow-500"/> Evidence</h4>
+                                                    <ul className="space-y-1.5">
+                                                        {msg.parsed.evidence_points.map((pt, i) => (
+                                                            <li key={i} className="flex gap-2 items-start text-slate-300">
+                                                                <span className="text-yellow-500 mt-0.5">•</span>
+                                                                <span>{pt}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                            
+                                            {msg.parsed.action_items && msg.parsed.action_items.length > 0 && (
+                                                <div>
+                                                    <h4 className="font-semibold text-white mb-2 flex items-center gap-1.5"><CheckSquare className="w-4 h-4 text-green-400"/> Action Items</h4>
+                                                    <ul className="space-y-2">
+                                                        {msg.parsed.action_items.map((act, i) => (
+                                                            <li key={i} className="flex gap-2 items-start text-slate-300 bg-slate-800/40 p-2 rounded border border-slate-700/50">
+                                                                <Square className="w-4 h-4 text-slate-500 mt-0.5 shrink-0"/>
+                                                                <span>{act}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                            
+                                            {msg.parsed.mitre_techniques && msg.parsed.mitre_techniques.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {msg.parsed.mitre_techniques.map((t, i) => (
+                                                        <span key={i} className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-1 rounded cursor-pointer hover:bg-purple-500/30">
+                                                            {t}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            
+                                            {!msg.parsed.summary && !msg.parsed.evidence_points?.length && !msg.parsed.action_items?.length && (
+                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                    )
+                                )}
                                 
                                 {msg.tools && msg.tools.length > 0 && (
                                     <div className="mt-3 pt-3 border-t border-slate-600/50 flex flex-wrap gap-2">

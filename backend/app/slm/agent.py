@@ -15,6 +15,19 @@ from app.slm.rag_pipeline import RAGPipeline, get_rag_pipeline
 from app.scoring.threat_engine import get_threat_engine
 from app.ingestion.es_client import get_es_client
 from app.ingestion.log_fetcher import fetch_by_entity
+from app.slm.prompt_templates import (
+    alert_explanation_prompt,
+    triage_decision_prompt,
+    investigation_steps_prompt,
+    remediation_prompt,
+    general_soc_question_prompt,
+    build_multi_turn_prompt
+)
+from app.slm.response_parser import parse_slm_response, format_for_display
+from app.slm.evaluator import get_slm_evaluator
+from app.slm.cache import get_slm_cache
+import time
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -148,10 +161,12 @@ class SLMLangChainWrapper(LLM):
 # --- Primary Orchestrator ---
 
 class SOCAgent:
-    def __init__(self, slm_engine: SLMEngine, rag_pipeline: RAGPipeline, es):
+    def __init__(self, slm_engine=None, rag_pipeline=None, es=None):
         self.slm_engine = slm_engine
         self.rag_pipeline = rag_pipeline
         self.es = es
+        self.evaluator = get_slm_evaluator()
+        self.cache = get_slm_cache()
         self.llm = SLMLangChainWrapper(engine=self.slm_engine)
         self.tools = [get_alert_details, get_entity_history, search_similar_alerts, get_mitre_info, get_raw_logs]
         
@@ -175,33 +190,10 @@ class SOCAgent:
         self.agent = create_react_agent(self.llm, self.tools, self.prompt)
         self.agent_executor = AgentExecutor(agent=self.agent, tools=self.tools, verbose=True, handle_parsing_errors=True)
 
-    def build_investigation_prompt(self, question: str, alert: dict, rag_context: str) -> str:
-        parts = []
-        parts.append("=== PRIMARY ALERT EXPLANATION ===")
-        parts.append(f"Entity: {alert.get('entity_key')}")
-        parts.append(f"Threat Map: {alert.get('threat_level')} (Score: {alert.get('threat_score')})")
-        parts.append(f"Engine Rules Fired: {alert.get('top_rule')}")
-        
-        parts.append("\n=== SHAP XAI EXPLAINABILITY VECTOR ===")
-        shap = alert.get("shap_values", {})
-        for k, v in shap.items():
-            parts.append(f"Feature '{k}': {v}")
-            
-        parts.append("\n=== MITRE ATT&CK FRAMEWORK ===")
-        parts.append("Tactics: " + ", ".join(alert.get("mitre_tactics", [])))
-        parts.append("Techniques: " + ", ".join(alert.get("mitre_techniques", [])))
-        
-        parts.append("\n=== RAG PIPELINE HISTORY MAP ===")
-        parts.append(rag_context)
-        
-        parts.append("\n=== ANALYST QUESTION ===")
-        parts.append(question)
-        
-        return "\n".join(parts)
-
     async def investigate(self, user_question: str, alert_id: str = None, conversation_history: list[dict] = None) -> dict:
         alert = {}
         rag_context = ""
+        tokenizer = getattr(self.slm_engine, "tokenizer", None)
         
         if alert_id:
             te = get_threat_engine()
@@ -211,21 +203,102 @@ class SOCAgent:
                 rag_results = await self.rag_pipeline.retrieve_similar(desc, n_results=3)
                 rag_context = self.rag_pipeline.build_rag_context(rag_results, alert)
                 
-        # Inject standard structural context globally bounding constraints seamlessly
-        input_text = user_question
+        # Intent Matching explicitly bound against template router
+        q_lower = user_question.lower()
+        q_type = "general"
         if alert:
-            input_text = self.build_investigation_prompt(user_question, alert, rag_context)
+            if any(k in q_lower for k in ["explain", "what is"]):
+                input_text = alert_explanation_prompt(alert, rag_context, tokenizer)
+                q_type = "explanation"
+            elif any(k in q_lower for k in ["true positive", "real", "false"]):
+                input_text = triage_decision_prompt(alert, "", tokenizer)
+                q_type = "triage"
+            elif any(k in q_lower for k in ["investigate", "steps", "how"]):
+                input_text = investigation_steps_prompt(alert, "", tokenizer)
+                q_type = "investigation"
+            elif any(k in q_lower for k in ["remediat", "fix", "action"]):
+                input_text = remediation_prompt(alert, False, tokenizer)
+                q_type = "remediation"
+            else:
+                input_text = general_soc_question_prompt(user_question, rag_context, tokenizer)
+        else:
+            input_text = general_soc_question_prompt(user_question, "", tokenizer)
 
-        # 3. Simple factual questions fallback logically into ReAct mapping standardly checking internal tool trees automatically
-        try:
-            res = await self.agent_executor.ainvoke({"input": input_text})
-            answer = res.get("output", "")
-        except Exception as e:
-            logger.error(f"Agent Engine Failed securely: {e}")
-            answer = f"The automated investigation framework failed to complete: {e}"
+        if conversation_history:
+            input_text = build_multi_turn_prompt(conversation_history, input_text, rag_context, tokenizer)
+
+        input_tokens = 0
+        if tokenizer:
+            try:
+                input_tokens = len(tokenizer.encode(input_text))
+            except: pass
             
+        t0 = time.time()
+
+        # Cache Interception
+        # Disable cache on multi-turn history strictly if conversation length > 0
+        cached_val = None
+        cache_level = "miss"
+        if not conversation_history:
+            cached_val, cache_level = self.cache.get(user_question, alert_id)
+            
+        if cached_val:
+            answer = cached_val
+            logger.info(f"SLM Cache Hit ({cache_level}): Served seamlessly without generation penalty.")
+        else:
+            try:
+                res = await self.agent_executor.ainvoke({"input": input_text})
+                answer = res.get("output", "")
+                
+                # Update Cache
+                if not conversation_history:
+                    self.cache.set(user_question, answer, alert_id)
+            except Exception as e:
+                logger.error(f"Agent execution failed: {e}")
+                answer = f"I apologize, but I encountered an error during investigation: {str(e)}"
+        
+        t1 = time.time()
+        resp_ms = (t1 - t0) * 1000.0
+        
+        output_tokens = 0
+        if tokenizer:
+            try:
+                output_tokens = len(tokenizer.encode(answer))
+            except: pass
+
+        parsed_dict = None
+        try:
+            parsed = parse_slm_response(answer)
+            parsed_dict = asdict(parsed) if parsed else None
+        except Exception as e:
+            logger.error(f"Error parsing SLM response: {e}")
+
+        # Fire Evaluator safely off thread bounds implicitly
+        if self.es:
+            def bg_evaluate():
+                metrics = self.evaluator.evaluate_response(
+                    question=user_question,
+                    response=answer,
+                    alert=alert or {},
+                    parsed=parsed_dict or {},
+                    response_time_ms=resp_ms,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    question_type=q_type
+                )
+                q_score = self.evaluator.compute_quality_score(metrics)
+                asyncio.create_task(self.evaluator.store_metrics(self.es, metrics, q_score))
+                
+            try:
+                bg_evaluate()
+            except Exception as e:
+                logger.error(f"Evaluator mapping failed implicitly: {e}")
+
         return {
             "answer": answer,
             "sources": [],
-            "tools_used": [t.name for t in self.tools]
+            "tools_used": [t.name for t in self.tools],
+            "parsed": parsed_dict,
+            "from_cache": cache_level != "miss",
+            "cache_level": cache_level
         }

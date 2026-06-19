@@ -143,6 +143,19 @@ async def start_scheduler(es: AsyncElasticsearch):
         replace_existing=True
     )
 
+    from app.slm.conversation_manager import get_conversation_manager
+    
+    async def cleanup_conversations_job():
+        cm = get_conversation_manager()
+        cm.cleanup_expired()
+        
+    _scheduler.add_job(
+        cleanup_conversations_job,
+        trigger=IntervalTrigger(hours=1),
+        id="cleanup_conversations",
+        replace_existing=True
+    )
+
     _scheduler.start()
     scheduler_state["status"] = "running"
     logger.info("Ingestion scheduler started (5-minute interval).")

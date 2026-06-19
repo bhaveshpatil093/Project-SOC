@@ -1,6 +1,8 @@
 import os
+import time
 import asyncio
 import logging
+import threading
 from concurrent.futures import ThreadPoolExecutor
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -16,7 +18,7 @@ Never make up data — only use what is provided in context."""
 
 class SLMEngine:
     def __init__(self, 
-                 model_name: str = "microsoft/Phi-3-mini-4k-instruct",
+                 model_name: str = "auto",
                  device: str = "cpu",
                  max_new_tokens: int = 512,
                  load_in_4bit: bool = False):
@@ -27,89 +29,145 @@ class SLMEngine:
         
         self.tokenizer = None
         self.model = None
+        self.is_finetuned = False
+        self.finetuned_path = None
+        self.load_time_seconds = 0.0
+        self.estimated_memory_mb = 0.0
+        
         self._executor = ThreadPoolExecutor(max_workers=1)
+        self._lock = threading.Lock()
+
+    def _resolve_model_path(self, target_model: str):
+        finetuned_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../models/saved/phi3-soc-finetuned/merged"))
+        
+        if target_model == "auto":
+            if os.path.exists(finetuned_dir):
+                return finetuned_dir, True
+            return "microsoft/Phi-3-mini-4k-instruct", False
+        elif target_model == "finetuned":
+            if os.path.exists(finetuned_dir):
+                return finetuned_dir, True
+            else:
+                logger.warning(f"Finetuned model not found at {finetuned_dir}. Falling back to base.")
+                return "microsoft/Phi-3-mini-4k-instruct", False
+        elif target_model == "base":
+            return "microsoft/Phi-3-mini-4k-instruct", False
+        else:
+            return target_model, False
 
     async def load(self):
-        logger.info(f"Loading SLM {self.model_name}...")
-        
-        # GPU / MPS / CPU resolution
-        if self.device == "cpu":
-            if torch.cuda.is_available():
-                self.device = "cuda"
-            elif torch.backends.mps.is_available():
-                self.device = "mps"
+        with self._lock:
+            start_t = time.time()
+            
+            resolved_path, is_ft = self._resolve_model_path(self.model_name)
+            logger.info(f"Loading SLM. Target: {self.model_name}, Resolved: {resolved_path}, Finetuned: {is_ft}")
+            
+            self.finetuned_path = resolved_path if is_ft else None
+            self.is_finetuned = is_ft
+            
+            if self.device == "cpu":
+                if torch.cuda.is_available():
+                    self.device = "cuda"
+                elif torch.backends.mps.is_available():
+                    self.device = "mps"
 
-        device_map = "auto" if self.device != "cpu" else None
-        
-        kwargs = {}
-        if self.load_in_4bit:
-            kwargs["load_in_4bit"] = True
+            device_map = "auto" if self.device != "cpu" else None
             
-        try:
-            # Run in executor to prevent blocking FastAPI async event loop
-            def _load():
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_name, 
-                    device_map=device_map,
-                    torch_dtype=torch.float16 if self.device != "cpu" else torch.float32,
-                    trust_remote_code=True,
-                    **kwargs
-                )
+            kwargs = {}
+            if self.load_in_4bit:
+                kwargs["load_in_4bit"] = True
+                
+            try:
+                def _load():
+                    self.tokenizer = AutoTokenizer.from_pretrained(resolved_path, trust_remote_code=True)
+                    self.model = AutoModelForCausalLM.from_pretrained(
+                        resolved_path, 
+                        device_map=device_map,
+                        torch_dtype=torch.float16 if self.device != "cpu" else torch.float32,
+                        trust_remote_code=True,
+                        **kwargs
+                    )
+                
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(self._executor, _load)
+                
+                self.model_name = resolved_path if is_ft else "microsoft/Phi-3-mini-4k-instruct"
+                
+            except Exception as e:
+                logger.error(f"Failed to load primary SLM: {e}")
+                logger.info("Initiating fallback to TinyLlama/TinyLlama-1.1B-Chat-v1.0")
+                self.model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+                self.is_finetuned = False
+                self.finetuned_path = None
+                def _load_fallback():
+                    self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+                    self.model = AutoModelForCausalLM.from_pretrained(
+                        self.model_name,
+                        device_map=device_map,
+                        torch_dtype=torch.float16 if self.device != "cpu" else torch.float32,
+                        **kwargs
+                    )
+                loop = asyncio.get_event_loop()
+                await loop.run_in_executor(self._executor, _load_fallback)
+
+            self.load_time_seconds = time.time() - start_t
             
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(self._executor, _load)
-            
-            logger.info(f"SLM loaded securely on {self.device}")
-            return {"status": "loaded", "model": self.model_name, "device": self.device}
-            
-        except Exception as e:
-            logger.error(f"Failed to load primary SLM: {e}")
-            logger.info("Initiating fallback to TinyLlama/TinyLlama-1.1B-Chat-v1.0")
-            self.model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-            def _load_fallback():
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_name,
-                    device_map=device_map,
-                    torch_dtype=torch.float16 if self.device != "cpu" else torch.float32,
-                    **kwargs
-                )
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(self._executor, _load_fallback)
-            return {"status": "loaded_fallback", "model": self.model_name, "device": self.device}
+            if self.device == "cuda" and torch.cuda.is_available():
+                self.estimated_memory_mb = torch.cuda.memory_allocated() / (1024*1024)
+            else:
+                self.estimated_memory_mb = 3800.0
+                
+            logger.info(f"SLM loaded securely on {self.device} in {self.load_time_seconds:.2f}s")
+            return self.get_model_info()
+
+    def get_model_info(self) -> dict:
+        return {
+            "model_name": self.model_name,
+            "is_finetuned": self.is_finetuned,
+            "finetuned_path": self.finetuned_path,
+            "device": self.device,
+            "loaded": self.is_loaded(),
+            "load_time_seconds": self.load_time_seconds,
+            "estimated_memory_mb": self.estimated_memory_mb
+        }
+
+    async def reload(self, model_name: str = "auto"):
+        logger.info(f"Hot-reloading SLM to target: {model_name}")
+        with self._lock:
+            self.unload()
+            self.model_name = model_name
+        return await self.load()
 
     def generate(self, prompt: str, system_prompt: str = None,
                  temperature: float = 0.3, max_new_tokens: int = None) -> str:
-        if not self.is_loaded():
-            raise RuntimeError("Model is not loaded into memory")
+        with self._lock:
+            if not self.is_loaded():
+                raise RuntimeError("Model is not loaded into memory")
+                
+            sys_p = system_prompt or SOC_SYSTEM_PROMPT
+            max_tokens = max_new_tokens or self.max_new_tokens
             
-        sys_p = system_prompt or SOC_SYSTEM_PROMPT
-        max_tokens = max_new_tokens or self.max_new_tokens
-        
-        messages = [
-            {"role": "system", "content": sys_p},
-            {"role": "user", "content": prompt}
-        ]
-        
-        # Format explicitly via the model's chat template ensuring correct delimiter tokens
-        text = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
-        
-        with torch.no_grad():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=max_tokens,
-                temperature=temperature,
-                do_sample=True if temperature > 0 else False,
-                pad_token_id=self.tokenizer.eos_token_id
-            )
+            messages = [
+                {"role": "system", "content": sys_p},
+                {"role": "user", "content": prompt}
+            ]
             
-        # Decode and strip prompt natively
-        input_length = inputs.input_ids.shape[1]
-        generated_tokens = outputs[0][input_length:]
-        response = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
-        return response.strip()
+            text = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
+            
+            with torch.no_grad():
+                outputs = self.model.generate(
+                    **inputs,
+                    max_new_tokens=max_tokens,
+                    temperature=temperature,
+                    do_sample=True if temperature > 0 else False,
+                    pad_token_id=self.tokenizer.eos_token_id
+                )
+                
+            input_length = inputs.input_ids.shape[1]
+            generated_tokens = outputs[0][input_length:]
+            response = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
+            return response.strip()
 
     async def generate_async(self, prompt: str, system_prompt: str = None, **kwargs) -> str:
         loop = asyncio.get_event_loop()
@@ -129,9 +187,9 @@ class SLMEngine:
             torch.cuda.empty_cache()
         elif torch.backends.mps.is_available():
             torch.mps.empty_cache()
-            
+
 # Global Instance binding
-_slm_engine = SLMEngine()
+_slm_engine = SLMEngine(model_name="auto")
 
 def get_slm_engine() -> SLMEngine:
     return _slm_engine
