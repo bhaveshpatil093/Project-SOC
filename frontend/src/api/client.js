@@ -16,10 +16,19 @@ export const apiClient = axios.create({
   timeout: 30000,
 });
 
+let memoryToken = null;
+
+export const setAuthToken = (token) => {
+  memoryToken = token;
+};
+
 // Request Interceptor
 apiClient.interceptors.request.use(config => {
   if (!config.headers['Content-Type']) {
     config.headers['Content-Type'] = 'application/json';
+  }
+  if (memoryToken) {
+    config.headers.Authorization = `Bearer ${memoryToken}`;
   }
   return config;
 });

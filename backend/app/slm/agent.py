@@ -3,12 +3,9 @@ import logging
 import asyncio
 from typing import Any, List, Optional
 
-from langchain.agents import create_react_agent, AgentExecutor
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import tool
-from langchain.llms.base import LLM
 from pydantic import Field
-from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 
 from app.slm.model_loader import SLMEngine, get_slm_engine
 from app.slm.rag_pipeline import RAGPipeline, get_rag_pipeline
@@ -29,7 +26,9 @@ from app.slm.cache import get_slm_cache
 import time
 import asyncio
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 # --- LangChain Tools ---
 
@@ -137,26 +136,53 @@ async def get_raw_logs(entity_key: str, minutes: int = 30) -> str:
     except Exception as e:
         return f"Error executing log extraction: {e}"
 
-# --- Custom SLM ReAct LLM Wrapper ---
+# --- Manual ReAct Loop ---
 
-class SLMLangChainWrapper(LLM):
-    """Wraps explicit SLMEngine bounds mapping seamlessly inside LangChain execution loops."""
-    engine: Any = Field(description="Instance of the running SLMEngine")
+async def run_react_loop(engine, tools, prompt_template: str, input_text: str, max_iterations: int = 5) -> str:
+    tool_descs = "\n".join([f"{t.name}: {t.description}" for t in tools])
+    tool_names = ", ".join([t.name for t in tools])
     
-    @property
-    def _llm_type(self) -> str:
-        return "slm_phi3"
+    current_prompt = prompt_template.format(
+        tools=tool_descs, 
+        tool_names=tool_names, 
+        input=input_text, 
+        agent_scratchpad=""
+    )
+    
+    for _ in range(max_iterations):
+        res = engine.generate(
+            prompt=current_prompt, 
+            system_prompt="You are an autonomous ReAct AI agent investigating anomalies. Think step by step securely.", 
+            max_new_tokens=512
+        )
         
-    def _call(self, prompt: str, stop: Optional[List[str]] = None, run_manager: Optional[CallbackManagerForLLMRun] = None, **kwargs: Any) -> str:
-        res = self.engine.generate(prompt=prompt, system_prompt="You are an autonomous ReAct AI agent investigating anomalies. Think step by step securely.", max_new_tokens=512)
+        current_prompt += res
         
-        # Phi-3 generation loops might hallucinate beyond bounds if stop tokens aren't respected natively
-        if stop:
-            for s in stop:
-                if s in res:
-                    res = res.split(s)[0]
-                    
-        return res
+        if "Final Answer:" in res:
+            return res.split("Final Answer:")[-1].strip()
+            
+        if "Action:" in res and "Action Input:" in res:
+            action_line = [line for line in res.split("\n") if line.strip().startswith("Action:")][-1]
+            action_input_line = [line for line in res.split("\n") if line.strip().startswith("Action Input:")][-1]
+            
+            action_name = action_line.replace("Action:", "").strip()
+            action_input = action_input_line.replace("Action Input:", "").strip()
+            
+            tool = next((t for t in tools if t.name == action_name), None)
+            if tool:
+                try:
+                    observation = await tool.ainvoke({"__arg1": action_input}) if hasattr(tool, "ainvoke") else tool.invoke({"__arg1": action_input})
+                except Exception as e:
+                    observation = str(e)
+            else:
+                observation = f"Error: Tool '{action_name}' not found."
+                
+            current_prompt += f"\nObservation: {observation}\nThought:"
+        else:
+            # If no action is formatted correctly, force a stop
+            return res.strip()
+            
+    return "Agent stopped after reaching max iterations."
 
 # --- Primary Orchestrator ---
 
@@ -167,10 +193,8 @@ class SOCAgent:
         self.es = es
         self.evaluator = get_slm_evaluator()
         self.cache = get_slm_cache()
-        self.llm = SLMLangChainWrapper(engine=self.slm_engine)
         self.tools = [get_alert_details, get_entity_history, search_similar_alerts, get_mitre_info, get_raw_logs]
-        
-        self.prompt = PromptTemplate.from_template(
+        self.prompt_template = (
             "Answer the following questions as best you can. You have access to the following tools:\n\n"
             "{tools}\n\n"
             "Use the following format explicitly:\n\n"
@@ -186,9 +210,6 @@ class SOCAgent:
             "Question: {input}\n"
             "Thought:{agent_scratchpad}"
         )
-        
-        self.agent = create_react_agent(self.llm, self.tools, self.prompt)
-        self.agent_executor = AgentExecutor(agent=self.agent, tools=self.tools, verbose=True, handle_parsing_errors=True)
 
     async def investigate(self, user_question: str, alert_id: str = None, conversation_history: list[dict] = None) -> dict:
         alert = {}
@@ -244,17 +265,16 @@ class SOCAgent:
             
         if cached_val:
             answer = cached_val
-            logger.info(f"SLM Cache Hit ({cache_level}): Served seamlessly without generation penalty.")
+            logger.info("slm_cache_hit", cache_level=cache_level, alert_id=alert_id)
         else:
             try:
-                res = await self.agent_executor.ainvoke({"input": input_text})
-                answer = res.get("output", "")
+                answer = await run_react_loop(self.slm_engine, self.tools, self.prompt_template, input_text)
                 
                 # Update Cache
                 if not conversation_history:
                     self.cache.set(user_question, answer, alert_id)
             except Exception as e:
-                logger.error(f"Agent execution failed: {e}")
+                logger.error("agent_execution_failed", error=str(e))
                 answer = f"I apologize, but I encountered an error during investigation: {str(e)}"
         
         t1 = time.time()
@@ -271,7 +291,7 @@ class SOCAgent:
             parsed = parse_slm_response(answer)
             parsed_dict = asdict(parsed) if parsed else None
         except Exception as e:
-            logger.error(f"Error parsing SLM response: {e}")
+            logger.error("slm_response_parse_error", error=str(e))
 
         # Fire Evaluator safely off thread bounds implicitly
         if self.es:
@@ -292,7 +312,7 @@ class SOCAgent:
             try:
                 bg_evaluate()
             except Exception as e:
-                logger.error(f"Evaluator mapping failed implicitly: {e}")
+                logger.error("evaluator_mapping_failed", error=str(e))
 
         return {
             "answer": answer,

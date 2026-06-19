@@ -7,7 +7,9 @@ from sentence_transformers import SentenceTransformer
 import chromadb
 from chromadb.config import Settings
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 class RAGPipeline:
     def __init__(self, persist_dir: str = "./data/chroma_db"):
@@ -17,7 +19,7 @@ class RAGPipeline:
         self.collection = None
 
     async def initialize(self):
-        logger.info("Initializing RAG Pipeline with all-MiniLM-L6-v2...")
+        logger.info("rag_pipeline_initializing", model="all-MiniLM-L6-v2")
         
         loop = asyncio.get_event_loop()
         def _load_model():
@@ -30,10 +32,10 @@ class RAGPipeline:
         self.collection = self.client.get_or_create_collection("soc_alerts")
         
         n_docs = self.collection.count()
-        logger.info(f"ChromaDB initialized: {n_docs} alerts already indexed in collection 'soc_alerts'")
+        logger.info("rag_pipeline_initialized", indexed_docs=n_docs, collection="soc_alerts")
 
     def clear_index(self):
-        logger.warning(f"CAUTION: Deleting entire ChromaDB collection 'soc_alerts' at {self.persist_dir}")
+        logger.warning("rag_index_cleared", persist_dir=self.persist_dir)
         try:
             self.client.delete_collection("soc_alerts")
         except:
@@ -177,7 +179,7 @@ class RAGPipeline:
             resp = await es.search(index=INDEX_NAMES["alerts_processed"], body=query)
             hits = resp.get("hits", {}).get("hits", [])
         except Exception as e:
-            logger.error(f"Error fetching alerts for reindexing: {e}")
+            logger.error("rag_reindex_failed", error=str(e))
             return {"indexed": 0, "skipped": 0, "errors": 1, "time_seconds": time.time() - start_t}
             
         total_indexed = 0

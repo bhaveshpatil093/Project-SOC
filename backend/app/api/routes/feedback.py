@@ -1,11 +1,12 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from app.feedback.label_store import AnalystFeedback, submit_feedback, get_all_feedback, get_fp_suppression_patterns, FEEDBACK_INDEX
 from app.feedback.suppressor import get_suppressor
 from app.ingestion.es_client import get_es_client, INDEX_NAMES
+from app.auth.jwt import require_role
 
 router = APIRouter()
 
-@router.post("")
+@router.post("", dependencies=[Depends(require_role("admin", "analyst"))])
 async def post_feedback(feedback: AnalystFeedback):
     """Submits manual triage labels dropping mapped boundaries sequentially matching ES indices."""
     es = await get_es_client()
@@ -23,7 +24,7 @@ async def fetch_feedback(label: str = Query(None), limit: int = Query(500)):
     res = await get_all_feedback(es, label=label, limit=limit)
     return {"data": res}
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_stats():
     """Calculates active system efficacy identifying accurate TP vs FP suppression bounds."""
     es = await get_es_client()
@@ -56,7 +57,7 @@ async def get_stats():
     except Exception as e:
         return {"error": str(e)}
 
-@router.get("/suppression-rules")
+@router.get("/suppressed", dependencies=[Depends(require_role("admin", "analyst"))])
 async def fetch_suppression_rules():
     """Generates transparency exposing tracking metrics identifying blocked mapping entities."""
     es = await get_es_client()

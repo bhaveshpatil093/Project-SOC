@@ -1,8 +1,10 @@
 from fastapi import APIRouter
-from app.ingestion.scheduler import scheduler_state, ingest_syslog, ingest_process_logs, ingest_security_events
+from app.ingestion.scheduler import scheduler_state, run_ingestion_cycle
 from app.ingestion.es_client import get_es_client
+from app.auth.jwt import require_role
+from fastapi import Depends
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_role("admin", "analyst"))])
 
 @router.get("/status")
 def get_ingestion_status():
@@ -17,19 +19,8 @@ def get_ingestion_status():
 async def trigger_ingestion_cycle():
     """Manually triggers the ingestion pipeline synchronously."""
     es = await get_es_client()
-    stats = {}
     try:
-        stats["syslog"] = await ingest_syslog(es)
-        stats["process"] = await ingest_process_logs(es)
-        stats["security"] = await ingest_security_events(es)
-        
-        # Update scheduler state
-        import time
-        from datetime import datetime
-        total = sum(stats.values())
-        scheduler_state["last_run"] = datetime.utcnow().isoformat()
-        scheduler_state["docs_last_cycle"] = total
-        
-        return {"status": "completed", "docs_ingested": total, "details": stats}
+        await run_ingestion_cycle(es)
+        return {"status": "completed", "details": "Ingestion cycle executed"}
     except Exception as e:
         return {"status": "failed", "error": str(e)}

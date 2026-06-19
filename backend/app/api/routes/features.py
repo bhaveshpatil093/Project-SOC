@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Any
 from app.ingestion.es_client import get_es_client, INDEX_NAMES
 from app.features.feature_merger import run_feature_pipeline, store_feature_vectors
+from app.auth.jwt import require_role
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_role("admin", "analyst"))])
 
 @router.get("/api/features/run")
 async def run_features_manually():

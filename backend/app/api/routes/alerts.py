@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 from app.scoring.threat_engine import get_threat_engine
 from app.ingestion.es_client import INDEX_NAMES, get_es_client
+from app.auth.jwt import require_role
+from fastapi import Depends
 
 router = APIRouter()
 
@@ -36,7 +38,7 @@ class AlertStatsResponse(BaseModel):
 class StatusUpdate(BaseModel):
     status: str
 
-@router.get("", response_model=AlertListResponse)
+@router.get("", response_model=AlertListResponse, dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_alerts_list(
     status: Optional[str] = Query(None, description="Filter by status (open, closed)"),
     threat_level: Optional[str] = Query(None, description="Filter by level (critical, high, medium, low)"),
@@ -81,7 +83,7 @@ async def get_alerts_list(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/stats", response_model=AlertStatsResponse)
+@router.get("/stats", response_model=AlertStatsResponse, dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_stats():
     """Generates complex ES aggregations tracking pipeline security throughput explicitly mapping to React UI dashboards."""
     es = await get_es_client()
@@ -126,7 +128,7 @@ async def get_stats():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/trigger-scoring")
+@router.post("/trigger-scoring", dependencies=[Depends(require_role("admin", "analyst"))])
 async def trigger_scoring():
     """Manually forces Threat Engine execution spanning the whole extraction pipeline synchronously."""
     engine = get_threat_engine()
@@ -137,7 +139,7 @@ async def trigger_scoring():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{alert_id}", response_model=AlertResponse)
+@router.get("/{alert_id}", response_model=AlertResponse, dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_alert(alert_id: str):
     """Resolves singular specific alerts returning precise SHAP features and translation mappings."""
     engine = get_threat_engine()
@@ -147,7 +149,7 @@ async def get_alert(alert_id: str):
     return {"id": alert_id, **alert}
 
 
-@router.patch("/{alert_id}/status")
+@router.patch("/{alert_id}/status", dependencies=[Depends(require_role("admin", "analyst"))])
 async def update_status(alert_id: str, update: StatusUpdate = Body(...)):
     """Allows UI triage handlers mapping interactive state flows directly natively over ES document fields."""
     if update.status not in ["open", "closed", "in_progress"]:
@@ -162,7 +164,7 @@ async def update_status(alert_id: str, update: StatusUpdate = Body(...)):
     return {"status": "success", "updated_status": update.status}
 
 
-@router.get("/{alert_id}/timeline")
+@router.get("/{alert_id}/timeline", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_timeline(alert_id: str):
     """Constructs localized chronological execution limits tracking identically mapped anomalies spanning exact same entities."""
     engine = get_threat_engine()

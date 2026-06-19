@@ -18,52 +18,69 @@ from app.api.routes.feedback import router as feedback_router
 from app.api.routes.training import router as training_router
 from app.api.routes.websocket import router as websocket_router
 from app.api.routes.slm import router as slm_router
+from app.auth.routes import router as auth_router
 from app.slm.model_loader import _slm_engine
+from app.logging_config import configure_logging, get_logger
 import asyncio
 from app.config import settings
 import os
 
+logger = get_logger(__name__)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Configure structured logging globally
+    configure_logging(log_level=settings.LOG_LEVEL, json_output=not settings.DEBUG)
+    
+    # Validate environment configurations explicitly BEFORE booting engines natively
+    from app.startup_validator import run_startup_validation
+    await run_startup_validation(settings)
+
     # Initialize ES connection
     await get_es_client()
     
     # Initialize ML Model orchestrator dynamically onto lifespan wrapper
-    await get_model_manager().initialize()
+    asyncio.create_task(get_model_manager().initialize())
     
     # Initialize Central Threat Engine
     await init_threat_engine()
 
     # Load SLM Chat Engine asynchronously without blocking event loops
     try:
-        await _slm_engine.load()
+        asyncio.create_task(_slm_engine.load())
     except Exception as e:
-        print(f"Warning: Failed to load SLM Engine during startup: {e}")
+        logger.warning("slm_engine_load_failed", error=str(e))
 
     # Load and bind the standalone RAG Pipeline mapping memory vectors locally
     try:
         from app.slm.rag_pipeline import _rag_pipeline
-        await _rag_pipeline.initialize()
+        asyncio.create_task(_rag_pipeline.initialize())
         
-        es = await get_es_client()
-        stats = await _rag_pipeline.get_index_stats()
-        n_docs = stats.get("total_indexed", 0)
-        
-        if n_docs < 10:
-            print(f"RAG auto-reindex triggered: found only {n_docs} indexed alerts")
-            asyncio.create_task(_rag_pipeline.reindex_from_elasticsearch(es))
+        try:
+            es = await get_es_client()
+            stats = await _rag_pipeline.get_index_stats()
+            n_docs = stats.get("total_indexed", 0)
+            
+            if n_docs < 10:
+                logger.info("rag_auto_reindex_triggered", docs_found=n_docs)
+                asyncio.create_task(_rag_pipeline.reindex_from_elasticsearch(es))
+        except Exception as es_e:
+            logger.warning("es_connection_for_rag_failed", error=str(es_e))
     except Exception as e:
-        print(f"Warning: Failed to initialize RAG Engine bounds cleanly: {e}")
+        logger.warning("rag_initialization_failed", error=str(e))
 
     # Evaluate ML Artifact Bounds initializing auto-training pipelines natively cleanly
     if_path = os.path.join(settings.MODEL_DIR, "isolation_forest.pkl")
     ae_path = os.path.join(settings.MODEL_DIR, "autoencoder.pt")
     
     if not os.path.exists(if_path) or not os.path.exists(ae_path):
-        from app.models.trainer import run_initial_training
-        es = await get_es_client()
-        mm = get_model_manager()
-        asyncio.create_task(run_initial_training(es, mm))
+        try:
+            from app.models.trainer import run_initial_training
+            es = await get_es_client()
+            mm = get_model_manager()
+            asyncio.create_task(run_initial_training(es, mm))
+        except Exception as es_e:
+            logger.warning("es_connection_for_trainer_failed", error=str(es_e))
 
     # Startup: Initialize ES connection and verify indices
     is_connected = await check_connection()
@@ -78,10 +95,27 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="ISRO SOC Security Analytics Platform",
-        description="Backend API for Security Operations Center",
+        title="ISRO ISTRAC SOC AI Platform",
+        description="""
+        AI-Driven Security Analytics Platform for ISRO ISTRAC Bengaluru.
+
+        ## Architecture
+        This platform ingests security logs from Elasticsearch, detects anomalies
+        using ML models (Isolation Forest, Autoencoder, LSTM), scores threats,
+        and provides natural language investigation via an SLM assistant.
+
+        ## Authentication
+        All endpoints require Bearer token authentication (see /api/auth/login).
+
+        ## Rate Limits
+        - /api/slm/chat: 60 requests/minute
+        - /api/alerts: 300 requests/minute
+        """,
         version="1.0.0",
         lifespan=lifespan,
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json"
     )
 
     app.add_middleware(
@@ -91,7 +125,11 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    
+    from app.middleware import RequestLoggingMiddleware
+    app.add_middleware(RequestLoggingMiddleware)
 
+    app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
     app.include_router(ingestion_router, prefix="/api/ingestion", tags=["Ingestion"])
     app.include_router(features_router, prefix="/api/features", tags=["Features"])
     app.include_router(alerts_router, prefix="/api/alerts", tags=["Alerts"])
@@ -100,7 +138,7 @@ def create_app() -> FastAPI:
     app.include_router(slm_router, prefix="/api/slm", tags=["SLM"])
     app.include_router(websocket_router, tags=["WebSocket"])
 
-    @app.get("/health")
+    @app.get("/health", tags=["Health"], response_model=dict, summary="System Health Check", description="Returns ok if the API is active.")
     def health_check():
         return {"status": "ok", "version": "1.0.0"}
 

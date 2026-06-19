@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAlertStore } from "../store/alertStore";
 import { useBannerStore } from "../store/bannerStore";
 
-export function useWebSocket() {
+export function useWebSocket(isAuthenticated = false) {
   const [connected, setConnected] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
@@ -14,6 +14,8 @@ export function useWebSocket() {
   useEffect(() => {
     let timeoutId;
     
+    if (!isAuthenticated) return;
+
     const connect = () => {
       const ws = new WebSocket("ws://localhost:8000/ws/alerts");
       wsRef.current = ws;
@@ -73,7 +75,7 @@ export function useWebSocket() {
       if (timeoutId) clearTimeout(timeoutId);
       if (wsRef.current) wsRef.current.close();
     };
-  }, []);
+  }, [isAuthenticated]);
 
   return { connected, reconnecting, lastMessage };
 }

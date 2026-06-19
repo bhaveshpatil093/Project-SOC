@@ -7,8 +7,10 @@ import threading
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
+from fastapi import BackgroundTasks
 from pydantic import BaseModel
 from transformers import TextIteratorStreamer
+from app.auth.jwt import require_role
 import torch
 
 from app.slm.model_loader import get_slm_engine, SOC_SYSTEM_PROMPT
@@ -51,7 +53,7 @@ async def get_soc_agent() -> SOCAgent:
     es = await get_es_client()
     return SOCAgent(slm_engine=slm, rag_pipeline=rag, es=es)
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/chat", response_model=ChatResponse, dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def chat_endpoint(req: ChatRequest, agent: SOCAgent = Depends(get_soc_agent)):
     start_t = time.time()
     cm = get_conversation_manager()
@@ -94,24 +96,24 @@ async def chat_endpoint(req: ChatRequest, agent: SOCAgent = Depends(get_soc_agen
         parsed_response=res.get("parsed")
     )
 
-@router.get("/conversations")
+@router.get("/conversations", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def list_conversations():
     cm = get_conversation_manager()
     return cm.list_conversations()
 
-@router.delete("/conversations/{conversation_id}")
+@router.delete("/conversations/{conversation_id}", dependencies=[Depends(require_role("admin", "analyst"))])
 async def clear_conversation(conversation_id: str):
     cm = get_conversation_manager()
     cm.delete_conversation(conversation_id)
     return {"status": "cleared"}
 
-@router.post("/explain/{alert_id}")
+@router.post("/explain/{alert_id}", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def explain_alert(alert_id: str, agent: SOCAgent = Depends(get_soc_agent)):
     prompt = "Explain this security alert in simple terms for a Level-1 SOC engineer."
     res = await agent.investigate(user_question=prompt, alert_id=alert_id, conversation_history=[])
     return {"explanation": res.get("answer", "")}
 
-@router.get("/status")
+@router.get("/status", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def slm_status():
     slm = get_slm_engine()
     rag = get_rag_pipeline()
@@ -127,7 +129,7 @@ async def slm_status():
     info["rag_indexed_count"] = indexed
     return info
 
-@router.post("/reload-model")
+@router.post("/reload-model", dependencies=[Depends(require_role("admin"))])
 async def reload_model(req: ReloadRequest):
     slm = get_slm_engine()
     try:
@@ -136,12 +138,12 @@ async def reload_model(req: ReloadRequest):
     except asyncio.TimeoutError:
         raise HTTPException(status_code=504, detail="Model reload timed out.")
 
-@router.get("/model-info")
+@router.get("/model-info", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def model_info():
     slm = get_slm_engine()
     return slm.get_model_info()
 
-@router.post("/rag/reindex")
+@router.post("/rag/reindex", dependencies=[Depends(require_role("admin", "analyst"))])
 async def rag_reindex(background_tasks: BackgroundTasks):
     import uuid
     from app.ingestion.es_client import get_es_client
@@ -161,12 +163,12 @@ async def rag_reindex(background_tasks: BackgroundTasks):
     
     return {"job_id": job_id, "status": "started"}
 
-@router.get("/rag/stats")
+@router.get("/rag/stats", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def rag_stats():
     rag = get_rag_pipeline()
     return await rag.get_index_stats()
 
-@router.delete("/rag/clear")
+@router.delete("/rag/clear", dependencies=[Depends(require_role("admin"))])
 async def rag_clear(confirm: str = None):
     if confirm != "yes":
         raise HTTPException(status_code=400, detail="Must pass ?confirm=yes to safely execute destruction of the RAG ChromaDB vectors.")
@@ -174,7 +176,7 @@ async def rag_clear(confirm: str = None):
     rag.clear_index()
     return {"status": "cleared", "message": "ChromaDB mapped index fully destroyed successfully."}
 
-@router.get("/metrics")
+@router.get("/metrics", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_slm_metrics(since_hours: int = 24):
     from app.slm.evaluator import get_slm_evaluator
     from app.ingestion.es_client import get_es_client
@@ -184,20 +186,20 @@ async def get_slm_metrics(since_hours: int = 24):
     
     return await evaluator.get_aggregate_stats(es, since_hours=since_hours)
 
-@router.get("/cache/stats")
+@router.get("/cache/stats", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def cache_stats():
     from app.slm.cache import get_slm_cache
     cache = get_slm_cache()
     return cache.get_combined_stats()
 
-@router.delete("/cache/clear")
+@router.delete("/cache/clear", dependencies=[Depends(require_role("admin", "analyst"))])
 async def cache_clear():
     from app.slm.cache import get_slm_cache
     cache = get_slm_cache()
     cache.clear()
     return {"status": "cleared", "message": "Exact and Semantic SLM caches completely destroyed."}
 
-@router.post("/chat/stream")
+@router.post("/chat/stream", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def chat_stream(req: Request):
     """
     Streams raw SLMEngine outputs utilizing Transformers TextIteratorStreamer and Server-Sent Events natively.

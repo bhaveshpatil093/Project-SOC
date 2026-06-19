@@ -12,7 +12,9 @@ from app.ingestion.es_client import INDEX_NAMES
 from app.ingestion.log_fetcher import fetch_all_sources
 from app.ingestion.normalizer import normalize_batch
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 # In-memory state tracking
 scheduler_state = {
@@ -48,7 +50,7 @@ async def bulk_index(es: AsyncElasticsearch, docs: list[dict], index: str) -> di
                 
         return {"indexed": success, "errors": errors}
     except Exception as e:
-        logger.error(f"Bulk indexing exception: {e}")
+        logger.error("bulk_indexing_exception", error=str(e))
         return {"indexed": 0, "errors": [str(e)]}
 
 def get_window_bucket(ts: datetime, window_minutes: int = 5) -> datetime:
@@ -59,7 +61,7 @@ def get_window_bucket(ts: datetime, window_minutes: int = 5) -> datetime:
 async def run_ingestion_cycle(es: AsyncElasticsearch):
     """Core ingestion cycle: fetch -> normalize -> enrich -> index."""
     try:
-        logger.info("Starting ingestion cycle...")
+        logger.info("ingestion_cycle_started")
         
         # a. Fetch logs
         raw_results = await fetch_all_sources(es, since_minutes=5)
@@ -104,16 +106,16 @@ async def run_ingestion_cycle(es: AsyncElasticsearch):
         scheduler_state["docs_last_cycle"] = index_result["indexed"]
         
         # e. Log results
-        logger.info(
-            f"Ingestion cycle completed. Fetched: {total_fetched}, "
-            f"Normalized: {total_normalized}, Indexed: {index_result['indexed']}, "
-            f"Errors: {len(index_result['errors'])}"
-        )
+        logger.info("ingestion_cycle_completed", 
+                    docs_fetched=total_fetched, 
+                    docs_normalized=total_normalized, 
+                    docs_indexed=index_result['indexed'], 
+                    error_count=len(index_result['errors']))
         if index_result['errors']:
-            logger.warning(f"Indexing errors sample: {index_result['errors'][:3]}")
+            logger.warning("indexing_errors_sample", errors=index_result['errors'][:3])
             
     except Exception as e:
-        logger.error(f"Error during ingestion cycle: {e}")
+        logger.error("ingestion_cycle_failed", error=str(e))
 
 async def start_scheduler(es: AsyncElasticsearch):
     """Starts the APScheduler background ingestion job."""
@@ -158,7 +160,7 @@ async def start_scheduler(es: AsyncElasticsearch):
 
     _scheduler.start()
     scheduler_state["status"] = "running"
-    logger.info("Ingestion scheduler started (5-minute interval).")
+    logger.info("scheduler_started", job="ingestion_pipeline", interval="5_minutes")
 
 async def stop_scheduler():
     """Stops the ingestion scheduler."""
@@ -167,4 +169,4 @@ async def stop_scheduler():
         _scheduler.shutdown()
         _scheduler = None
         scheduler_state["status"] = "stopped"
-        logger.info("Ingestion scheduler stopped.")
+        logger.info("scheduler_stopped")

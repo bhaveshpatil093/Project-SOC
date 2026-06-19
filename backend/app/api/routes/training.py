@@ -5,10 +5,12 @@ from typing import Dict, Any
 from app.models.trainer import run_initial_training, run_incremental_retraining, get_model_versions, TRAINING_JOBS
 from app.ingestion.es_client import get_es_client
 from app.models.model_manager import get_model_manager
+from app.auth.jwt import require_role
+from fastapi import Depends
 
 router = APIRouter()
 
-@router.post("/initial")
+@router.post("/initial", dependencies=[Depends(require_role("admin"))])
 async def trigger_initial_training(background_tasks: BackgroundTasks):
     """Triggers complete baseline ML training pipeline executing arrays synchronously asynchronously in background routines."""
     job_id = str(uuid.uuid4())
@@ -18,8 +20,8 @@ async def trigger_initial_training(background_tasks: BackgroundTasks):
     background_tasks.add_task(run_initial_training, es, mm, job_id)
     return {"job_id": job_id, "status": "started"}
 
-@router.post("/retrain")
-async def trigger_retraining(background_tasks: BackgroundTasks):
+@router.post("/incremental", dependencies=[Depends(require_role("admin", "analyst"))])
+async def trigger_incremental_retraining(background_tasks: BackgroundTasks):
     """Executes incremental bounds retraining overlapping existing artifacts mapping new specific explicit feature vectors."""
     job_id = str(uuid.uuid4())
     es = await get_es_client()
@@ -35,8 +37,8 @@ async def get_job_status(job_id: str):
         raise HTTPException(status_code=404, detail="Training job explicit artifact not found natively.")
     return {"job_id": job_id, **TRAINING_JOBS[job_id]}
 
-@router.get("/history")
-async def get_training_history():
+@router.get("/status", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+async def get_training_status():
     """Generates complete model versioning mapping cleanly leveraging underlying MLFlow experiment log pipelines."""
     history = get_model_versions()
     return {"versions": history}

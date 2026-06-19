@@ -9,7 +9,9 @@ from app.models.model_manager import ModelManager, get_model_manager
 from app.scoring.explainability import ExplainabilityEngine, explain_scoring_result, build_explanation_context
 from app.ingestion.scheduler import bulk_index
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 class ThreatEngine:
     """The central orchestrator driving feature extraction, mathematical evaluations, and linguistic generation safely down pipeline arrays."""
@@ -113,7 +115,7 @@ class ThreatEngine:
             resp = await self.es.get(index=INDEX_NAMES["alerts_processed"], id=alert_id)
             return resp.get("_source", {})
         except Exception as e:
-            logger.warning(f"Error retrieving alert {alert_id}: {e}")
+            logger.warning("get_alert_failed", alert_id=alert_id, error=str(e))
             return {}
 
     async def list_alerts(self, status="open", limit=50, offset=0) -> dict:
@@ -136,7 +138,7 @@ class ThreatEngine:
                 "alerts": [{"id": h["_id"], **h["_source"]} for h in hits]
             }
         except Exception as e:
-            logger.warning(f"Error listing alerts: {e}")
+            logger.warning("list_alerts_failed", status=status, limit=limit, error=str(e))
             return {"total": 0, "alerts": []}
 
     async def update_alert_status(self, alert_id: str, status: str):
@@ -145,7 +147,7 @@ class ThreatEngine:
         try:
             await self.es.update(index=INDEX_NAMES["alerts_processed"], id=alert_id, body=body)
         except Exception as e:
-            logger.error(f"Error updating alert {alert_id} status: {e}")
+            logger.error("update_alert_status_failed", alert_id=alert_id, status=status, error=str(e))
 
 
 _threat_engine_instance = None
@@ -163,7 +165,7 @@ async def init_threat_engine():
     from app.feedback.suppressor import get_suppressor
     await get_suppressor().refresh_suppression_list(es)
     
-    logger.info("Central ThreatEngine fully initialized and wired to ML subsystems.")
+    logger.info("threat_engine_initialized", message="Central ThreatEngine fully initialized and wired to ML subsystems.")
 
 def get_threat_engine() -> ThreatEngine:
     global _threat_engine_instance

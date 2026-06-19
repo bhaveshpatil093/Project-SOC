@@ -8,8 +8,11 @@ import { Investigation } from './pages/Investigation';
 import { Feedback } from './pages/Feedback';
 import { Settings } from './pages/Settings';
 import { Training } from './pages/Training';
+import { Login } from './pages/Login';
 import { useWebSocket } from './hooks/useWebSocket';
 import { AlertTriangle } from 'lucide-react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
 const NotFound = () => (
   <div className="flex flex-col items-center justify-center h-full min-h-[500px]">
@@ -22,23 +25,29 @@ const NotFound = () => (
 );
 
 const AppContent = () => {
-  // Initialize WebSocket connection universally across the whole single page lifecycle.
-  useWebSocket();
+  const { isAuthenticated } = useAuth();
+  
+  // Initialize WebSocket connection universally across the whole single page lifecycle ONLY when authenticated
+  useWebSocket(isAuthenticated);
   
   return (
     <>
       <AlertNotificationBanner />
       <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="alerts" element={<Alerts />} />
-          <Route path="alerts/:id" element={<AlertDetail />} />
-          <Route path="investigation" element={<Investigation />} />
-          <Route path="feedback" element={<Feedback />} />
-          <Route path="training" element={<Training />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="*" element={<NotFound />} />
+        <Route path="/login" element={<Login />} />
+        
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="alerts" element={<Alerts />} />
+            <Route path="alerts/:id" element={<AlertDetail />} />
+            <Route path="investigation" element={<Investigation />} />
+            <Route path="feedback" element={<Feedback />} />
+            <Route path="training" element={<Training />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
         </Route>
       </Routes>
     </>
@@ -47,9 +56,11 @@ const AppContent = () => {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   );
 }
 
