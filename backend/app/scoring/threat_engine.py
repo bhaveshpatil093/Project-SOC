@@ -7,6 +7,7 @@ from app.ingestion.es_client import INDEX_NAMES, get_es_client
 from app.features.feature_merger import run_feature_pipeline, store_feature_vectors
 from app.models.model_manager import ModelManager, get_model_manager
 from app.models.baseline_learner import BaselineLearner
+from app.scoring.threat_intel import ThreatIntelEnricher
 from app.scoring.explainability import ExplainabilityEngine, explain_scoring_result, build_explanation_context
 from app.scoring.correlator import AlertCorrelator
 from app.ingestion.scheduler import bulk_index
@@ -24,6 +25,7 @@ class ThreatEngine:
         self.explainability_engine = explainability_engine
         self.correlator = AlertCorrelator()
         self.baseline_learner = BaselineLearner()
+        self.intel_enricher = ThreatIntelEnricher()
 
     async def run_scoring_cycle(self, since_minutes=5) -> dict:
         start_t = time.time()
@@ -76,6 +78,39 @@ class ThreatEngine:
                 explained_res = explain_scoring_result(res, feature_row, self.explainability_engine)
                 ctx = build_explanation_context(explained_res)
                 
+                # Enrich with Offline Threat Intelligence
+                ctx = self.intel_enricher.enrich_alert(ctx, feature_row)
+                intel = ctx.get("threat_intel", {})
+                
+                # Adjust threat score dynamically
+                ctx["threat_score"] = self.intel_enricher.adjust_threat_score(ctx["threat_score"], intel)
+                # Recalculate threat level
+                if ctx["threat_score"] >= 0.8:
+                    ctx["threat_level"] = "critical"
+                elif ctx["threat_score"] >= 0.6:
+                    ctx["threat_level"] = "high"
+                elif ctx["threat_score"] >= 0.4:
+                    ctx["threat_level"] = "medium"
+                else:
+                    ctx["threat_level"] = "low"
+                    
+                # Append Intel to explanation
+                intel_strs = []
+                if intel.get("ip_reputation", {}).get("src_ip_is_bad"):
+                    intel_strs.append(f"Source IP matches known malicious range ({intel['ip_reputation']['matching_range']}).")
+                if intel.get("ip_reputation", {}).get("dst_ip_is_bad"):
+                    intel_strs.append(f"Destination IP matches known malicious range ({intel['ip_reputation']['matching_range']}).")
+                if intel.get("process_reputation", {}).get("is_known_malicious"):
+                    intel_strs.append(f"Process matches known malware/tool signature ({intel['process_reputation']['process_name']}).")
+                if intel.get("domain_reputation", {}).get("has_suspicious_tld"):
+                    intel_strs.append("Domain utilizes a highly suspicious TLD.")
+                if intel.get("domain_reputation", {}).get("has_c2_pattern"):
+                    intel_strs.append("Domain matches a known Command & Control pattern.")
+                    
+                if intel_strs:
+                    intel_summary = " Threat Intel: " + " ".join(intel_strs)
+                    ctx["human_explanation"] = ctx["human_explanation"] + "\n\n" + intel_summary
+
                 ctx["status"] = "open"
                 if is_suppressed:
                     ctx["suppressed"] = True
