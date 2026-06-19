@@ -15,7 +15,8 @@ INDEX_NAMES = {
     "security":         "logs-windows.powershell_operational-*",
     "alerts_processed": "soc-processed-alerts",
     "features":         "soc-feature-vectors",
-    "feedback":         "soc-analyst-feedback"
+    "feedback":         "soc-analyst-feedback",
+    "incidents":        "soc-incidents"
 }
 
 async def get_es_client() -> AsyncElasticsearch:
@@ -115,6 +116,40 @@ async def create_soc_indices(es: AsyncElasticsearch):
             }
         )
         logger.info("es_index_created", index=feedback_index)
+
+    # 4. soc-incidents
+    incidents_index = INDEX_NAMES["incidents"]
+    if not await es.indices.exists(index=incidents_index):
+        await es.indices.create(
+            index=incidents_index,
+            body={
+                "mappings": {
+                    "properties": {
+                        "incident_id": {"type": "keyword"},
+                        "entity_key": {"type": "keyword"},
+                        "host_id": {"type": "keyword"},
+                        "user_name": {"type": "keyword"},
+                        "started_at": {"type": "date"},
+                        "last_seen": {"type": "date"},
+                        "duration_seconds": {"type": "float"},
+                        "alert_ids": {"type": "keyword"},
+                        "alert_count": {"type": "integer"},
+                        "log_types_involved": {"type": "keyword"},
+                        "max_threat_score": {"type": "float"},
+                        "mean_threat_score": {"type": "float"},
+                        "incident_threat_score": {"type": "float"},
+                        "threat_level": {"type": "keyword"},
+                        "mitre_tactics": {"type": "keyword"},
+                        "mitre_techniques": {"type": "keyword"},
+                        "attack_stage": {"type": "keyword"},
+                        "is_multi_stage": {"type": "boolean"},
+                        "status": {"type": "keyword"},
+                        "created_at": {"type": "date"}
+                    }
+                }
+            }
+        )
+        logger.info("es_index_created", index=incidents_index)
 
 async def close_es_client():
     """Closes the Elasticsearch singleton client."""

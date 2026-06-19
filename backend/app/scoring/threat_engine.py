@@ -7,6 +7,7 @@ from app.ingestion.es_client import INDEX_NAMES, get_es_client
 from app.features.feature_merger import run_feature_pipeline, store_feature_vectors
 from app.models.model_manager import ModelManager, get_model_manager
 from app.scoring.explainability import ExplainabilityEngine, explain_scoring_result, build_explanation_context
+from app.scoring.correlator import AlertCorrelator
 from app.ingestion.scheduler import bulk_index
 
 from app.logging_config import get_logger
@@ -20,6 +21,7 @@ class ThreatEngine:
         self.es = es
         self.model_manager = model_manager
         self.explainability_engine = explainability_engine
+        self.correlator = AlertCorrelator()
 
     async def run_scoring_cycle(self, since_minutes=5) -> dict:
         start_t = time.time()
@@ -83,6 +85,11 @@ class ThreatEngine:
             from app.slm.rag_pipeline import _rag_pipeline
             
             await bulk_index(self.es, alerts_to_store, INDEX_NAMES["alerts_processed"])
+            
+            # Group into unified incidents
+            incidents = self.correlator.correlate(alerts_to_store)
+            for inc in incidents:
+                await self.correlator.store_incident(self.es, inc)
             
             import datetime
             for alert in alerts_to_store:
