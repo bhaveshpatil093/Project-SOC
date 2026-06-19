@@ -29,6 +29,7 @@ class Incident:
     is_multi_stage: bool
     status: str
     created_at: datetime
+    matched_patterns: list[dict]
 
 class AlertCorrelator:
     def __init__(self, time_window_minutes: int = 15, min_alerts_for_incident: int = 2, score_threshold: float = 0.4):
@@ -151,7 +152,8 @@ class AlertCorrelator:
             attack_stage=attack_stage,
             is_multi_stage=is_multi_stage,
             status="active",
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
+            matched_patterns=[]
         )
 
     def determine_attack_stage(self, tactics: List[str]) -> str:

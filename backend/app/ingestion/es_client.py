@@ -146,7 +146,8 @@ async def create_soc_indices(es: AsyncElasticsearch):
                         "attack_stage": {"type": "keyword"},
                         "is_multi_stage": {"type": "boolean"},
                         "status": {"type": "keyword"},
-                        "created_at": {"type": "date"}
+                        "created_at": {"type": "date"},
+                        "matched_patterns": {"type": "object"}
                     }
                 }
             }

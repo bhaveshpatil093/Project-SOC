@@ -7,6 +7,7 @@ from app.ingestion.es_client import INDEX_NAMES, get_es_client
 from app.features.feature_merger import run_feature_pipeline, store_feature_vectors
 from app.models.model_manager import ModelManager, get_model_manager
 from app.models.baseline_learner import BaselineLearner
+from app.models.pattern_detector import PatternDetector
 from app.scoring.threat_intel import ThreatIntelEnricher
 from app.scoring.explainability import ExplainabilityEngine, explain_scoring_result, build_explanation_context
 from app.scoring.correlator import AlertCorrelator
@@ -26,6 +27,7 @@ class ThreatEngine:
         self.correlator = AlertCorrelator()
         self.baseline_learner = BaselineLearner()
         self.intel_enricher = ThreatIntelEnricher()
+        self.pattern_detector = PatternDetector()
 
     async def run_scoring_cycle(self, since_minutes=5) -> dict:
         start_t = time.time()
@@ -134,6 +136,12 @@ class ThreatEngine:
             # Group into unified incidents
             incidents = self.correlator.correlate(alerts_to_store)
             for inc in incidents:
+                # Filter alerts bound to this specific incident for pattern detection
+                inc_alerts = [a for a in alerts_to_store if a.get("id", a.get("_id")) in inc.alert_ids]
+                matches = self.pattern_detector.detect_patterns(inc, inc_alerts)
+                from dataclasses import asdict
+                inc.matched_patterns = [asdict(m) for m in matches]
+                
                 await self.correlator.store_incident(self.es, inc)
             
             import datetime
