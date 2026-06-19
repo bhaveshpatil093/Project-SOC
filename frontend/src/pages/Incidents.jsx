@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getIncidents, getIncidentDetail, updateIncidentStatus, escalateIncident } from '../api/incidents';
+import { getAlerts } from '../api/alerts';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorBanner } from '../components/common/ErrorBanner';
 import { AttackChain } from '../components/common/AttackChain';
+import { CorrelationGraph } from '../components/common/CorrelationGraph';
 import { formatDate } from '../utils/formatters';
 import { ShieldAlert, Clock, Activity, Target, Network, Zap, ChevronRight, Filter } from 'lucide-react';
 
@@ -251,6 +253,7 @@ const IncidentDetailPanel = ({ incidentId }) => {
 export const Incidents = () => {
   const [filters, setFilters] = useState({ status: 'active', threat_level: '', attack_stage: '' });
   const [selectedIncidentId, setSelectedIncidentId] = useState(null);
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'graph'
 
   const { data: listData, isLoading, isError } = useQuery({
     queryKey: ['incidents', filters],
@@ -258,21 +261,62 @@ export const Incidents = () => {
     refetchInterval: 15000
   });
 
+  const { data: alertsData } = useQuery({
+    queryKey: ['alerts', 'recent'],
+    queryFn: () => getAlerts({ limit: 200 }),
+    enabled: viewMode === 'graph',
+    refetchInterval: 15000
+  });
+
   const incidents = listData?.incidents || [];
+  const recentAlerts = alertsData?.alerts || [];
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-6">
+    <div className="h-[calc(100vh-8rem)] flex flex-col gap-4">
       
-      {/* Left Panel: Incident List */}
-      <div className="w-full md:w-[35%] lg:w-[30%] flex flex-col bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden shrink-0">
+      {/* Top Controls & Tabs */}
+      <div className="flex items-center justify-between bg-slate-900 border border-slate-700 rounded-xl p-3 shrink-0">
+        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <Network className="h-5 w-5 text-blue-500" />
+          Incident Management
+        </h2>
         
-        <div className="p-4 border-b border-slate-800 bg-slate-950/50">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
-            <Network className="h-5 w-5 text-blue-500" />
-            Correlated Incidents
-          </h2>
-          
-          <div className="space-y-2">
+        <div className="flex items-center gap-4">
+          <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+            >
+              List View
+            </button>
+            <button
+              onClick={() => setViewMode('graph')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${viewMode === 'graph' ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
+            >
+              Graph View
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {viewMode === 'graph' ? (
+        <div className="flex-1 min-h-0 bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden">
+          <CorrelationGraph 
+            incidents={incidents} 
+            alerts={recentAlerts} 
+            onNodeClick={(d) => {
+              if (d.type === 'incident') {
+                setViewMode('list');
+                setSelectedIncidentId(d.id);
+              }
+            }} 
+          />
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 flex flex-col md:flex-row gap-6">
+          {/* Left Panel: Incident List */}
+          <div className="w-full md:w-[35%] lg:w-[30%] flex flex-col bg-slate-900 border border-slate-700 rounded-xl shadow-xl overflow-hidden shrink-0">
+            <div className="p-4 border-b border-slate-800 bg-slate-950/50 space-y-2">
             <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5">
               <Filter className="h-4 w-4 text-slate-500" />
               <select 
@@ -338,6 +382,8 @@ export const Incidents = () => {
             <IncidentDetailPanel incidentId={selectedIncidentId} />
           </div>
         </div>
+      )}
+      </div>
       )}
     </div>
   );
