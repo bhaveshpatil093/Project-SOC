@@ -1,48 +1,75 @@
-version: '3.8'
-
+version: "3.9"
 services:
+
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
-    container_name: isro-soc-elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
     environment:
-      - node.name=es01
-      - cluster.name=isro-soc-cluster
       - discovery.type=single-node
-      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-elasticpassword}
-      - bootstrap.memory_lock=true
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - ELASTIC_PASSWORD=${ES_PASSWORD}
       - xpack.security.enabled=true
       - xpack.security.http.ssl.enabled=false
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+    ports: ["9200:9200"]
     volumes:
       - es_data:/usr/share/elasticsearch/data
-    ports:
-      - "9200:9200"
-    networks:
-      - soc-network
+    healthcheck:
+      test: curl -u elastic:${ES_PASSWORD} -s http://localhost:9200/_cluster/health
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.12.0
-    container_name: isro-soc-kibana
+    image: docker.elastic.co/kibana/kibana:8.13.0
     environment:
-      - SERVER_NAME=kibana
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=elastic
-      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-elasticpassword}
-    ports:
-      - "5601:5601"
+      - ELASTICSEARCH_PASSWORD=${ES_PASSWORD}
+    ports: ["5601:5601"]
     depends_on:
-      - elasticsearch
-    networks:
-      - soc-network
+      elasticsearch:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - ES_HOST=elasticsearch
+      - ES_PORT=9200
+      - ES_USERNAME=elastic
+      - ES_PASSWORD=${ES_PASSWORD}
+    ports: ["8000:8000"]
+    volumes:
+      - ./backend/models/saved:/app/models/saved
+      - ./data:/app/data
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: curl -f http://localhost:8000/health/ready
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports: ["3000:80"]
+    depends_on:
+      - backend
+
+  mlflow:
+    image: python:3.11-slim
+    command: >
+      sh -c "pip install mlflow && mlflow server
+        --backend-store-uri sqlite:///mlflow.db
+        --default-artifact-root /mlflow/artifacts
+        --host 0.0.0.0 --port 5000"
+    ports: ["5000:5000"]
+    volumes:
+      - mlflow_data:/mlflow
 
 volumes:
   es_data:
-    driver: local
-
-networks:
-  soc-network:
-    driver: bridge
+  mlflow_data:
