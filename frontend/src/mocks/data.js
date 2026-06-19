@@ -1,0 +1,28 @@
+export const mockAlerts = [
+  { id: "1", timestamp: new Date().toISOString(), host_id: "host-1", user_name: "admin", log_type: "syslog", threat_score: 0.95, threat_level: "critical", top_rule: "Brute Force", status: "open", mitre_tactics: ["Credential Access"], mitre_techniques: ["T1110"] },
+  { id: "2", timestamp: new Date().toISOString(), host_id: "host-2", user_name: "system", log_type: "process", threat_score: 0.65, threat_level: "high", top_rule: "Suspicious PowerShell", status: "in_progress", mitre_tactics: ["Execution"], mitre_techniques: ["T1059.001"] },
+  { id: "3", timestamp: new Date().toISOString(), host_id: "host-3", user_name: "jdoe", log_type: "network", threat_score: 0.45, threat_level: "medium", top_rule: "Large Upload", status: "closed", mitre_tactics: ["Exfiltration"], mitre_techniques: ["T1048"] },
+  { id: "4", timestamp: new Date().toISOString(), host_id: "host-1", user_name: "admin", log_type: "syslog", threat_score: 0.20, threat_level: "low", top_rule: "Failed Login", status: "open", mitre_tactics: [], mitre_techniques: [] },
+  { id: "5", timestamp: new Date().toISOString(), host_id: "host-5", user_name: "svc_acct", log_type: "security", threat_score: 0.85, threat_level: "critical", top_rule: "Ransomware Behavior", status: "open", mitre_tactics: ["Impact"], mitre_techniques: ["T1486"] },
+];
+
+export const mockAlertStats = {
+  total_open: 4,
+  critical_count: 2,
+  high_count: 1,
+  last_24h: 5,
+  distribution: { critical: 2, high: 1, medium: 1, low: 1 },
+  top_tactics: [{ name: "Credential Access", value: 1 }, { name: "Execution", value: 1 }, { name: "Impact", value: 1 }]
+};
+
+export const mockFeedbackStats = {
+  total: 100,
+  fp_rate: 15.5,
+  tp_rate: 80.0,
+  distribution: [{ name: "TP", value: 80 }, { name: "FP", value: 15 }, { name: "Benign", value: 5 }],
+  trend: []
+};
+
+export const mockTrainingHistory = [
+  { version: "v1.0.0", timestamp: new Date().toISOString(), model_type: "isolation_forest", metrics: { n_samples: 10000, contamination: 0.01 }, status: "active" }
+];

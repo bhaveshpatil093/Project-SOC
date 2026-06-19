@@ -16,6 +16,9 @@ from app.scoring.threat_engine import init_threat_engine
 from app.api.routes.alerts import router as alerts_router
 from app.api.routes.feedback import router as feedback_router
 from app.api.routes.training import router as training_router
+from app.api.routes.websocket import router as websocket_router
+from app.api.routes.slm import router as slm_router
+from app.slm.model_loader import _slm_engine
 import asyncio
 from app.config import settings
 import os
@@ -30,6 +33,23 @@ async def lifespan(app: FastAPI):
     
     # Initialize Central Threat Engine
     await init_threat_engine()
+
+    # Load SLM Chat Engine asynchronously without blocking event loops
+    try:
+        await _slm_engine.load()
+    except Exception as e:
+        print(f"Warning: Failed to load SLM Engine during startup: {e}")
+
+    # Load and bind the standalone RAG Pipeline mapping memory vectors locally
+    try:
+        from app.slm.rag_pipeline import _rag_pipeline, reindex_all
+        await _rag_pipeline.initialize()
+        
+        # Fire background task tracking historical RAG payload indices explicitly
+        es = await get_es_client()
+        asyncio.create_task(reindex_all(es))
+    except Exception as e:
+        print(f"Warning: Failed to initialize RAG Engine bounds cleanly: {e}")
 
     # Evaluate ML Artifact Bounds initializing auto-training pipelines natively cleanly
     if_path = os.path.join(settings.MODEL_DIR, "isolation_forest.pkl")
@@ -73,6 +93,8 @@ def create_app() -> FastAPI:
     app.include_router(alerts_router, prefix="/api/alerts", tags=["Alerts"])
     app.include_router(feedback_router, prefix="/api/feedback", tags=["Feedback"])
     app.include_router(training_router, prefix="/api/training", tags=["Training"])
+    app.include_router(slm_router, prefix="/api/slm", tags=["SLM"])
+    app.include_router(websocket_router, tags=["WebSocket"])
 
     @app.get("/health")
     def health_check():

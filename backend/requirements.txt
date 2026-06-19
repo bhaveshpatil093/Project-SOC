@@ -22,3 +22,6 @@ pytest
 pytest-asyncio
 httpx
 shap
+accelerate
+bitsandbytes
+chromadb

@@ -77,8 +77,24 @@ class ThreatEngine:
                     
         # 4. Structural Storage Commits tracking natively against soc-processed-alerts
         if alerts_to_store:
+            from app.api.routes.websocket import manager
+            from app.slm.rag_pipeline import _rag_pipeline
+            
             await bulk_index(self.es, alerts_to_store, INDEX_NAMES["alerts_processed"])
             
+            import datetime
+            for alert in alerts_to_store:
+                if alert.get("threat_score", 0) > 0.3:
+                    # Index directly into RAG Vector DB mapping real-time alert boundaries natively
+                    await _rag_pipeline.index_alert(alert)
+                    
+                    # In a real app we'd fetch the ES _id, but sending the payload is sufficient for real-time feed
+                    await manager.broadcast({
+                        "type": "new_alert",
+                        "data": alert,
+                        "timestamp": datetime.datetime.utcnow().isoformat()
+                    })
+                    
         cycle_time = (time.time() - start_t) * 1000
         
         return {
