@@ -13,6 +13,7 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { AlertTriangle } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const NotFound = () => (
   <div className="flex flex-col items-center justify-center h-full min-h-[500px]">
@@ -34,19 +35,19 @@ const AppContent = () => {
     <>
       <AlertNotificationBanner />
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
         
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Layout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="alerts" element={<Alerts />} />
-            <Route path="alerts/:id" element={<AlertDetail />} />
-            <Route path="investigation" element={<Investigation />} />
-            <Route path="feedback" element={<Feedback />} />
-            <Route path="training" element={<Training />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+            <Route path="alerts" element={<ErrorBoundary><Alerts /></ErrorBoundary>} />
+            <Route path="alerts/:id" element={<ErrorBoundary><AlertDetail /></ErrorBoundary>} />
+            <Route path="investigation" element={<ErrorBoundary><Investigation /></ErrorBoundary>} />
+            <Route path="feedback" element={<ErrorBoundary><Feedback /></ErrorBoundary>} />
+            <Route path="training" element={<ErrorBoundary><Training /></ErrorBoundary>} />
+            <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
+            <Route path="*" element={<ErrorBoundary><NotFound /></ErrorBoundary>} />
           </Route>
         </Route>
       </Routes>

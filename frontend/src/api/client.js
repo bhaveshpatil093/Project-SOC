@@ -1,11 +1,14 @@
 import axios from 'axios';
 
 export class ApiError extends Error {
-  constructor(message, status, detail) {
+  constructor(message, status, detail, code = null, fields = null, correlationId = null) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.detail = detail;
+    this.code = code;
+    this.fields = fields;
+    this.correlationId = correlationId;
   }
 }
 
@@ -90,28 +93,40 @@ apiClient.interceptors.response.use(
     let message = "Network Error";
     let status = 0;
     let detail = null;
+    let code = "UNKNOWN_ERROR";
+    let fields = null;
+    let correlationId = null;
     
     if (error.response) {
       status = error.response.status;
       detail = error.response.data;
       
-      // Attempt to extract detail cleanly from standard FastAPI HTTPException signatures
-      if (typeof error.response.data?.detail === 'string') {
-        message = error.response.data.detail;
-      } else if (error.response.data?.message) {
-        message = error.response.data.message;
-      } else if (Array.isArray(error.response.data?.detail)) {
-        // FastAPI Pydantic validation error array
-        message = error.response.data.detail.map(d => `${d.loc.join('.')}: ${d.msg}`).join(', ');
+      // If it matches our new structured JSONResponse format
+      if (detail && typeof detail === 'object' && detail.error) {
+        code = detail.error;
+        message = detail.message || message;
+        fields = detail.fields || null;
+        correlationId = detail.correlation_id || null;
       } else {
-        message = `API Error ${status}`;
+        // Attempt to extract detail cleanly from standard FastAPI HTTPException signatures
+        if (typeof detail?.detail === 'string') {
+          message = detail.detail;
+        } else if (detail?.message) {
+          message = detail.message;
+        } else if (Array.isArray(detail?.detail)) {
+          // FastAPI Pydantic validation error array
+          message = detail.detail.map(d => `${d.loc.join('.')}: ${d.msg}`).join(', ');
+        } else {
+          message = `API Error ${status}`;
+        }
       }
     } else if (error.request) {
       message = "No response received from the server. Check your connection.";
+      code = "NETWORK_ERROR";
     } else {
       message = error.message;
     }
     
-    throw new ApiError(message, status, detail);
+    throw new ApiError(message, status, detail, code, fields, correlationId);
   }
 );

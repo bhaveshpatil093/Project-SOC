@@ -41,6 +41,8 @@ const TabSubmitFeedback = () => {
     }
   });
 
+  const fieldErrors = mutation.error?.code === "VALIDATION_ERROR" ? mutation.error.fields || {} : {};
+
   const handleSubmit = (e) => {
     e.preventDefault();
     mutation.mutate(form);
@@ -69,6 +71,13 @@ const TabSubmitFeedback = () => {
             <p>{toast}</p>
           </div>
         )}
+        
+        {mutation.isError && mutation.error?.code !== "VALIDATION_ERROR" && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5" />
+            <p>{mutation.error?.message || "Failed to submit feedback."}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -80,8 +89,9 @@ const TabSubmitFeedback = () => {
                 value={form.alert_id} 
                 onChange={e => setForm({...form, alert_id: e.target.value})}
                 placeholder="soc-alert-12345"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors" 
+                className={`w-full bg-slate-900 border ${fieldErrors.alert_id ? 'border-red-500' : 'border-slate-700'} rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors`}
               />
+              {fieldErrors.alert_id && <p className="text-xs text-red-400 mt-1">{fieldErrors.alert_id}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Analyst Name</label>
@@ -91,8 +101,9 @@ const TabSubmitFeedback = () => {
                 value={form.analyst_name} 
                 onChange={e => setForm({...form, analyst_name: e.target.value})}
                 placeholder="John Doe"
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors" 
+                className={`w-full bg-slate-900 border ${fieldErrors.analyst_name ? 'border-red-500' : 'border-slate-700'} rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors`}
               />
+              {fieldErrors.analyst_name && <p className="text-xs text-red-400 mt-1">{fieldErrors.analyst_name}</p>}
             </div>
           </div>
 
@@ -121,8 +132,9 @@ const TabSubmitFeedback = () => {
               value={form.mitre_override} 
               onChange={e => setForm({...form, mitre_override: e.target.value})}
               placeholder="e.g. T1078.001"
-              className="w-full md:w-1/2 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors font-mono text-sm" 
+              className={`w-full md:w-1/2 bg-slate-900 border ${fieldErrors.mitre_override ? 'border-red-500' : 'border-slate-700'} rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors font-mono text-sm`}
             />
+            {fieldErrors.mitre_override && <p className="text-xs text-red-400 mt-1">{fieldErrors.mitre_override}</p>}
           </div>
 
           <div>
@@ -133,8 +145,9 @@ const TabSubmitFeedback = () => {
               value={form.notes} 
               onChange={e => setForm({...form, notes: e.target.value})}
               placeholder="Explain the reasoning behind this label..."
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors resize-y" 
+              className={`w-full bg-slate-900 border ${fieldErrors.notes ? 'border-red-500' : 'border-slate-700'} rounded-lg px-4 py-3 text-slate-200 focus:outline-none focus:border-blue-500 transition-colors resize-y`}
             />
+            {fieldErrors.notes && <p className="text-xs text-red-400 mt-1">{fieldErrors.notes}</p>}
           </div>
 
           <button 

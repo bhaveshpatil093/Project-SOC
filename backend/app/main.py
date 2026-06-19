@@ -103,6 +103,14 @@ async def lifespan(app: FastAPI):
     await stop_scheduler()
     await close_es_client()
 
+from app.exceptions import SOCBaseException
+from app.middleware.exception_handlers import (
+    soc_exception_handler,
+    validation_exception_handler,
+    generic_exception_handler
+)
+from fastapi.exceptions import RequestValidationError
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="ISRO ISTRAC SOC AI Platform",
@@ -150,6 +158,10 @@ def create_app() -> FastAPI:
 
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    
+    app.add_exception_handler(SOCBaseException, soc_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(Exception, generic_exception_handler)
 
     app.add_middleware(RequestSizeMiddleware, max_upload_size=1048576) # 1MB limit
     app.add_middleware(
