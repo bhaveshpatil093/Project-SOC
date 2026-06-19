@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       return { 
         success: false, 
-        error: err.response?.data?.detail || 'Authentication handshake completely failed.'
+        error: err.message || 'Authentication handshake completely failed.'
       };
     }
   };

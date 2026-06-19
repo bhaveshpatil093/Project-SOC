@@ -1,6 +1,15 @@
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+import asyncio
+import os
+
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from app.middleware.rate_limiter import limiter
+from app.middleware.validation_middleware import RequestSizeMiddleware
 from app.config import settings
 from app.ingestion.es_client import (
     get_es_client,
@@ -120,7 +129,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000"],
+        allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -136,6 +145,15 @@ def create_app() -> FastAPI:
     app.include_router(feedback_router, prefix="/api/feedback", tags=["Feedback"])
     app.include_router(training_router, prefix="/api/training", tags=["Training"])
     app.include_router(slm_router, prefix="/api/slm", tags=["SLM"])
+
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    app.add_middleware(RequestSizeMiddleware, max_upload_size=1048576) # 1MB limit
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["localhost", "127.0.0.1", "*.isro.gov.in"]
+    )
     app.include_router(websocket_router, tags=["WebSocket"])
 
     @app.get("/health", tags=["Health"], response_model=dict, summary="System Health Check", description="Returns ok if the API is active.")

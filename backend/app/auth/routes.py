@@ -3,13 +3,16 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.auth.models import USERS_DB, verify_password, User
 from app.auth.jwt import create_access_token, get_current_user
 from app.logging_config import get_logger
+from fastapi import Request
+from app.middleware.rate_limiter import limiter
 
 logger = get_logger(__name__)
 
 router = APIRouter()
 
 @router.post("/login")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+@limiter.limit("10/minute")
+async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
     user_data = USERS_DB.get(form_data.username)
     if not user_data or not verify_password(form_data.password, user_data.hashed_password):
         logger.warning("auth_failed", username=form_data.username, reason="invalid_credentials")

@@ -20,6 +20,9 @@ from app.scoring.threat_engine import get_threat_engine
 from app.ingestion.es_client import get_es_client
 from app.slm.conversation_manager import get_conversation_manager
 
+from app.middleware.rate_limiter import limiter
+from app.middleware.validation_middleware import InputSanitizer
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -54,8 +57,12 @@ async def get_soc_agent() -> SOCAgent:
     return SOCAgent(slm_engine=slm, rag_pipeline=rag, es=es)
 
 @router.post("/chat", response_model=ChatResponse, dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
-async def chat_endpoint(req: ChatRequest, agent: SOCAgent = Depends(get_soc_agent)):
+@limiter.limit("20/minute")
+async def chat_endpoint(request: Request, req: ChatRequest, agent: SOCAgent = Depends(get_soc_agent)):
     start_t = time.time()
+    
+    # Sanitize input
+    req.message = InputSanitizer.sanitize_chat_message(req.message)
     cm = get_conversation_manager()
     
     conv = None
@@ -200,12 +207,16 @@ async def cache_clear():
     return {"status": "cleared", "message": "Exact and Semantic SLM caches completely destroyed."}
 
 @router.post("/chat/stream", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
-async def chat_stream(req: Request):
+@limiter.limit("10/minute")
+async def chat_stream(request: Request):
     """
     Streams raw SLMEngine outputs utilizing Transformers TextIteratorStreamer and Server-Sent Events natively.
     """
-    body = await req.json()
+    body = await request.json()
     prompt = body.get("message", "")
+    
+    # Sanitize input
+    prompt = InputSanitizer.sanitize_chat_message(prompt)
     
     slm = get_slm_engine()
     if not slm.is_loaded():

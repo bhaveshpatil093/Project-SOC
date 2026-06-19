@@ -4,7 +4,8 @@ from typing import List, Optional
 from app.scoring.threat_engine import get_threat_engine
 from app.ingestion.es_client import INDEX_NAMES, get_es_client
 from app.auth.jwt import require_role
-from fastapi import Depends
+from fastapi import Depends, Request
+from app.middleware.rate_limiter import limiter
 
 router = APIRouter()
 
@@ -39,7 +40,9 @@ class StatusUpdate(BaseModel):
     status: str
 
 @router.get("", response_model=AlertListResponse, dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+@limiter.limit("120/minute")
 async def get_alerts_list(
+    request: Request,
     status: Optional[str] = Query(None, description="Filter by status (open, closed)"),
     threat_level: Optional[str] = Query(None, description="Filter by level (critical, high, medium, low)"),
     host_id: Optional[str] = Query(None, description="Filter by origin host ID"),
