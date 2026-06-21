@@ -33,6 +33,7 @@ import { formatDate } from '../utils/formatters'
 import { PreferencesForm } from '../components/preferences/PreferencesForm'
 import { BackupsPanel } from "../components/preferences/BackupsPanel"
 import { AuditLogPanel } from "../components/preferences/AuditLogPanel"
+import { SLMAnalyticsPanel } from "../components/preferences/SLMAnalyticsPanel"
 
 export const Settings = () => {
 
@@ -290,11 +291,22 @@ export const Settings = () => {
         >
           Audit Log
         </button>
+        <button
+          onClick={() => setActiveTab('slm_analytics')}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'slm_analytics'
+              ? 'border-blue-500 text-blue-400'
+              : 'border-transparent text-[var(--text\\_secondary)] hover:text-[var(--text\\_primary)] hover:border-[var(--border)]'
+          }`}
+        >
+          SLM Analytics
+        </button>
       </div>
 
       {activeTab === 'preferences' && <PreferencesForm />}
       {activeTab === "backups" && <BackupsPanel />}
       {activeTab === "audit" && <AuditLogPanel />}
+      {activeTab === "slm_analytics" && <SLMAnalyticsPanel />}
 
 
       {activeTab === 'health' && (

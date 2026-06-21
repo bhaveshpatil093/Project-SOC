@@ -13,6 +13,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from transformers import TextIteratorStreamer
 
+from app.monitoring.slm_analytics import slm_analytics_instance, ResponseMetrics
 from app.auth.jwt import require_role
 from app.ingestion.es_client import get_es_client
 from app.middleware.rate_limiter import limiter
@@ -96,6 +97,14 @@ async def chat_endpoint(request: Request, req: ChatRequest, agent: SOCAgent = De
 
     asst_msg = ChatMessage(role="assistant", content=res.get("answer", ""), timestamp=asst_turn.timestamp)
 
+    es = await get_es_client()
+    metrics = ResponseMetrics(
+        generation_time_ms=int(resp_time),
+        prompt_tokens=res.get("prompt_tokens", 0),
+        completion_tokens=res.get("completion_tokens", 0),
+        quality_score=res.get("quality_score", 1.0)
+    )
+    await slm_analytics_instance.track_query(es, conv.conversation_id, req.message, "chat", req.alert_id, metrics)
     return ChatResponse(
         conversation_id=conv.conversation_id,
         message=asst_msg,
@@ -122,6 +131,14 @@ async def explain_alert(alert_id: str, agent: SOCAgent = Depends(get_soc_agent))
     res = await agent.investigate(user_question=prompt, alert_id=alert_id, conversation_history=[])
     await audit_action('slm.explain_alert', 'alert', alert_id, {})
     await audit_action('slm.explain_alert', 'alert', alert_id, {})
+    es = await get_es_client()
+    metrics = ResponseMetrics(
+        generation_time_ms=int(resp_time),
+        prompt_tokens=res.get("prompt_tokens", 0),
+        completion_tokens=res.get("completion_tokens", 0),
+        quality_score=res.get("quality_score", 1.0)
+    )
+    await slm_analytics_instance.track_query(es, "explain_"+alert_id, "Explain this alert", "explanation", alert_id, metrics)
     return {"explanation": res.get("answer", "")}
 
 @router.get("/status", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
@@ -275,3 +292,18 @@ async def fetch_playbook(alert_id: str):
     except Exception:
         # Alert not found or other ES error
         return {"data": None}
+
+
+@router.get("/analytics", dependencies=[Depends(require_role("admin", "analyst"))])
+async def get_slm_analytics(since_days: int = 30):
+    es = await get_es_client()
+    trends = await slm_analytics_instance.get_usage_trends(es, since_days)
+    top_questions = await slm_analytics_instance.get_top_questions(es, since_days)
+    knowledge_gaps = await slm_analytics_instance.get_knowledge_gaps(es)
+    investigated = await slm_analytics_instance.get_most_investigated_entities(es, since_days)
+    return {
+        "trends": trends,
+        "top_questions": top_questions,
+        "knowledge_gaps": knowledge_gaps,
+        "most_investigated": investigated
+    }
