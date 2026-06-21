@@ -215,6 +215,20 @@ class ThreatEngine:
 
                 await self.correlator.store_incident(self.es, inc)
 
+                # Dispatch webhook event for new incident
+                try:
+                    from app.integrations.webhook_manager import webhook_manager
+                    from dataclasses import asdict as _asdict
+                    await webhook_manager.dispatch_event(self.es, "new_incident", {
+                        "incident_id": inc.incident_id,
+                        "attack_stage": inc.attack_stage,
+                        "alert_count": len(inc.alert_ids),
+                        "is_multi_stage": inc.is_multi_stage,
+                        "link": f"http://soc.isro.gov.in/incidents/{inc.incident_id}",
+                    })
+                except Exception as wh_err:
+                    logger.warning(f"Webhook incident dispatch failed: {wh_err}")
+
             import datetime
             for alert in alerts_to_store:
                 if alert.get("threat_score", 0) > 0.3:
@@ -227,6 +241,22 @@ class ThreatEngine:
                         "data": alert,
                         "timestamp": datetime.datetime.utcnow().isoformat()
                     })
+
+                    # Dispatch webhook event for new alert
+                    try:
+                        from app.integrations.webhook_manager import webhook_manager
+                        alert_payload = {
+                            "id": alert.get("_id", ""),
+                            "entity_key": alert.get("entity_key", ""),
+                            "threat_level": alert.get("threat_level", ""),
+                            "threat_score": alert.get("threat_score", 0),
+                            "mitre_tactics": alert.get("mitre_tactics", []),
+                            "human_explanation": alert.get("human_explanation", ""),
+                            "link": f"http://soc.isro.gov.in/alerts/{alert.get('_id', '')}",
+                        }
+                        await webhook_manager.dispatch_event(self.es, "new_alert", {"alert": alert_payload})
+                    except Exception as wh_err:
+                        logger.warning(f"Webhook dispatch failed: {wh_err}")
 
             from app.cache.cache_manager import cache
             await cache.delete("alert_stats")

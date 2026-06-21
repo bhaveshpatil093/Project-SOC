@@ -27,6 +27,7 @@ import {
   Network,
   LineChart,
   Zap,
+  Webhook,
 } from 'lucide-react'
 import { formatDate } from '../utils/formatters'
 
@@ -34,6 +35,7 @@ import { PreferencesForm } from '../components/preferences/PreferencesForm'
 import { BackupsPanel } from "../components/preferences/BackupsPanel"
 import { AuditLogPanel } from "../components/preferences/AuditLogPanel"
 import { SLMAnalyticsPanel } from "../components/preferences/SLMAnalyticsPanel"
+import { WebhooksPanel } from '../components/preferences/WebhooksPanel'
 
 export const Settings = () => {
 
@@ -296,10 +298,30 @@ export const Settings = () => {
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'slm_analytics'
               ? 'border-blue-500 text-blue-400'
-              : 'border-transparent text-[var(--text\\_secondary)] hover:text-[var(--text\\_primary)] hover:border-[var(--border)]'
+              : 'border-transparent text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] hover:border-[var(--border)]'
           }`}
         >
           SLM Analytics
+        </button>
+        <button
+          onClick={() => setActiveTab('teams')}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'teams'
+              ? 'border-blue-500 text-blue-400'
+              : 'border-transparent text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] hover:border-[var(--border)]'
+          }`}
+        >
+          Analyst Teams
+        </button>
+        <button
+          onClick={() => setActiveTab('webhooks')}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'webhooks'
+              ? 'border-blue-500 text-blue-400'
+              : 'border-transparent text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] hover:border-[var(--border)]'
+          }`}
+        >
+          Webhooks
         </button>
       </div>
 
@@ -308,6 +330,7 @@ export const Settings = () => {
       {activeTab === "audit" && <AuditLogPanel />}
       {activeTab === "slm_analytics" && <SLMAnalyticsPanel />}
       {activeTab === "teams" && <TeamsPanel />}
+      {activeTab === "webhooks" && <WebhooksPanel />}
 
 
 
