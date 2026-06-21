@@ -4,6 +4,10 @@ import { Clock, CheckCircle, Menu, Sun, Moon } from 'lucide-react'
 import { useUiStore } from '../../store/uiStore'
 import { usePreferencesStore } from '../../store/preferencesStore'
 import { NotificationDropdown } from './NotificationDropdown'
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '../../api/client'
+import { DatabaseBackup } from 'lucide-react'
+import { formatDate } from '../../utils/formatters'
 
 export const TopBar = () => {
   const location = useLocation()
@@ -15,6 +19,15 @@ export const TopBar = () => {
     const timer = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
+
+  const { data: backups } = useQuery({
+    queryKey: ['backups_topbar'],
+    queryFn: () => apiClient.get('/api/admin/backups'),
+    retry: false,
+    refetchInterval: 60000,
+  })
+
+  const lastBackup = backups?.length > 0 ? backups[0] : null;
 
   const getPageTitle = () => {
     const path = location.pathname
@@ -47,6 +60,13 @@ export const TopBar = () => {
           <Clock className="h-4 w-4 text-blue-500" />
           {time.toLocaleTimeString()}
         </div>
+
+        {lastBackup && (
+          <div className="hidden lg:flex items-center gap-2 text-[var(--text_secondary)] text-sm font-mono bg-[var(--bg_primary)]/50 px-3 py-1.5 rounded-lg border border-[var(--border)]" title="Last successful backup">
+            <DatabaseBackup className="h-4 w-4 text-purple-500" />
+            {formatDate(new Date(lastBackup.start_time))}
+          </div>
+        )}
 
         <div className="flex items-center gap-2 bg-green-500/5 border border-green-500/20 px-3 py-1.5 rounded-lg">
           <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>

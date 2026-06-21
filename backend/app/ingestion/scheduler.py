@@ -284,6 +284,34 @@ async def start_scheduler(es: AsyncElasticsearch):
         replace_existing=True
     )
 
+    from app.backup.backup_manager import BackupManager
+
+    async def daily_backup_job():
+        bm = BackupManager(es)
+        await bm.create_snapshot()
+        await bm.delete_old_snapshots(keep_last_n=7)
+
+    _scheduler.add_job(
+        daily_backup_job,
+        trigger=CronTrigger(hour=21, minute=0), # 02:30 IST is UTC 21:00
+        id="daily_backup",
+        replace_existing=True
+    )
+
+    async def weekly_full_backup_job():
+        bm = BackupManager(es)
+        from datetime import datetime
+        name = f"soc_full_backup_{datetime.now():%Y%m%d_%H%M%S}"
+        await bm.create_snapshot(snapshot_name=name)
+        await bm.delete_old_snapshots(keep_last_n=14)
+
+    _scheduler.add_job(
+        weekly_full_backup_job,
+        trigger=CronTrigger(day_of_week='sun', hour=21, minute=30), # 03:00 IST is UTC 21:30
+        id="weekly_full_backup",
+        replace_existing=True
+    )
+
     scheduler_state["status"] = "running"
     logger.info("scheduler_started", job="ingestion_pipeline", interval="5_minutes")
 

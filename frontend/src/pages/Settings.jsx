@@ -31,6 +31,7 @@ import {
 import { formatDate } from '../utils/formatters'
 
 import { PreferencesForm } from '../components/preferences/PreferencesForm'
+import { BackupsPanel } from "../components/preferences/BackupsPanel"
 
 export const Settings = () => {
   const [activeTab, setActiveTab] = useState('general')
@@ -282,6 +283,10 @@ export const Settings = () => {
       </div>
 
       {activeTab === 'preferences' && <PreferencesForm />}
+      }
+      {activeTab === "backups" && (
+        <BackupsPanel />
+
 
       {activeTab === 'health' && (
         <>
