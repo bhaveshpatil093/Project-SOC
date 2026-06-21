@@ -9,7 +9,7 @@ import {
   getLabelingQueue,
   getLabelingStats,
 } from '../api/feedback'
-import { LoadingSpinner } from '../components/common/LoadingSpinner'
+import { SkeletonTable, SkeletonCard } from '../components/common/Skeleton'
 import { ErrorBanner } from '../components/common/ErrorBanner'
 import { Badge } from '../components/common/Badge'
 import { formatDate } from '../utils/formatters'
@@ -246,9 +246,9 @@ const TabSubmitFeedback = () => {
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-[var(--text\_primary)] font-medium px-6 py-2.5 rounded-lg transition-colors flex items-center gap-2"
+            className={`bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-[var(--text\_primary)] font-medium px-6 py-2.5 rounded-lg transition-all flex items-center gap-2 ${mutation.isPending ? 'scale-95' : 'active:scale-95'}`}
           >
-            {mutation.isPending ? <LoadingSpinner size={4} /> : 'Submit Feedback'}
+            {mutation.isPending ? <div className="h-4 w-4 rounded-full border-2 border-white/20 border-t-white animate-spin" /> : 'Submit Feedback'}
           </button>
         </form>
       </div>
@@ -290,8 +290,8 @@ const TabSubmitFeedback = () => {
             <tbody className="divide-y divide-[var(--border)]/30">
               {isLoading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12">
-                    <LoadingSpinner />
+                  <td colSpan="6" className="p-4">
+                    <SkeletonTable rows={5} cols={6} />
                   </td>
                 </tr>
               ) : isError ? (
@@ -349,8 +349,16 @@ const TabFeedbackStats = () => {
 
   if (isLoading)
     return (
-      <div className="py-20">
-        <LoadingSpinner />
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <SkeletonCard className="lg:col-span-1 h-64" />
+          <SkeletonCard className="lg:col-span-2 h-64" />
+        </div>
       </div>
     )
   if (isError) return <ErrorBanner message="Failed to load feedback statistics." />
@@ -541,8 +549,8 @@ const TabSuppressionRules = () => {
             <tbody className="divide-y divide-[var(--border)]/30">
               {isLoading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-16">
-                    <LoadingSpinner />
+                  <td colSpan="6" className="p-4">
+                    <SkeletonTable rows={4} cols={6} />
                   </td>
                 </tr>
               ) : isError ? (
@@ -638,8 +646,10 @@ const TabLabelingQueue = () => {
 
   if (isLoading)
     return (
-      <div className="py-12">
-        <LoadingSpinner />
+      <div className="space-y-4">
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
       </div>
     )
   if (isError)
@@ -689,7 +699,7 @@ const TabLabelingQueue = () => {
           <div className="space-y-4 relative">
             {mutation.isPending && (
               <div className="absolute inset-0 bg-[var(--bg\_primary)]/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
-                <LoadingSpinner size={8} />
+                <div className="h-8 w-8 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
               </div>
             )}
             {queue.slice(0, 5).map((item, idx) => (

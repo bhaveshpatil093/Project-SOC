@@ -4,7 +4,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react'
 
 export const ErrorBanner = ({ message, onRetry }) => {
   return (
-    <div className="bg-red-500/10 border border-red-500/50 rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full animate-in fade-in slide-in-from-top-4 duration-300">
+    <div role="alert" aria-live="assertive" className="bg-red-500/10 border border-red-500/50 rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full animate-in fade-in slide-in-from-top-4 duration-300">
       <div className="flex items-start gap-4">
         <div className="p-2 bg-red-500/20 rounded-full text-red-500 shrink-0">
           <AlertCircle className="h-6 w-6" />

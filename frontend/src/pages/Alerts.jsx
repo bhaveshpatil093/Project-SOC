@@ -2,7 +2,8 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useAlerts, useTriggerScoring } from '../hooks/useAlerts'
-import { LoadingSpinner } from '../components/common/LoadingSpinner'
+import { SkeletonTable } from '../components/common/Skeleton'
+import { EmptyState } from '../components/common/EmptyState'
 import { ErrorBanner } from '../components/common/ErrorBanner'
 import { Badge } from '../components/common/Badge'
 import { formatDate } from '../utils/formatters'
@@ -634,17 +635,21 @@ export const Alerts = () => {
             {/* Virtualized Body */}
             <div ref={parentRef} className="flex-1 overflow-y-auto w-full">
               {loading ? (
-                <div className="flex items-center justify-center p-16">
-                  <LoadingSpinner />
+                <div className="p-4">
+                  <SkeletonTable rows={10} cols={8} />
                 </div>
               ) : error ? (
                 <div className="p-8">
                   <ErrorBanner message="Failed to load alerts. Please try again." />
                 </div>
               ) : memoizedAlerts.length === 0 ? (
-                <div className="p-12 text-center text-[var(--text\_secondary)] font-medium">
-                  No alerts found matching the given filters.
-                </div>
+                <EmptyState
+                  icon="🛡️"
+                  title="All clear — no alerts"
+                  description="The system is monitoring. New threats will appear here."
+                  actionLabel="Trigger scoring cycle"
+                  onAction={handleTriggerScoring}
+                />
               ) : (
                 <div
                   style={{

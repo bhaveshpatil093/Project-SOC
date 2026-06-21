@@ -8,7 +8,7 @@ import {
   escalateIncident,
 } from '../api/incidents'
 import { getAlerts } from '../api/alerts'
-import { LoadingSpinner } from '../components/common/LoadingSpinner'
+import { SkeletonTable } from '../components/common/Skeleton'
 import { ErrorBanner } from '../components/common/ErrorBanner'
 import { AttackChain } from '../components/common/AttackChain'
 import { CorrelationGraph } from '../components/common/CorrelationGraph'
@@ -422,12 +422,12 @@ export const Incidents = () => {
             </div>
             <div className="flex-1 overflow-y-auto">
               {isLoading ? (
-                <div className="p-8 flex justify-center">
-                  <LoadingSpinner />
+                <div className="p-4">
+                  <SkeletonTable rows={4} cols={1} />
                 </div>
               ) : isError ? (
                 <div className="p-4">
-                  <ErrorBanner message="Failed to load incidents" />
+                  <SkeletonTable rows={8} cols={6} />
                 </div>
               ) : incidents.length === 0 ? (
                 <div className="p-8 text-center text-[var(--text\_secondary)] text-sm">

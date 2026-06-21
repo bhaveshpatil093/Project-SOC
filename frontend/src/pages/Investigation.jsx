@@ -29,7 +29,8 @@ import { useAlertStore } from '../store/alertStore'
 import { ThreatGauge } from '../components/common/ThreatGauge'
 import { MitrePanel } from '../components/common/MitrePanel'
 import { AttackChain } from '../components/common/AttackChain'
-import { LoadingSpinner } from '../components/common/LoadingSpinner'
+import { SkeletonCard } from '../components/common/Skeleton'
+import { EmptyState } from '../components/common/EmptyState'
 import { useIsMobile } from '../hooks/useMediaQuery'
 
 export const Investigation = () => {
@@ -149,9 +150,12 @@ export const Investigation = () => {
 
       {!alertIdParam && !incidentIdParam ? (
         <div className="bg-[var(--bg\_secondary)] rounded-xl p-6 border border-[var(--border)]">
-          <p className="text-[var(--text\_secondary)] mb-4 text-sm">
-            Enter an Alert ID or Incident ID to bind explicit context onto the AI logic map.
-          </p>
+          <EmptyState
+            icon="🤖"
+            title="Select an alert to investigate"
+            description="Choose an alert from the list or enter an alert ID to start an AI-powered investigation."
+            className="mb-6 border-none bg-transparent p-0"
+          />
           <div className="flex gap-2 mb-6">
             <input
               type="text"
@@ -206,8 +210,9 @@ export const Investigation = () => {
           </div>
         </div>
       ) : isAlertLoading || isIncidentLoading ? (
-        <div className="flex justify-center py-10">
-          <LoadingSpinner size="lg" />
+        <div className="flex flex-col gap-4 py-4">
+          <SkeletonCard lines={8} />
+          <SkeletonCard lines={6} />
         </div>
       ) : incidentContext ? (
         <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">

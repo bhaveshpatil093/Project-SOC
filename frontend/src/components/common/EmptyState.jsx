@@ -1,39 +1,28 @@
 import React from 'react'
-import PropTypes from 'prop-types'
-import { PackageOpen } from 'lucide-react'
 
-export const EmptyState = ({
-  icon: Icon = PackageOpen,
-  title,
-  description,
+export function EmptyState({
+  icon = "📁",
+  title = "No data available",
+  description = "There is nothing to display here right now.",
   actionLabel,
   onAction,
-}) => {
+  className = ""
+}) {
   return (
-    <div className="flex flex-col items-center justify-center p-12 text-center bg-[var(--bg\_secondary)]/50 rounded-xl border border-dashed border-[var(--border)] animate-in fade-in duration-300">
-      <div className="w-16 h-16 bg-[var(--bg\_secondary)] rounded-full flex items-center justify-center mb-4 border border-[var(--border)]">
-        <Icon className="h-8 w-8 text-[var(--text\_secondary)]" />
+    <div className={`flex flex-col items-center justify-center p-12 text-center bg-[var(--bg_secondary)] rounded-xl border border-dashed border-[var(--border)] ${className}`}>
+      <div className="text-5xl mb-4 opacity-50 select-none filter drop-shadow-lg grayscale hover:grayscale-0 transition-all duration-500">
+        {icon}
       </div>
-      <h3 className="text-lg font-bold text-[var(--text\_primary)] mb-2">{title}</h3>
-      <p className="text-[var(--text\_secondary)] max-w-sm text-sm leading-relaxed mb-6">
-        {description}
-      </p>
+      <h3 className="text-lg font-bold text-[var(--text_primary)] mb-2">{title}</h3>
+      <p className="text-sm text-[var(--text_secondary)] max-w-sm mb-6">{description}</p>
       {actionLabel && onAction && (
         <button
           onClick={onAction}
-          className="bg-[var(--bg\_secondary)] hover:bg-[var(--bg\_tertiary)] border border-[var(--border)] text-[var(--text\_primary)] px-6 py-2 rounded-lg font-medium transition-colors"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-500/20"
         >
           {actionLabel}
         </button>
       )}
     </div>
   )
-}
-
-EmptyState.propTypes = {
-  icon: PropTypes.elementType,
-  title: PropTypes.string.isRequired,
-  description: PropTypes.string.isRequired,
-  actionLabel: PropTypes.string,
-  onAction: PropTypes.func,
 }

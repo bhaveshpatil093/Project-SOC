@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAlert, useAlertTimeline, useUpdateAlertStatus } from '../hooks/useAlerts'
 import { getEntityScoreHistory } from '../api/entities'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { ErrorBanner } from '../components/common/ErrorBanner'
 import { Badge } from '../components/common/Badge'
 import { ThreatGauge } from '../components/common/ThreatGauge'
@@ -28,7 +27,7 @@ import {
 } from 'lucide-react'
 import { addTags, removeTag, getAllTags } from '../api/alerts'
 import { generateAlertReport, downloadJSON } from '../utils/exporters'
-import { useIsMobile } from '../hooks/useMediaQuery'
+import { SkeletonCard } from '../components/common/Skeleton'
 import { useUiStore } from '../store/uiStore'
 import { THEMES } from '../utils/theme'
 import {
@@ -91,7 +90,23 @@ export const AlertDetail = () => {
     }
   }
 
-  if (isLoading) return <LoadingSpinner />
+  if (isLoading) {
+    return (
+      <div className="space-y-8 max-w-7xl mx-auto mt-8">
+        <SkeletonCard lines={4} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <SkeletonCard lines={6} />
+            <SkeletonCard lines={8} />
+          </div>
+          <div className="space-y-8">
+            <SkeletonCard lines={5} />
+            <SkeletonCard lines={5} />
+          </div>
+        </div>
+      </div>
+    )
+  }
   if (isError || !alert)
     return <ErrorBanner message="Failed to load alert details. Alert may not exist." />
 

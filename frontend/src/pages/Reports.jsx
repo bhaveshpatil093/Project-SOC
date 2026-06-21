@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../api/client'
-import { LoadingSpinner } from '../components/common/LoadingSpinner'
+import { SkeletonTable, SkeletonCard } from '../components/common/Skeleton'
 import { Badge } from '../components/common/Badge'
 import { SLADashboard } from '../components/reports/SLADashboard'
 import { formatDate } from '../utils/formatters'
@@ -153,7 +153,7 @@ const SchedulesTab = () => {
     onSettled: () => { setRunningId(null); queryClient.invalidateQueries(['schedules']); queryClient.invalidateQueries(['generatedReports']) }
   })
 
-  if (isLoading) return <LoadingSpinner />
+  if (isLoading) return <div className="mt-8"><SkeletonTable rows={5} cols={6} /></div>
 
   return (
     <div className="space-y-6">
@@ -235,7 +235,7 @@ const GeneratedReportsTab = () => {
     window.print()
   }
 
-  if (isLoading) return <LoadingSpinner />
+  if (isLoading) return <div className="mt-8"><SkeletonTable rows={5} cols={5} /></div>
 
   if (selectedReportId) {
     return (
@@ -244,7 +244,7 @@ const GeneratedReportsTab = () => {
           ← Back to Reports
         </button>
         {isReportLoading ? (
-          <LoadingSpinner />
+          <div className="mt-8"><SkeletonCard lines={10} /></div>
         ) : activeReport ? (
           <div className="bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-xl overflow-hidden shadow-2xl print:shadow-none print:border-none">
             <div className="p-4 bg-black/20 border-b border-[var(--border)] flex justify-between items-center print:hidden">

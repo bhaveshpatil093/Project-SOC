@@ -11,6 +11,8 @@ import { ErrorBoundary } from './components/common/ErrorBoundary'
 import { LoadingSpinner } from './components/common/LoadingSpinner'
 import { applyTheme } from './utils/theme'
 import { usePreferencesStore } from './store/preferencesStore'
+import { PageTransition } from './components/layout/PageTransition'
+import { OnboardingWizard } from './components/onboarding/OnboardingWizard'
 
 // Apply initial theme on app startup
 applyTheme(usePreferencesStore.getState().theme)
@@ -54,6 +56,7 @@ const AppContent = () => {
   return (
     <>
       <AlertNotificationBanner />
+      {isAuthenticated && <OnboardingWizard />}
       <Suspense
         fallback={
           <div className="h-screen w-full flex items-center justify-center bg-[var(--bg\_primary)]">
@@ -66,7 +69,7 @@ const AppContent = () => {
             path="/login"
             element={
               <ErrorBoundary>
-                <Login />
+                <PageTransition><Login /></PageTransition>
               </ErrorBoundary>
             }
           />
@@ -78,7 +81,7 @@ const AppContent = () => {
                 path="dashboard"
                 element={
                   <ErrorBoundary>
-                    <Dashboard />
+                    <PageTransition><Dashboard /></PageTransition>
                   </ErrorBoundary>
                 }
               />
@@ -86,7 +89,7 @@ const AppContent = () => {
                 path="alerts"
                 element={
                   <ErrorBoundary>
-                    <Alerts />
+                    <PageTransition><Alerts /></PageTransition>
                   </ErrorBoundary>
                 }
               />
@@ -94,7 +97,7 @@ const AppContent = () => {
                 path="alerts/:id"
                 element={
                   <ErrorBoundary>
-                    <AlertDetail />
+                    <PageTransition><AlertDetail /></PageTransition>
                   </ErrorBoundary>
                 }
               />
@@ -102,7 +105,7 @@ const AppContent = () => {
                 path="incidents"
                 element={
                   <ErrorBoundary>
-                    <Incidents />
+                    <PageTransition><Incidents /></PageTransition>
                   </ErrorBoundary>
                 }
               />
@@ -110,7 +113,7 @@ const AppContent = () => {
                 path="investigation"
                 element={
                   <ErrorBoundary>
-                    <Investigation />
+                    <PageTransition><Investigation /></PageTransition>
                   </ErrorBoundary>
                 }
               />
@@ -118,7 +121,7 @@ const AppContent = () => {
                 path="feedback"
                 element={
                   <ErrorBoundary>
-                    <Feedback />
+                    <PageTransition><Feedback /></PageTransition>
                   </ErrorBoundary>
                 }
               />
@@ -126,7 +129,7 @@ const AppContent = () => {
                 path="training"
                 element={
                   <ErrorBoundary>
-                    <Training />
+                    <PageTransition><Training /></PageTransition>
                   </ErrorBoundary>
                 }
               />
@@ -134,7 +137,7 @@ const AppContent = () => {
                 path="settings"
                 element={
                   <ErrorBoundary>
-                    <Settings />
+                    <PageTransition><Settings /></PageTransition>
                   </ErrorBoundary>
                 }
               />
@@ -142,7 +145,7 @@ const AppContent = () => {
                 path="system"
                 element={
                   <ErrorBoundary>
-                    <SystemMonitor />
+                    <PageTransition><SystemMonitor /></PageTransition>
                   </ErrorBoundary>
                 }
               />
@@ -150,7 +153,7 @@ const AppContent = () => {
                 path="*"
                 element={
                   <ErrorBoundary>
-                    <NotFound />
+                    <PageTransition><NotFound /></PageTransition>
                   </ErrorBoundary>
                 }
               />

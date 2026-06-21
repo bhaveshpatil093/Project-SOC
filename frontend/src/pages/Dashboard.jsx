@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAlertStats } from '../api/alerts'
 import { fetchFeedbackStats } from '../api/feedback'
-import { LoadingSpinner } from '../components/common/LoadingSpinner'
+import { SkeletonCard } from '../components/common/Skeleton'
 import { ErrorBanner } from '../components/common/ErrorBanner'
 import { useNavigate } from 'react-router-dom'
 import { useWebSocketStore } from '../hooks/useWebSocket'
@@ -306,7 +306,22 @@ export const Dashboard = () => {
     refetchInterval: refreshMs,
   })
 
-  if (isLoadingStats || isLoadingFeedback) return <LoadingSpinner />
+  if (isLoadingStats || isLoadingFeedback) {
+    return (
+      <div className="flex flex-col min-h-screen bg-[var(--bg\_primary)] -m-4 md:-m-8">
+        <div className="flex-1 p-4 md:p-8 space-y-6 md:space-y-8">
+          <h1 className="text-xl md:text-2xl font-bold">SOC Dashboard</h1>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+            {[...Array(5)].map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <SkeletonCard lines={8} className="h-[300px] md:h-[400px]" />
+            <SkeletonCard lines={8} className="h-[300px] md:h-[400px]" />
+          </div>
+        </div>
+      </div>
+    )
+  }
   if (isErrorStats || isErrorFeedback)
     return <ErrorBanner message="Failed to load dashboard data." />
 

@@ -10,6 +10,7 @@ export default defineConfig({
     setupFiles: './vitest.setup.js',
   },
   build: {
+    cssMinify: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
