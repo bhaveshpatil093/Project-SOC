@@ -1,3 +1,4 @@
+from app.monitoring.audit_logger import audit_action
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Any
 

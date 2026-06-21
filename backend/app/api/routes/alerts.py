@@ -1,4 +1,5 @@
 
+from app.monitoring.audit_logger import audit_action
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
@@ -166,6 +167,8 @@ async def update_status(alert_id: str, update: StatusUpdate = Body(...)):
         raise HTTPException(status_code=404, detail="Alert not found")
 
     await engine.update_alert_status(alert_id, update.status)
+    await audit_action('alert.status_change', 'alert', alert_id, {'new_status': update.status})
+    await audit_action('alert.status_change', 'alert', alert_id, {'new_status': update.status})
     return {"status": "success", "updated_status": update.status}
 
 

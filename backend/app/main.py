@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from app.api.middleware import AuditMiddleware
 
 from app.api.routes.alerts import router as alerts_router
 from app.api.routes.cache import router as cache_router
@@ -159,6 +160,7 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json"
     )
 
+    app.add_middleware(AuditMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
@@ -174,6 +176,8 @@ def create_app() -> FastAPI:
     app.mount("/metrics", metrics_app)
 
     from app.api.routes.admin import router as admin_router
+from app.api.routes.admin_audit_log import router as admin_audit_log_router
+
 
     app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
     app.include_router(ingestion_router, prefix="/api/ingestion", tags=["Ingestion"])

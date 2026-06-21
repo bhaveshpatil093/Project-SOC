@@ -1,5 +1,6 @@
 import uuid
 
+from app.monitoring.audit_logger import audit_action
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
 from app.auth.jwt import require_role

@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime
 
 import torch
+from app.monitoring.audit_logger import audit_action
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -119,6 +120,8 @@ async def clear_conversation(conversation_id: str):
 async def explain_alert(alert_id: str, agent: SOCAgent = Depends(get_soc_agent)):
     prompt = "Explain this security alert in simple terms for a Level-1 SOC engineer."
     res = await agent.investigate(user_question=prompt, alert_id=alert_id, conversation_history=[])
+    await audit_action('slm.explain_alert', 'alert', alert_id, {})
+    await audit_action('slm.explain_alert', 'alert', alert_id, {})
     return {"explanation": res.get("answer", "")}
 
 @router.get("/status", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])

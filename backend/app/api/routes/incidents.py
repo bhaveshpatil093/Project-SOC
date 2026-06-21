@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any
 
+from app.monitoring.audit_logger import audit_action
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 
@@ -243,6 +244,8 @@ async def escalate_incident(
     try:
         await es.update(index=INDEX_NAMES["incidents"], id=incident_id, body=body)
         logger.info("incident_escalated", incident_id=incident_id, to=escalation.escalated_to)
+        await audit_action('incident.escalate', 'incident', incident_id, {})
+        await audit_action('incident.escalate', 'incident', incident_id, {})
         return {"success": True, "incident_id": incident_id, "status": "escalated"}
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to escalate incident")

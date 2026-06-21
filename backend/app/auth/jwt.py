@@ -7,6 +7,7 @@ from jose import JWTError, jwt
 from app.auth.models import USERS_DB, User
 from app.config import settings
 from app.logging_config import get_logger
+from app.monitoring.audit_logger import audit_context_user, audit_context_role
 
 logger = get_logger(__name__)
 
@@ -46,7 +47,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     if user_data is None:
         raise HTTPException(status_code=401, detail="User not tracked")
 
-    return User(username=user_data.username, role=user_data.role, email=user_data.email)
+    user = User(username=user_data.username, role=user_data.role, email=user_data.email)
+    audit_context_user.set(user.username)
+    audit_context_role.set(user.role)
+    return user
 
 def require_role(*roles: str):
     def role_dependency(user: User = Depends(get_current_user)):
