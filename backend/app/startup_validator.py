@@ -36,6 +36,18 @@ async def validate_startup_config(settings: Settings) -> list[str]:
     if not settings.MLFLOW_TRACKING_URI.startswith("http") and not settings.MLFLOW_TRACKING_URI.startswith("sqlite"):
         errors.append(f"MLFLOW_TRACKING_URI must be an HTTP URL or SQLite path. Got: {settings.MLFLOW_TRACKING_URI}")
 
+    # 6. Production specific validations
+    from app.config import ENVIRONMENT
+    if ENVIRONMENT == "production":
+        if settings.JWT_SECRET_KEY == "dev-secret-key-not-for-production":
+            errors.append("FATAL: Default JWT secret in production!")
+        if settings.ES_VERIFY_CERTS is False:
+            errors.append("FATAL: ES_VERIFY_CERTS must be True in production!")
+        if settings.DEBUG is True:
+            errors.append("FATAL: DEBUG must be False in production!")
+        if len(settings.JWT_SECRET_KEY) < 32:
+            errors.append("FATAL: JWT_SECRET_KEY too short — use openssl rand -hex 32")
+
     return errors
 
 async def run_startup_validation(settings: Settings):

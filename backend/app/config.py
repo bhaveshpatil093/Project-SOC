@@ -57,6 +57,16 @@ class Settings(BaseSettings):
     MLFLOW_TRACKING_URI: str = "sqlite:///./data/mlflow.db"
     MLFLOW_EXPERIMENT_NAME: str = "soc-anomaly-detection"
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(extra="ignore")
 
-settings = Settings()
+import os
+
+ENVIRONMENT = os.getenv("SOC_ENVIRONMENT", "development")
+
+def load_settings() -> Settings:
+    env_file = f".env.{ENVIRONMENT}"
+    if not os.path.exists(env_file):
+        env_file = ".env"
+    return Settings(_env_file=env_file)
+
+settings = load_settings()

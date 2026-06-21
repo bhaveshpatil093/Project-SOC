@@ -15,7 +15,7 @@ export class ApiError extends Error {
 export const isApiError = (err) => err instanceof ApiError
 
 export const apiClient = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
   timeout: 30000,
 })
 
