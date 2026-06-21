@@ -1,9 +1,10 @@
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone, timedelta
 import uuid
-from typing import List, Dict, Any
-from app.logging_config import get_logger
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from typing import Any
+
 from app.ingestion.es_client import INDEX_NAMES
+from app.logging_config import get_logger
 
 logger = get_logger(__name__)
 
@@ -37,7 +38,7 @@ class AlertCorrelator:
         self.min_alerts_for_incident = min_alerts_for_incident
         self.score_threshold = score_threshold
 
-    def correlate(self, alerts: List[Dict[str, Any]]) -> List[Incident]:
+    def correlate(self, alerts: list[dict[str, Any]]) -> list[Incident]:
         if not alerts:
             return []
 
@@ -51,7 +52,7 @@ class AlertCorrelator:
         for key, entity_alerts in entity_groups.items():
             # Sort by timestamp
             entity_alerts.sort(key=lambda a: self._parse_date(a.get("timestamp", datetime.utcnow().isoformat())))
-            
+
             # Simple clustering by time window
             clusters = []
             current_cluster = []
@@ -69,7 +70,7 @@ class AlertCorrelator:
                         clusters.append(current_cluster)
                         current_cluster = [alert]
                         cluster_start = ts
-            
+
             if current_cluster:
                 clusters.append(current_cluster)
 
@@ -90,33 +91,33 @@ class AlertCorrelator:
         except:
             return datetime.utcnow()
 
-    def _create_incident_from_cluster(self, cluster: List[Dict[str, Any]]) -> Incident:
+    def _create_incident_from_cluster(self, cluster: list[dict[str, Any]]) -> Incident:
         if not cluster:
             return None
 
         entity_key = f"{cluster[0].get('host_id', '')}:{cluster[0].get('user_name', '')}"
         host_id = cluster[0].get('host_id', '')
         user_name = cluster[0].get('user_name', None)
-        
+
         timestamps = [self._parse_date(a.get("timestamp", datetime.utcnow().isoformat())) for a in cluster]
         started_at = min(timestamps)
         last_seen = max(timestamps)
         duration_seconds = (last_seen - started_at).total_seconds()
-        
+
         alert_ids = [a.get("id") or a.get("_id") for a in cluster if (a.get("id") or a.get("_id"))]
         if not alert_ids: # Provide fallback UUIDs if not yet indexed
             alert_ids = [str(uuid.uuid4()) for _ in cluster]
 
         log_types_involved = list(set(a.get("log_type") for a in cluster if a.get("log_type")))
-        
+
         scores = [a.get("threat_score", 0.0) for a in cluster]
         max_threat_score = max(scores, default=0.0)
         mean_threat_score = sum(scores) / len(scores) if scores else 0.0
-        
+
         multi_log_type_bonus = 0.2 if len(log_types_involved) >= 2 else 0.0
         incident_threat_score = (max_threat_score * 0.5) + (mean_threat_score * 0.3) + multi_log_type_bonus
         incident_threat_score = min(incident_threat_score, 1.0) # cap at 1.0
-        
+
         if incident_threat_score >= 0.8:
             threat_level = "critical"
         elif incident_threat_score >= 0.6:
@@ -128,7 +129,7 @@ class AlertCorrelator:
 
         mitre_tactics = list(set(a.get("mitre_tactic") for a in cluster if a.get("mitre_tactic")))
         mitre_techniques = list(set(a.get("mitre_technique") for a in cluster if a.get("mitre_technique")))
-        
+
         attack_stage = self.determine_attack_stage(mitre_tactics)
         is_multi_stage = len(mitre_tactics) >= 3
 
@@ -156,10 +157,10 @@ class AlertCorrelator:
             matched_patterns=[]
         )
 
-    def determine_attack_stage(self, tactics: List[str]) -> str:
+    def determine_attack_stage(self, tactics: list[str]) -> str:
         if not tactics:
             return "unknown"
-            
+
         stages = set()
         for t in tactics:
             t_lower = t.lower()
@@ -173,40 +174,39 @@ class AlertCorrelator:
                 stages.add("lateral_movement")
             elif "collection" in t_lower or "exfiltration" in t_lower:
                 stages.add("exfiltration")
-        
+
         if len(stages) > 1:
             return "multi_stage"
-        elif len(stages) == 1:
+        if len(stages) == 1:
             return list(stages)[0]
-        else:
-            return "unknown"
+        return "unknown"
 
-    def merge_incidents(self, existing: Incident, new_alerts: List[Dict[str, Any]]) -> Incident:
+    def merge_incidents(self, existing: Incident, new_alerts: list[dict[str, Any]]) -> Incident:
         new_timestamps = [self._parse_date(a.get("timestamp", datetime.utcnow().isoformat())) for a in new_alerts]
         all_timestamps = [existing.started_at, existing.last_seen] + new_timestamps
-        
+
         existing.started_at = min(all_timestamps)
         existing.last_seen = max(all_timestamps)
         existing.duration_seconds = (existing.last_seen - existing.started_at).total_seconds()
-        
+
         new_ids = [a.get("id") or a.get("_id") for a in new_alerts if (a.get("id") or a.get("_id"))]
         existing.alert_ids = list(set(existing.alert_ids + new_ids))
         existing.alert_count = len(existing.alert_ids)
-        
+
         new_logs = [a.get("log_type") for a in new_alerts if a.get("log_type")]
         existing.log_types_involved = list(set(existing.log_types_involved + new_logs))
-        
+
         # We don't have all historical alert scores readily available here, so we approximate
         new_scores = [a.get("threat_score", 0.0) for a in new_alerts]
         if new_scores:
             existing.max_threat_score = max(existing.max_threat_score, max(new_scores))
             # Rough mean update
             existing.mean_threat_score = (existing.mean_threat_score + sum(new_scores)/len(new_scores)) / 2.0
-            
+
         multi_log_type_bonus = 0.2 if len(existing.log_types_involved) >= 2 else 0.0
         incident_threat_score = (existing.max_threat_score * 0.5) + (existing.mean_threat_score * 0.3) + multi_log_type_bonus
         existing.incident_threat_score = min(incident_threat_score, 1.0)
-        
+
         if existing.incident_threat_score >= 0.8:
             existing.threat_level = "critical"
         elif existing.incident_threat_score >= 0.6:
@@ -218,13 +218,13 @@ class AlertCorrelator:
 
         new_tactics = [a.get("mitre_tactic") for a in new_alerts if a.get("mitre_tactic")]
         existing.mitre_tactics = list(set(existing.mitre_tactics + new_tactics))
-        
+
         new_techniques = [a.get("mitre_technique") for a in new_alerts if a.get("mitre_technique")]
         existing.mitre_techniques = list(set(existing.mitre_techniques + new_techniques))
-        
+
         existing.attack_stage = self.determine_attack_stage(existing.mitre_tactics)
         existing.is_multi_stage = len(existing.mitre_tactics) >= 3
-        
+
         return existing
 
     async def store_incident(self, es, incident: Incident):
@@ -232,11 +232,11 @@ class AlertCorrelator:
         doc["started_at"] = doc["started_at"].isoformat()
         doc["last_seen"] = doc["last_seen"].isoformat()
         doc["created_at"] = doc["created_at"].isoformat()
-        
+
         try:
             await es.index(index=INDEX_NAMES["incidents"], id=incident.incident_id, document=doc)
             logger.info("incident_stored", incident_id=incident.incident_id, threat_level=incident.threat_level)
-            
+
             from app.api.routes.websocket import manager
             await manager.broadcast({
                 "type": "new_incident",
@@ -245,7 +245,7 @@ class AlertCorrelator:
         except Exception as e:
             logger.error("failed_to_store_incident", incident_id=incident.incident_id, error=str(e))
 
-    async def get_active_incidents(self, es, limit: int = 20) -> List[Incident]:
+    async def get_active_incidents(self, es, limit: int = 20) -> list[Incident]:
         query = {
             "size": limit,
             "sort": [{"last_seen": {"order": "desc"}}],

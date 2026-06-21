@@ -1,6 +1,8 @@
-from datetime import datetime, timedelta
-import numpy as np
 import logging
+from datetime import datetime, timedelta
+
+import numpy as np
+
 from app.models.model_manager import ScoringResult
 
 logger = logging.getLogger(__name__)
@@ -59,20 +61,20 @@ async def get_score_trends(es, entity_key: str) -> dict:
             "score_volatility": 0.0,
             "recent_scores": []
         }
-        
+
     now = datetime.utcnow()
     last_24h = [h for h in history if (now - datetime.fromisoformat(h["timestamp"].replace("Z", ""))).total_seconds() < 86400]
-    
+
     scores_7d = [h["threat_score"] for h in history]
     scores_24h = [h["threat_score"] for h in last_24h]
-    
+
     peak_record = max(history, key=lambda x: x["threat_score"])
-    
+
     avg_7d = sum(scores_7d) / len(scores_7d) if scores_7d else 0.0
     avg_24h = sum(scores_24h) / len(scores_24h) if scores_24h else 0.0
-    
+
     volatility = float(np.std(scores_24h)) if len(scores_24h) > 1 else 0.0
-    
+
     # Calculate trend_7d
     older_avg = sum(scores_7d[:-len(scores_24h)]) / len(scores_7d[:-len(scores_24h)]) if len(scores_7d) > len(scores_24h) else 0.0
     if avg_24h > older_avg + 0.1:
@@ -81,7 +83,7 @@ async def get_score_trends(es, entity_key: str) -> dict:
         trend = "decreasing"
     else:
         trend = "stable"
-        
+
     return {
         "trend_7d": trend,
         "peak_score": peak_record["threat_score"],
@@ -118,14 +120,14 @@ async def get_system_score_trends(es) -> dict:
         }
         res = await es.search(index=INDEX_NAME, body=query, ignore_unavailable=True)
         buckets = res.get("aggregations", {}).get("hourly_trends", {}).get("buckets", [])
-        
+
         hourly_data = []
         for b in buckets:
             hourly_data.append({
                 "timestamp": b["key_as_string"],
                 "avg_score": b["avg_threat"]["value"] if b["avg_threat"]["value"] is not None else 0.0
             })
-            
+
         return {"hourly_avg_threat_score": hourly_data}
     except Exception as e:
         logger.error(f"Failed to get system score trends: {e}")

@@ -1,3 +1,3 @@
-import { apiClient } from './client';
+import { apiClient } from './client'
 
-export const runFeaturePipeline = () => apiClient.post('/api/features/run');
+export const runFeaturePipeline = () => apiClient.post('/api/features/run')

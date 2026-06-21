@@ -1,33 +1,26 @@
-import json
-import logging
 import asyncio
-from typing import Any, List, Optional
+import json
+import time
 
-from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import tool
-from pydantic import Field
 
-from app.slm.model_loader import SLMEngine, get_slm_engine
-from app.slm.rag_pipeline import RAGPipeline, get_rag_pipeline
-from app.scoring.threat_engine import get_threat_engine
 from app.ingestion.es_client import get_es_client
 from app.ingestion.log_fetcher import fetch_by_entity
+from app.logging_config import get_logger
+from app.scoring.threat_engine import get_threat_engine
+from app.slm.cache import get_slm_cache
+from app.slm.evaluator import get_slm_evaluator
 from app.slm.prompt_templates import (
     alert_explanation_prompt,
-    triage_decision_prompt,
+    build_multi_turn_prompt,
+    general_soc_question_prompt,
+    incident_investigation_prompt,
     investigation_steps_prompt,
     remediation_prompt,
-    general_soc_question_prompt,
-    build_multi_turn_prompt,
-    incident_investigation_prompt
+    triage_decision_prompt,
 )
-from app.slm.response_parser import parse_slm_response, format_for_display
-from app.slm.evaluator import get_slm_evaluator
-from app.slm.cache import get_slm_cache
-import time
-import asyncio
-
-from app.logging_config import get_logger
+from app.slm.rag_pipeline import get_rag_pipeline
+from app.slm.response_parser import parse_slm_response
 
 logger = get_logger(__name__)
 
@@ -65,13 +58,13 @@ async def get_entity_history(entity_key: str, hours: int = 24) -> str:
         }
         resp = await es.search(index=INDEX_NAMES["alerts_processed"], body=query, ignore_unavailable=True)
         hits = resp.get("hits", {}).get("hits", [])
-        
+
         if not hits:
             return f"No alerts found tracking entity {entity_key} inside {hours}h."
-            
+
         max_score = max([h["_source"].get("threat_score", 0) for h in hits])
         incidents = [f"[{h['_source'].get('timestamp')}] {h['_source'].get('top_rule')} (Score: {h['_source'].get('threat_score')})" for h in hits]
-        
+
         return f"Count: {len(hits)}\nMax Threat Score: {max_score}\nIncidents:\n" + "\n".join(incidents)
     except Exception as e:
         return f"Error fetching temporal history: {e}"
@@ -84,7 +77,7 @@ async def search_similar_alerts(description: str) -> str:
         results = await rag.retrieve_similar(description, n_results=3)
         if not results:
             return "No similar RAG-mapped historical alerts detected."
-        
+
         out = []
         for r in results:
             out.append(f"Alert ID: {r['metadata']['alert_id']} - {r['document']}")
@@ -106,11 +99,11 @@ def get_mitre_info(technique_id: str) -> str:
         "T1105": {"name": "Ingress Tool Transfer", "tactic": "Command and Control", "desc": "Downloading tools to compromised host.", "mit": "Proxy filtering."},
         "T1059.001": {"name": "PowerShell", "tactic": "Execution", "desc": "Execution via PowerShell.", "mit": "Enable Script Block Logging."}
     }
-    
+
     tech = db.get(technique_id.upper())
     if not tech:
         return f"No documentation mapped natively for technique {technique_id}."
-        
+
     return f"Technique {technique_id}: {tech['name']}. Tactic: {tech['tactic']}. Description: {tech['desc']}. Mitigation: {tech['mit']}."
 
 @tool
@@ -120,17 +113,17 @@ async def get_raw_logs(entity_key: str, minutes: int = 30) -> str:
         parts = entity_key.split("|")
         host_id = parts[0]
         user_name = parts[1] if len(parts) > 1 else ""
-        
+
         es = await get_es_client()
         logs = await fetch_by_entity(es, host_id, user_name, since_minutes=minutes)
-        
+
         out = []
         for log_type, entries in logs.items():
             if entries:
                 out.append(f"Type: {log_type} (Count: {len(entries)})")
                 for e in entries[:5]:
                     out.append(f"  - {json.dumps(e)}")
-        
+
         if not out:
             return "No raw raw log streams matched entity bounds."
         return "\n".join(out)
@@ -142,33 +135,33 @@ async def get_raw_logs(entity_key: str, minutes: int = 30) -> str:
 async def run_react_loop(engine, tools, prompt_template: str, input_text: str, max_iterations: int = 5) -> str:
     tool_descs = "\n".join([f"{t.name}: {t.description}" for t in tools])
     tool_names = ", ".join([t.name for t in tools])
-    
+
     current_prompt = prompt_template.format(
-        tools=tool_descs, 
-        tool_names=tool_names, 
-        input=input_text, 
+        tools=tool_descs,
+        tool_names=tool_names,
+        input=input_text,
         agent_scratchpad=""
     )
-    
+
     for _ in range(max_iterations):
         res = engine.generate(
-            prompt=current_prompt, 
-            system_prompt="You are an autonomous ReAct AI agent investigating anomalies. Think step by step securely.", 
+            prompt=current_prompt,
+            system_prompt="You are an autonomous ReAct AI agent investigating anomalies. Think step by step securely.",
             max_new_tokens=512
         )
-        
+
         current_prompt += res
-        
+
         if "Final Answer:" in res:
             return res.split("Final Answer:")[-1].strip()
-            
+
         if "Action:" in res and "Action Input:" in res:
             action_line = [line for line in res.split("\n") if line.strip().startswith("Action:")][-1]
             action_input_line = [line for line in res.split("\n") if line.strip().startswith("Action Input:")][-1]
-            
+
             action_name = action_line.replace("Action:", "").strip()
             action_input = action_input_line.replace("Action Input:", "").strip()
-            
+
             tool = next((t for t in tools if t.name == action_name), None)
             if tool:
                 try:
@@ -177,12 +170,12 @@ async def run_react_loop(engine, tools, prompt_template: str, input_text: str, m
                     observation = str(e)
             else:
                 observation = f"Error: Tool '{action_name}' not found."
-                
+
             current_prompt += f"\nObservation: {observation}\nThought:"
         else:
             # If no action is formatted correctly, force a stop
             return res.strip()
-            
+
     return "Agent stopped after reaching max iterations."
 
 # --- Primary Orchestrator ---
@@ -217,12 +210,11 @@ class SOCAgent:
         incident = {}
         rag_context = ""
         tokenizer = getattr(self.slm_engine, "tokenizer", None)
-        
+
         te = get_threat_engine()
-        
+
         if incident_id:
             # We fetch the incident from ES directly
-            from app.api.routes.incidents import get_incident_detail
             try:
                 # get_incident_detail is not async directly, wait it is in routes but it uses async ES
                 # we'll fetch from ES locally here
@@ -230,28 +222,28 @@ class SOCAgent:
                 from app.ingestion.es_client import INDEX_NAMES
                 resp = await es.get(index=INDEX_NAMES["incidents"], id=incident_id)
                 incident = resp.get("_source", {})
-                
+
                 # Fetch alerts
                 alert_ids = incident.get("alert_ids", [])
                 alerts_query = {"query": {"terms": {"_id": alert_ids}}, "size": 100}
                 al_resp = await es.search(index=INDEX_NAMES["alerts_processed"], body=alerts_query, ignore_unavailable=True)
                 inc_alerts = [h["_source"] for h in al_resp.get("hits", {}).get("hits", [])]
-                
+
                 # RAG
                 desc = " ".join(incident.get("mitre_tactics", [])) + " " + " ".join(incident.get("log_types_involved", []))
                 rag_results = await self.rag_pipeline.retrieve_similar(desc, n_results=3)
                 rag_context = self.rag_pipeline.build_rag_context(rag_results, incident)
-                
+
             except Exception as e:
                 logger.error("failed_to_fetch_incident_context", incident_id=incident_id, error=str(e))
-                
+
         elif alert_id:
             alert = await te.get_alert(alert_id)
             if alert:
                 desc = alert.get("human_explanation", "") or alert.get("top_rule", "")
                 rag_results = await self.rag_pipeline.retrieve_similar(desc, n_results=3)
                 rag_context = self.rag_pipeline.build_rag_context(rag_results, alert)
-                
+
         # Intent Matching explicitly bound against template router
         q_lower = user_question.lower()
         q_type = "general"
@@ -290,7 +282,7 @@ class SOCAgent:
             try:
                 input_tokens = len(tokenizer.encode(input_text))
             except: pass
-            
+
         t0 = time.time()
 
         # Cache Interception
@@ -299,24 +291,24 @@ class SOCAgent:
         cache_level = "miss"
         if not conversation_history:
             cached_val, cache_level = self.cache.get(user_question, alert_id)
-            
+
         if cached_val:
             answer = cached_val
             logger.info("slm_cache_hit", cache_level=cache_level, alert_id=alert_id)
         else:
             try:
                 answer = await run_react_loop(self.slm_engine, self.tools, self.prompt_template, input_text)
-                
+
                 # Update Cache
                 if not conversation_history:
                     self.cache.set(user_question, answer, alert_id)
             except Exception as e:
                 logger.error("agent_execution_failed", error=str(e))
                 answer = f"I apologize, but I encountered an error during investigation: {str(e)}"
-        
+
         t1 = time.time()
         resp_ms = (t1 - t0) * 1000.0
-        
+
         output_tokens = 0
         if tokenizer:
             try:
@@ -345,7 +337,7 @@ class SOCAgent:
                 )
                 q_score = self.evaluator.compute_quality_score(metrics)
                 asyncio.create_task(self.evaluator.store_metrics(self.es, metrics, q_score))
-                
+
             try:
                 bg_evaluate()
             except Exception as e:

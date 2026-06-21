@@ -1,6 +1,7 @@
-import structlog
-import logging
 import contextvars
+import logging
+
+import structlog
 
 CORRELATION_ID_CTX = contextvars.ContextVar("correlation_id", default=None)
 

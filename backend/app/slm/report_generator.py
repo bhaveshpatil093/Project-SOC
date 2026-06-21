@@ -1,9 +1,7 @@
 import logging
-import uuid
-import json
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from dataclasses import dataclass, asdict
-from typing import List, Dict, Any
+from typing import Any
 
 from app.slm.engine import SLMEngine
 
@@ -18,11 +16,11 @@ class IncidentReport:
     generated_by: str   # "SOC AI Platform v1.0.0"
     executive_summary: str
     technical_analysis: str
-    attack_timeline: List[Dict[str, Any]]
-    affected_assets: List[str]
-    mitre_coverage: Dict[str, Any]
-    recommended_actions: List[str]
-    indicators_of_compromise: Dict[str, List[str]]
+    attack_timeline: list[dict[str, Any]]
+    affected_assets: list[str]
+    mitre_coverage: dict[str, Any]
+    recommended_actions: list[str]
+    indicators_of_compromise: dict[str, list[str]]
     severity_justification: str
     analyst_notes: str
 
@@ -30,23 +28,23 @@ def extract_iocs(incident: dict, alerts: list[dict]) -> dict:
     ips = set()
     processes = set()
     techniques = set()
-    
+
     for alert in alerts:
         # IPs
         if "src_ip" in alert and alert["src_ip"]:
             ips.add(alert["src_ip"])
         if "dst_ip" in alert and alert["dst_ip"]:
             ips.add(alert["dst_ip"])
-        
+
         # Processes
         if "process_name" in alert and alert["process_name"]:
             processes.add(alert["process_name"])
-            
+
         # Techniques
         if "mitre_technique_ids" in alert and alert["mitre_technique_ids"]:
             for t in alert["mitre_technique_ids"]:
                 techniques.add(t)
-                
+
     return {
         "ips": list(ips),
         "processes": list(processes),
@@ -74,7 +72,7 @@ Entities: {', '.join(incident.get('entities', []))}
 async def draft_technical_analysis(slm_engine: SLMEngine, incident: dict, alerts: list[dict]) -> str:
     # Prepare a condensed summary of alerts
     alert_summary = "\\n".join([f"- {a.get('log_type', 'Unknown')} at {a.get('timestamp')}: Threat Score {a.get('threat_score', 0):.2f}" for a in alerts[:5]])
-    
+
     prompt = f"""
 Write a technical analysis of this incident covering:
 attack vector, techniques used, lateral movement path, and data potentially at risk.
@@ -93,15 +91,15 @@ Top Alerts:
 
 async def generate_incident_report(es, slm_engine: SLMEngine, incident_id: str, incident: dict, alerts: list[dict]) -> IncidentReport:
     logger.info(f"Generating incident report for {incident_id}")
-    
+
     exec_summary = await draft_executive_summary(slm_engine, incident)
     tech_analysis = await draft_technical_analysis(slm_engine, incident, alerts)
     iocs = extract_iocs(incident, alerts)
-    
+
     # Simple extraction for other fields
     timeline = [{"timestamp": a.get("timestamp"), "event": a.get("log_type"), "threat_level": a.get("threat_level")} for a in alerts[:10]]
     assets = list(set([a.get("host_id") for a in alerts if a.get("host_id")]))
-    
+
     # Prompt for recommendations and severity justification
     rec_prompt = "Based on this incident, list 3 numbered recommended actions for the SOC team to remediate the threat."
     try:
@@ -111,13 +109,13 @@ async def generate_incident_report(es, slm_engine: SLMEngine, incident_id: str, 
             recs = ["Isolate affected hosts immediately.", "Rotate compromised credentials.", "Review firewall rules for anomalous IP traffic."]
     except:
         recs = ["Isolate affected hosts immediately.", "Rotate compromised credentials.", "Review firewall rules for anomalous IP traffic."]
-        
+
     sev_prompt = f"In one short paragraph, justify why this incident was classified as {incident.get('severity')}."
     try:
         sev_justification = await slm_engine.generate(sev_prompt, max_tokens=100)
     except:
         sev_justification = "Severity assigned based on aggregate threat scores of constituent alerts."
-        
+
     report = IncidentReport(
         incident_id=incident_id,
         generated_at=datetime.utcnow().isoformat() + "Z",
@@ -132,19 +130,19 @@ async def generate_incident_report(es, slm_engine: SLMEngine, incident_id: str, 
         severity_justification=sev_justification.strip(),
         analyst_notes=""
     )
-    
+
     # Save to ES
     try:
         await es.index(index=INDEX_NAME, id=incident_id, document=asdict(report))
         logger.info(f"Saved incident report for {incident_id}")
     except Exception as e:
         logger.error(f"Failed to save incident report: {e}")
-        
+
     return report
 
 async def get_incident_report(es, incident_id: str) -> dict:
     try:
         res = await es.get(index=INDEX_NAME, id=incident_id)
         return res["_source"]
-    except Exception as e:
+    except Exception:
         return None

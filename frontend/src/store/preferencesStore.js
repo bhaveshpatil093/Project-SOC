@@ -1,27 +1,27 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { applyTheme } from '../utils/theme';
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import { applyTheme } from '../utils/theme'
 
 const initialState = {
   // Display
-  theme: "dark",
+  theme: 'dark',
   alertsPageSize: 50,
-  defaultAlertSort: "threat_score",
+  defaultAlertSort: 'threat_score',
   showLowAlerts: true,
 
   // Notifications
   notificationsEnabled: false,
   soundEnabled: true,
   soundVolume: 50,
-  notifyForLevel: "high", // "critical" | "high" | "medium" | "all"
+  notifyForLevel: 'high', // "critical" | "high" | "medium" | "all"
 
   // Dashboard
   dashboardRefreshInterval: 30, // seconds
   showLiveStream: true,
-  defaultTimeRange: "24h", // "1h"|"24h"|"7d"|"30d"
+  defaultTimeRange: '24h', // "1h"|"24h"|"7d"|"30d"
 
   // Investigation (SLM)
-  defaultAnalystName: "",
+  defaultAnalystName: '',
   autoLoadAlertContext: true,
   showParsedResponse: true,
 
@@ -37,7 +37,7 @@ const initialState = {
     status: true,
     actions: true,
   },
-};
+}
 
 export const usePreferencesStore = create(
   persist(
@@ -45,9 +45,9 @@ export const usePreferencesStore = create(
       ...initialState,
 
       setPreference: (key, value) => {
-        set({ [key]: value });
+        set({ [key]: value })
         if (key === 'theme') {
-            applyTheme(value);
+          applyTheme(value)
         }
       },
 
@@ -57,21 +57,21 @@ export const usePreferencesStore = create(
             ...state.alertColumns,
             [column]: isVisible,
           },
-        }));
+        }))
       },
 
       resetPreferences: () => {
-        set(initialState);
-        applyTheme(initialState.theme);
+        set(initialState)
+        applyTheme(initialState.theme)
       },
     }),
-    { 
-      name: "soc-preferences",
+    {
+      name: 'soc-preferences',
       onRehydrateStorage: () => (state) => {
         if (state) {
-          applyTheme(state.theme);
+          applyTheme(state.theme)
         }
-      }
-    }
-  )
-);
+      },
+    },
+  ),
+)

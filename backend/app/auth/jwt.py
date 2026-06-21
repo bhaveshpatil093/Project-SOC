@@ -1,10 +1,11 @@
 import time
-from typing import Optional, List
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from app.config import settings
+
 from app.auth.models import USERS_DB, User
+from app.config import settings
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -40,11 +41,11 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     username: str = payload.get("sub")
     if username is None:
         raise HTTPException(status_code=401, detail="Invalid token map")
-        
+
     user_data = USERS_DB.get(username)
     if user_data is None:
         raise HTTPException(status_code=401, detail="User not tracked")
-        
+
     return User(username=user_data.username, role=user_data.role, email=user_data.email)
 
 def require_role(*roles: str):

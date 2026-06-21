@@ -1,62 +1,78 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Settings, Volume2, BellRing, BellOff, VolumeX, CheckCircle, AlertTriangle, AlertOctagon, Info, Check } from 'lucide-react';
-import { useNotificationStore } from '../../store/notificationStore';
-import { useNotifications } from '../../hooks/useNotifications';
-import { formatDate } from '../../utils/formatters';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react'
+import {
+  Bell,
+  Settings,
+  Volume2,
+  BellRing,
+  BellOff,
+  VolumeX,
+  CheckCircle,
+  AlertTriangle,
+  AlertOctagon,
+  Info,
+  Check,
+} from 'lucide-react'
+import { useNotificationStore } from '../../store/notificationStore'
+import { useNotifications } from '../../hooks/useNotifications'
+import { formatDate } from '../../utils/formatters'
+import { Link } from 'react-router-dom'
 
 export const NotificationDropdown = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [view, setView] = useState('history'); // 'history' | 'settings'
-  const dropdownRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false)
+  const [view, setView] = useState('history') // 'history' | 'settings'
+  const dropdownRef = useRef(null)
 
-  const { settings, updateSettings, history, unreadCount, markAllRead } = useNotificationStore();
-  const { requestPermission, notificationPermission, playAlertSound } = useNotifications();
+  const { settings, updateSettings, history, unreadCount, markAllRead } = useNotificationStore()
+  const { requestPermission, notificationPermission, playAlertSound } = useNotifications()
 
   // Handle click outside to close
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
+        setIsOpen(false)
       }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleToggleBrowserNotifications = async () => {
     if (!settings.browserEnabled && notificationPermission !== 'granted') {
-      const perm = await requestPermission();
+      const perm = await requestPermission()
       if (perm === 'granted') {
-        updateSettings({ browserEnabled: true });
+        updateSettings({ browserEnabled: true })
       } else {
-        alert('Browser notifications were denied. Please enable them in your browser settings.');
+        alert('Browser notifications were denied. Please enable them in your browser settings.')
       }
     } else {
-      updateSettings({ browserEnabled: !settings.browserEnabled });
+      updateSettings({ browserEnabled: !settings.browserEnabled })
     }
-  };
+  }
 
   const handleTestSound = () => {
-    playAlertSound('critical');
-  };
+    playAlertSound('critical')
+  }
 
   const getIconForLevel = (level) => {
     switch (level) {
-      case 'critical': return <AlertOctagon className="h-4 w-4 text-red-500" />;
-      case 'high': return <AlertTriangle className="h-4 w-4 text-orange-500" />;
-      case 'medium': return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      default: return <Info className="h-4 w-4 text-blue-500" />;
+      case 'critical':
+        return <AlertOctagon className="h-4 w-4 text-red-500" />
+      case 'high':
+        return <AlertTriangle className="h-4 w-4 text-orange-500" />
+      case 'medium':
+        return <AlertTriangle className="h-4 w-4 text-yellow-500" />
+      default:
+        return <Info className="h-4 w-4 text-blue-500" />
     }
-  };
+  }
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button 
+      <button
         onClick={() => {
-          setIsOpen(!isOpen);
-          setView('history');
-          if (!isOpen && unreadCount > 0) markAllRead();
+          setIsOpen(!isOpen)
+          setView('history')
+          if (!isOpen && unreadCount > 0) markAllRead()
         }}
         className="relative p-2 rounded-lg text-[var(--text_secondary)] hover:text-[var(--text_primary)] hover:bg-[var(--bg_secondary)] transition-colors focus:outline-none"
       >
@@ -78,7 +94,7 @@ export const NotificationDropdown = () => {
             </h3>
             <div className="flex gap-2">
               {view === 'history' ? (
-                <button 
+                <button
                   onClick={() => setView('settings')}
                   className="p-1.5 rounded-lg text-[var(--text_secondary)] hover:bg-[var(--bg_tertiary)] hover:text-[var(--text_primary)] transition-colors"
                   title="Settings"
@@ -86,7 +102,7 @@ export const NotificationDropdown = () => {
                   <Settings className="h-4 w-4" />
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={() => setView('history')}
                   className="text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors"
                 >
@@ -106,19 +122,26 @@ export const NotificationDropdown = () => {
                   </div>
                 ) : (
                   history.map((notif, idx) => (
-                    <div key={notif.id || idx} className="px-4 py-3 border-b border-[var(--border)] hover:bg-[var(--bg_secondary)]/50 transition-colors flex items-start gap-3">
-                      <div className="shrink-0 mt-0.5">
-                        {getIconForLevel(notif.level)}
-                      </div>
+                    <div
+                      key={notif.id || idx}
+                      className="px-4 py-3 border-b border-[var(--border)] hover:bg-[var(--bg_secondary)]/50 transition-colors flex items-start gap-3"
+                    >
+                      <div className="shrink-0 mt-0.5">{getIconForLevel(notif.level)}</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-1">
-                          <p className="text-sm font-semibold text-[var(--text_primary)] truncate pr-2">{notif.title}</p>
-                          <span className="text-[10px] text-[var(--text_secondary)] shrink-0">{formatDate(notif.timestamp)}</span>
+                          <p className="text-sm font-semibold text-[var(--text_primary)] truncate pr-2">
+                            {notif.title}
+                          </p>
+                          <span className="text-[10px] text-[var(--text_secondary)] shrink-0">
+                            {formatDate(notif.timestamp)}
+                          </span>
                         </div>
-                        <p className="text-xs text-[var(--text_secondary)] truncate mb-2">{notif.body}</p>
+                        <p className="text-xs text-[var(--text_secondary)] truncate mb-2">
+                          {notif.body}
+                        </p>
                         {notif.alert_id && (
-                          <Link 
-                            to={`/alerts/${notif.alert_id}`} 
+                          <Link
+                            to={`/alerts/${notif.alert_id}`}
                             onClick={() => setIsOpen(false)}
                             className="text-[10px] uppercase tracking-wider font-bold text-blue-400 hover:text-blue-300"
                           >
@@ -139,13 +162,17 @@ export const NotificationDropdown = () => {
                       <BellRing className="h-4 w-4 text-[var(--text_secondary)]" />
                       Browser Push
                     </h4>
-                    <p className="text-xs text-[var(--text_secondary)] mt-1">Receive native desktop alerts.</p>
+                    <p className="text-xs text-[var(--text_secondary)] mt-1">
+                      Receive native desktop alerts.
+                    </p>
                   </div>
-                  <button 
+                  <button
                     onClick={handleToggleBrowserNotifications}
                     className={`w-11 h-6 rounded-full transition-colors relative focus:outline-none ${settings.browserEnabled ? 'bg-blue-500' : 'bg-[var(--bg_tertiary)]'}`}
                   >
-                    <span className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.browserEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    <span
+                      className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.browserEnabled ? 'translate-x-5' : 'translate-x-0'}`}
+                    />
                   </button>
                 </div>
 
@@ -153,16 +180,24 @@ export const NotificationDropdown = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-sm font-semibold text-[var(--text_primary)] flex items-center gap-2">
-                      {settings.soundEnabled ? <Volume2 className="h-4 w-4 text-[var(--text_secondary)]" /> : <VolumeX className="h-4 w-4 text-[var(--text_secondary)]" />}
+                      {settings.soundEnabled ? (
+                        <Volume2 className="h-4 w-4 text-[var(--text_secondary)]" />
+                      ) : (
+                        <VolumeX className="h-4 w-4 text-[var(--text_secondary)]" />
+                      )}
                       Sound Alerts
                     </h4>
-                    <p className="text-xs text-[var(--text_secondary)] mt-1">Play sounds for new alerts.</p>
+                    <p className="text-xs text-[var(--text_secondary)] mt-1">
+                      Play sounds for new alerts.
+                    </p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => updateSettings({ soundEnabled: !settings.soundEnabled })}
                     className={`w-11 h-6 rounded-full transition-colors relative focus:outline-none ${settings.soundEnabled ? 'bg-blue-500' : 'bg-[var(--bg_tertiary)]'}`}
                   >
-                    <span className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.soundEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    <span
+                      className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${settings.soundEnabled ? 'translate-x-5' : 'translate-x-0'}`}
+                    />
                   </button>
                 </div>
 
@@ -173,10 +208,11 @@ export const NotificationDropdown = () => {
                       <span>Volume</span>
                       <span>{settings.volume}%</span>
                     </div>
-                    <input 
-                      type="range" 
-                      min="0" max="100" 
-                      value={settings.volume} 
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={settings.volume}
                       onChange={(e) => updateSettings({ volume: parseInt(e.target.value, 10) })}
                       className="w-full accent-blue-500"
                     />
@@ -185,9 +221,13 @@ export const NotificationDropdown = () => {
 
                 {/* Threshold Selector */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[var(--text_primary)] block">Alert Threshold</label>
-                  <p className="text-xs text-[var(--text_secondary)] mb-2">Only notify for alerts at or above this level.</p>
-                  <select 
+                  <label className="text-sm font-semibold text-[var(--text_primary)] block">
+                    Alert Threshold
+                  </label>
+                  <p className="text-xs text-[var(--text_secondary)] mb-2">
+                    Only notify for alerts at or above this level.
+                  </p>
+                  <select
                     value={settings.threshold}
                     onChange={(e) => updateSettings({ threshold: e.target.value })}
                     className="w-full bg-[var(--bg_primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text_primary)] focus:outline-none focus:border-blue-500"
@@ -200,7 +240,7 @@ export const NotificationDropdown = () => {
                 </div>
 
                 <div className="pt-4 border-t border-[var(--border)]">
-                  <button 
+                  <button
                     onClick={handleTestSound}
                     className="w-full py-2 bg-[var(--bg_secondary)] hover:bg-[var(--bg_tertiary)] border border-[var(--border)] text-[var(--text_secondary)] rounded-lg text-sm font-medium transition-colors"
                   >
@@ -210,11 +250,11 @@ export const NotificationDropdown = () => {
               </div>
             )}
           </div>
-          
+
           {/* Footer actions for History view */}
           {view === 'history' && history.length > 0 && (
             <div className="p-2 border-t border-[var(--border)] bg-[var(--bg_primary)] text-center">
-              <button 
+              <button
                 onClick={() => useNotificationStore.getState().clearHistory()}
                 className="text-xs text-[var(--text_secondary)] hover:text-[var(--text_secondary)] transition-colors"
               >
@@ -225,5 +265,5 @@ export const NotificationDropdown = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}

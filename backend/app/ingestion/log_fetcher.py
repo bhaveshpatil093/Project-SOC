@@ -1,7 +1,6 @@
-import logging
 import asyncio
+import logging
 from typing import Any
-from datetime import datetime, timezone
 
 from elasticsearch import AsyncElasticsearch
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -31,10 +30,10 @@ def get_query_hash(index_pattern: str, since_minutes: int, additional_filters: l
     reraise=True
 )
 async def fetch_logs(
-    es: AsyncElasticsearch, 
-    index_pattern: str, 
-    since_minutes: int = 5, 
-    size: int = 1000, 
+    es: AsyncElasticsearch,
+    index_pattern: str,
+    since_minutes: int = 5,
+    size: int = 1000,
     additional_filters: list[dict[str, Any]] | None = None
 ) -> list[dict]:
     """
@@ -44,9 +43,9 @@ async def fetch_logs(
     """
     if additional_filters is None:
         additional_filters = []
-        
+
     query_hash = get_query_hash(index_pattern, since_minutes, additional_filters)
-    
+
     # Check empty query cache
     now = time.time()
     if query_hash in _empty_query_cache:
@@ -72,7 +71,7 @@ async def fetch_logs(
     }
 
     results = []
-    
+
     if size <= 1000:
         # Standard search is sufficient
         resp = await es.search(
@@ -91,7 +90,7 @@ async def fetch_logs(
         # Use scroll API for larger sizes
         scroll_time = "2m"
         scroll_size = 1000
-        
+
         resp = await es.search(
             index=index_pattern,
             query=query,
@@ -100,10 +99,10 @@ async def fetch_logs(
             _source=["host", "user", "@timestamp", "message", "process", "event", "winlog", "kibana"],
             ignore_unavailable=True
         )
-        
+
         scroll_id = resp.get("_scroll_id")
         hits = resp.get("hits", {}).get("hits", [])
-        
+
         while hits and len(results) < size:
             for hit in hits:
                 if len(results) >= size:
@@ -112,31 +111,31 @@ async def fetch_logs(
                 doc["_id"] = hit["_id"]
                 doc["_index"] = hit["_index"]
                 results.append(doc)
-                
+
             if len(results) >= size:
                 break
-                
+
             resp = await es.scroll(scroll_id=scroll_id, scroll=scroll_time)
             scroll_id = resp.get("_scroll_id")
             hits = resp.get("hits", {}).get("hits", [])
-            
+
         # Clean up the scroll context
         if scroll_id:
             try:
                 await es.clear_scroll(scroll_id=scroll_id)
             except Exception as e:
                 logger.warning(f"Failed to clear scroll context: {e}")
-                
+
     # Update cache
     _empty_query_cache[query_hash] = (time.time(), len(results))
-    
+
     # Cleanup old cache entries (older than 1 hour) to prevent memory leaks
     if len(_empty_query_cache) > 1000:
         cutoff = time.time() - 3600
         for k in list(_empty_query_cache.keys()):
             if _empty_query_cache[k][0] < cutoff:
                 del _empty_query_cache[k]
-                
+
     return results
 
 async def fetch_all_sources(es: AsyncElasticsearch, since_minutes: int = 5) -> dict[str, list[dict]]:
@@ -147,25 +146,25 @@ async def fetch_all_sources(es: AsyncElasticsearch, since_minutes: int = 5) -> d
     """
     tasks = []
     log_types = list(SOURCE_PATTERNS.keys())
-    
+
     for log_type in log_types:
         pattern = SOURCE_PATTERNS[log_type]
         tasks.append(fetch_logs(es, pattern, since_minutes=since_minutes, size=1000))
-        
+
     results_list = await asyncio.gather(*tasks, return_exceptions=True)
-    
+
     final_results = {log_type: [] for log_type in log_types}
-    
+
     for log_type, result in zip(log_types, results_list):
         if isinstance(result, Exception):
             logger.error(f"Failed to fetch logs for {log_type}: {result}")
             continue
-            
+
         for doc in result:
             # Tag each document with its logical source type
             doc["log_type"] = log_type
             final_results[log_type].append(doc)
-            
+
     return final_results
 
 async def fetch_by_entity(es: AsyncElasticsearch, host_id: str, user_name: str, since_minutes: int = 30) -> dict[str, list[dict]]:
@@ -178,33 +177,33 @@ async def fetch_by_entity(es: AsyncElasticsearch, host_id: str, user_name: str, 
         {"term": {"host.id": host_id}},
         {"term": {"user.name": user_name}}
     ]
-    
+
     tasks = []
     log_types = list(SOURCE_PATTERNS.keys())
-    
+
     for log_type in log_types:
         pattern = SOURCE_PATTERNS[log_type]
         tasks.append(
             fetch_logs(
-                es, 
-                pattern, 
-                since_minutes=since_minutes, 
-                size=1000, 
+                es,
+                pattern,
+                since_minutes=since_minutes,
+                size=1000,
                 additional_filters=additional_filters
             )
         )
-        
+
     results_list = await asyncio.gather(*tasks, return_exceptions=True)
-    
+
     final_results = {log_type: [] for log_type in log_types}
-    
+
     for log_type, result in zip(log_types, results_list):
         if isinstance(result, Exception):
             logger.error(f"Failed to fetch entity logs for {log_type}: {result}")
             continue
-            
+
         for doc in result:
             doc["log_type"] = log_type
             final_results[log_type].append(doc)
-            
+
     return final_results

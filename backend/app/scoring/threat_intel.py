@@ -1,5 +1,5 @@
 import ipaddress
-from typing import Dict, Any, Optional
+from typing import Any
 
 # Known bad IP ranges
 KNOWN_BAD_IP_RANGES = [
@@ -64,14 +64,14 @@ class ThreatIntelEnricher:
             except ValueError:
                 pass
 
-    def check_ip_reputation(self, ip: str) -> Dict[str, Any]:
+    def check_ip_reputation(self, ip: str) -> dict[str, Any]:
         result = {
             "is_bad": False,
             "matching_range": None
         }
         if not ip:
             return result
-            
+
         try:
             ip_obj = ipaddress.ip_address(ip)
             for net in self._compiled_ranges:
@@ -81,10 +81,10 @@ class ThreatIntelEnricher:
                     break
         except ValueError:
             pass
-            
+
         return result
 
-    def check_process_reputation(self, process_name: str) -> Dict[str, Any]:
+    def check_process_reputation(self, process_name: str) -> dict[str, Any]:
         result = {
             "is_known_malicious": False,
             "is_known_safe": False,
@@ -92,23 +92,19 @@ class ThreatIntelEnricher:
         }
         if not process_name:
             return result
-            
+
         name_lower = process_name.lower().strip()
-        
+
         # Exact match or substring (e.g., /usr/bin/nmap)
-        if name_lower in KNOWN_SAFE_PROCESSES:
+        if name_lower in KNOWN_SAFE_PROCESSES or any(safe in name_lower for safe in KNOWN_SAFE_PROCESSES):
             result["is_known_safe"] = True
-        elif any(safe in name_lower for safe in KNOWN_SAFE_PROCESSES):
-            result["is_known_safe"] = True
-            
-        if name_lower in KNOWN_BAD_PROCESS_NAMES:
+
+        if name_lower in KNOWN_BAD_PROCESS_NAMES or any(bad in name_lower for bad in KNOWN_BAD_PROCESS_NAMES):
             result["is_known_malicious"] = True
-        elif any(bad in name_lower for bad in KNOWN_BAD_PROCESS_NAMES):
-            result["is_known_malicious"] = True
-            
+
         return result
 
-    def check_domain_reputation(self, domain: str) -> Dict[str, Any]:
+    def check_domain_reputation(self, domain: str) -> dict[str, Any]:
         result = {
             "has_suspicious_tld": False,
             "has_c2_pattern": False,
@@ -116,43 +112,43 @@ class ThreatIntelEnricher:
         }
         if not domain:
             return result
-            
+
         domain_lower = domain.lower().strip()
-        
+
         for tld in SUSPICIOUS_TLDS:
             if domain_lower.endswith(tld):
                 result["has_suspicious_tld"] = True
                 break
-                
+
         for pattern in KNOWN_C2_PATTERNS:
             if pattern in domain_lower:
                 result["has_c2_pattern"] = True
                 break
-                
+
         return result
 
-    def enrich_alert(self, alert: dict, feature_row: dict) -> Dict[str, Any]:
+    def enrich_alert(self, alert: dict, feature_row: dict) -> dict[str, Any]:
         src_ip_res = self.check_ip_reputation(feature_row.get("src_ip", ""))
         dst_ip_res = self.check_ip_reputation(feature_row.get("dst_ip", ""))
-        
+
         proc_name = feature_row.get("process_name", "") or feature_row.get("parent_process_name", "")
         proc_res = self.check_process_reputation(proc_name)
-        
+
         domain = feature_row.get("dns_query", "") or feature_row.get("http_host", "")
         dom_res = self.check_domain_reputation(domain)
-        
+
         intel_score_boost = 0.0
-        
+
         if src_ip_res["is_bad"] or dst_ip_res["is_bad"]:
             intel_score_boost += 0.1
         if proc_res["is_known_malicious"]:
             intel_score_boost += 0.15
         elif proc_res["is_known_safe"]:
             intel_score_boost -= 0.1 # Discount for known safe
-            
+
         if dom_res["has_suspicious_tld"] or dom_res["has_c2_pattern"]:
             intel_score_boost += 0.1
-            
+
         intel = {
             "ip_reputation": {
                 "src_ip_is_bad": src_ip_res["is_bad"],
@@ -163,7 +159,7 @@ class ThreatIntelEnricher:
             "domain_reputation": dom_res,
             "intel_score_boost": intel_score_boost
         }
-        
+
         alert["threat_intel"] = intel
         return alert
 

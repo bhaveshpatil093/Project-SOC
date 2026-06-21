@@ -1,21 +1,21 @@
-import os
-import joblib
 import dataclasses
+import os
+
+import joblib
 import numpy as np
 import pandas as pd
-from typing import Any
-from sklearn.preprocessing import StandardScaler
 from elasticsearch import AsyncElasticsearch
+from sklearn.preprocessing import StandardScaler
 
-from app.ingestion.log_fetcher import fetch_all_sources
-from app.ingestion.normalizer import normalize_batch
+from app.features.alert_features import extract_all_alert_features
 from app.features.network_features import extract_all_network_features
 from app.features.process_features import extract_all_process_features
-from app.features.alert_features import extract_all_alert_features
 from app.ingestion.es_client import INDEX_NAMES
-from app.ingestion.scheduler import get_window_bucket, bulk_index
+from app.ingestion.log_fetcher import fetch_all_sources
+from app.ingestion.normalizer import normalize_batch
+from app.ingestion.scheduler import bulk_index, get_window_bucket
 
-# The 50 carefully selected numeric ML input vectors representing 
+# The 50 carefully selected numeric ML input vectors representing
 # network flow, endpoint execution, and semantic alert severity aggregations.
 # 8 synthesized interaction ratios have been injected to balance out exactly 50 dimensions.
 FEATURE_COLUMNS = [
@@ -85,14 +85,14 @@ def merge_features(network_df: pd.DataFrame, process_df: pd.DataFrame, alert_df:
         if df is not None and not df.empty:
             if 'entity_key' in df.columns and 'window_bucket' in df.columns:
                 dfs.append(df)
-                
+
     if not dfs:
         return pd.DataFrame()
-        
+
     merged_df = dfs[0]
     for df in dfs[1:]:
         merged_df = pd.merge(merged_df, df, on=['entity_key', 'window_bucket'], how='outer')
-        
+
     # Generate the 8 synthetic interaction features required to satisfy the 50-dim ML constraint
     if 'conn_per_minute' in merged_df.columns and 'process_spawn_count' in merged_df.columns:
         merged_df['network_to_process_ratio'] = merged_df['conn_per_minute'] / merged_df['process_spawn_count'].clip(lower=1)
@@ -137,10 +137,10 @@ def merge_features(network_df: pd.DataFrame, process_df: pd.DataFrame, alert_df:
     # Handle explicit NaN filling
     numeric_cols = merged_df.select_dtypes(include=[np.number]).columns
     string_cols = merged_df.select_dtypes(exclude=[np.number]).columns
-    
+
     merged_df[numeric_cols] = merged_df[numeric_cols].fillna(0)
     merged_df[string_cols] = merged_df[string_cols].fillna("unknown")
-    
+
     return merged_df
 
 def get_feature_vector(merged_row: pd.Series) -> np.ndarray:
@@ -158,7 +158,7 @@ def build_feature_matrix(merged_df: pd.DataFrame) -> np.ndarray:
     """Extract matrix of shape (N, 50)."""
     if merged_df is None or merged_df.empty:
         return np.empty((0, 50), dtype=np.float32)
-        
+
     matrix = []
     for _, row in merged_df.iterrows():
         matrix.append(get_feature_vector(row))
@@ -189,6 +189,7 @@ def load_scaler(path: str) -> StandardScaler:
 
 import asyncio
 
+
 async def extract_network_async(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame()
@@ -209,19 +210,19 @@ async def run_feature_pipeline_parallel(es: AsyncElasticsearch, since_minutes: i
     Full pipeline: fetch -> normalize -> extract all three feature sets concurrently -> merge
     """
     raw_results = await fetch_all_sources(es, since_minutes=since_minutes)
-    
+
     network_raw = raw_results.get("network", [])
     process_raw = raw_results.get("process", [])
     alert_raw = raw_results.get("security_alert", [])
-    
+
     network_norm = normalize_batch(network_raw, "network")
     process_norm = normalize_batch(process_raw, "process")
     alert_norm = normalize_batch(alert_raw, "security_alert")
-    
+
     def enrich_normalized(logs):
         if not logs:
             return pd.DataFrame()
-            
+
         enriched = []
         for log in logs:
             doc = dataclasses.asdict(log)
@@ -231,25 +232,25 @@ async def run_feature_pipeline_parallel(es: AsyncElasticsearch, since_minutes: i
             doc["entity_key"] = f"{log.host_id}|{user}"
             enriched.append(doc)
         return pd.DataFrame(enriched)
-        
+
     network_df_in = enrich_normalized(network_norm)
     process_df_in = enrich_normalized(process_norm)
     alert_df_in = enrich_normalized(alert_norm)
-    
+
     # Extract all 3 feature sets concurrently
     network_task = asyncio.create_task(extract_network_async(network_df_in))
     process_task = asyncio.create_task(extract_process_async(process_df_in))
     alert_task = asyncio.create_task(extract_alert_async(alert_df_in))
-    
+
     network_features, process_features, alert_features = await asyncio.gather(
         network_task, process_task, alert_task
     )
-    
+
     merged_df = merge_features(network_features, process_features, alert_features)
-    
+
     valid_dfs = [df for df in [network_df_in, process_df_in, alert_df_in] if not df.empty]
     normalized_df = pd.concat(valid_dfs, ignore_index=True) if valid_dfs else pd.DataFrame()
-    
+
     return merged_df, normalized_df
 
 async def store_feature_vectors(es: AsyncElasticsearch, feature_df: pd.DataFrame):
@@ -258,16 +259,16 @@ async def store_feature_vectors(es: AsyncElasticsearch, feature_df: pd.DataFrame
     """
     if feature_df is None or feature_df.empty:
         return {"indexed": 0, "errors": []}
-        
+
     index_name = INDEX_NAMES["features"]
     docs = []
-    
+
     for _, row in feature_df.iterrows():
         doc = row.to_dict()
         vec = get_feature_vector(row).tolist()
         doc["feature_vector"] = vec
         docs.append(doc)
-        
+
     return await bulk_index(es, docs, index_name)
 
 # Alias for backwards compatibility

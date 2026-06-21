@@ -1,12 +1,12 @@
-from fastapi import APIRouter, HTTPException, Query, Body
+
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
-from typing import List, Optional
-from app.scoring.threat_engine import get_threat_engine
-from app.ingestion.es_client import INDEX_NAMES, get_es_client
+
 from app.auth.jwt import require_role
-from fastapi import Depends, Request
-from app.middleware.rate_limiter import limiter
 from app.cache.cache_manager import cache_result
+from app.ingestion.es_client import INDEX_NAMES, get_es_client
+from app.middleware.rate_limiter import limiter
+from app.scoring.threat_engine import get_threat_engine
 
 router = APIRouter()
 
@@ -44,43 +44,43 @@ class StatusUpdate(BaseModel):
 @limiter.limit("120/minute")
 async def get_alerts_list(
     request: Request,
-    status: Optional[str] = Query(None, description="Filter by status (open, closed)"),
-    threat_level: Optional[str] = Query(None, description="Filter by level (critical, high, medium, low)"),
-    host_id: Optional[str] = Query(None, description="Filter by origin host ID"),
-    user_name: Optional[str] = Query(None, description="Filter by active user context"),
-    from_time: Optional[str] = Query(None, description="ISO timestamp baseline"),
-    to_time: Optional[str] = Query(None, description="ISO timestamp ceiling"),
+    status: str | None = Query(None, description="Filter by status (open, closed)"),
+    threat_level: str | None = Query(None, description="Filter by level (critical, high, medium, low)"),
+    host_id: str | None = Query(None, description="Filter by origin host ID"),
+    user_name: str | None = Query(None, description="Filter by active user context"),
+    from_time: str | None = Query(None, description="ISO timestamp baseline"),
+    to_time: str | None = Query(None, description="ISO timestamp ceiling"),
     limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0)
 ):
     """Fetches ML processed alerts querying across elastic fields scaling with deep pagination arrays."""
     es = await get_es_client()
     must_clauses = []
-    
+
     if status: must_clauses.append({"match": {"status.keyword": status}})
     if threat_level: must_clauses.append({"match": {"threat_level.keyword": threat_level}})
-    
+
     if host_id: must_clauses.append({"wildcard": {"entity_key.keyword": f"{host_id}|*"}})
     if user_name: must_clauses.append({"wildcard": {"entity_key.keyword": f"*|{user_name}"}})
-        
+
     if from_time or to_time:
         time_range = {}
         if from_time: time_range["gte"] = from_time
         if to_time: time_range["lte"] = to_time
         must_clauses.append({"range": {"timestamp": time_range}})
-        
+
     query = {
         "from": offset,
         "size": limit,
         "sort": [{"threat_score": {"order": "desc"}}],
         "query": {"bool": {"must": must_clauses}} if must_clauses else {"match_all": {}}
     }
-    
+
     try:
         resp = await es.search(index=INDEX_NAMES["alerts_processed"], body=query, ignore_unavailable=True)
         hits = resp.get("hits", {}).get("hits", [])
         total = resp.get("hits", {}).get("total", {}).get("value", 0)
-        
+
         alerts = [{"id": h["_id"], **h["_source"]} for h in hits]
         return AlertListResponse(total=total, alerts=alerts, page=(offset // limit) + 1)
     except Exception as e:
@@ -106,19 +106,19 @@ async def get_stats():
     try:
         resp = await es.search(index=INDEX_NAMES["alerts_processed"], body=query, ignore_unavailable=True)
         aggs = resp.get("aggregations", {})
-        
+
         open_cnt = aggs.get("status_open", {}).get("doc_count", 0)
         levels = {b["key"]: b["doc_count"] for b in aggs.get("levels", {}).get("buckets", [])}
         top_tactics = [{"tactic": b["key"], "count": b["doc_count"]} for b in aggs.get("top_tactics", {}).get("buckets", [])]
-        
+
         top_hosts = []
         for b in aggs.get("top_entities", {}).get("buckets", []):
             entity_str = b["key"]
             host_id = entity_str.split("|")[0] if "|" in entity_str else entity_str
             top_hosts.append({"host_id": host_id, "count": b["doc_count"]})
-            
+
         last_24 = aggs.get("last_24h", {}).get("doc_count", 0)
-        
+
         return AlertStatsResponse(
             total_open=open_cnt,
             critical=levels.get("critical", 0),
@@ -159,12 +159,12 @@ async def update_status(alert_id: str, update: StatusUpdate = Body(...)):
     """Allows UI triage handlers mapping interactive state flows directly natively over ES document fields."""
     if update.status not in ["open", "closed", "in_progress"]:
         raise HTTPException(status_code=422, detail="Invalid status. Must be 'open', 'closed', or 'in_progress'.")
-    
+
     engine = get_threat_engine()
     alert = await engine.get_alert(alert_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
-        
+
     await engine.update_alert_status(alert_id, update.status)
     return {"status": "success", "updated_status": update.status}
 
@@ -176,11 +176,11 @@ async def get_timeline(alert_id: str):
     alert = await engine.get_alert(alert_id)
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
-        
+
     entity_key = alert.get("entity_key")
     if not entity_key:
         return {"timeline": []}
-        
+
     es = await get_es_client()
     query = {
         "size": 100,

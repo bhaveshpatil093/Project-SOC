@@ -1,19 +1,18 @@
-import os
-import logging
 import gc
-import torch
+import logging
+import os
 from dataclasses import dataclass, field
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+import torch
 
 from app.config import settings
-from app.features.feature_merger import scale_features, load_scaler
-from app.models.isolation_forest import IsolationForestDetector, NETWORK_FEATURE_COLS
-from app.models.autoencoder import AutoencoderDetector, PROCESS_FEATURE_COLS
+from app.features.feature_merger import load_scaler, scale_features
+from app.models.autoencoder import PROCESS_FEATURE_COLS, AutoencoderDetector
+from app.models.isolation_forest import NETWORK_FEATURE_COLS, IsolationForestDetector
 from app.models.lstm_detector import LSTMDetector, build_event_sequences
 from app.models.rule_engine import evaluate_rules, get_rule_explanation
-from app.models.calibrator import ScoreCalibrator
-from app.models.voting_ensemble import VotingEnsemble
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ class ModelManager:
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(ModelManager, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance.if_detector = None
             cls._instance.ae_detector = None
             cls._instance.lstm_detector = None
@@ -58,9 +57,9 @@ class ModelManager:
         """Loads all detectors. If missing, applies graceful degradation bounding components."""
         if self._initialized:
             return
-            
+
         logger.info("Initializing ModelManager: loading ML models.")
-        
+
         if_path = os.path.join(settings.MODEL_DIR, "isolation_forest.pkl")
         if os.path.exists(if_path):
             self.if_detector = IsolationForestDetector.load(if_path)
@@ -83,7 +82,7 @@ class ModelManager:
             logger.info("LSTM Sequence model loaded.")
         else:
             logger.warning("LSTM Sequence model not found. Graceful degradation active.")
-            
+
         self._initialized = True
 
     def score_entity(self, feature_row: dict, event_sequences: list[list[str]] = None) -> ScoringResult:
@@ -91,54 +90,54 @@ class ModelManager:
         net_score = 0.0
         proc_score = 0.0
         seq_score = 0.0
-        
+
         # 1. Network IF scoring
         if self.if_detector and self.net_scaler:
             raw_net_vec = np.array([float(feature_row.get(c, 0.0)) for c in NETWORK_FEATURE_COLS]).reshape(1, -1)
             scaled_net_vec = scale_features(raw_net_vec, self.net_scaler)
             net_score = self.if_detector.score_single(scaled_net_vec.flatten())
-            
+
         # 2. Process Autoencoder scoring
         if self.ae_detector and self.proc_scaler:
             raw_proc_vec = np.array([float(feature_row.get(c, 0.0)) for c in PROCESS_FEATURE_COLS]).reshape(1, -1)
             scaled_proc_vec = scale_features(raw_proc_vec, self.proc_scaler)
             proc_score = self.ae_detector.score_single(scaled_proc_vec.flatten())
-            
+
         # 3. Sequence LSTM scoring
         if self.lstm_detector and event_sequences:
             scores = [self.lstm_detector.sequence_anomaly_score(seq) for seq in event_sequences]
             seq_score = float(max(scores)) if scores else 0.0
-            
+
         # 4. Deterministic Rule Engine Scoring
         rule_eval = evaluate_rules(feature_row)
         rule_score = rule_eval["rule_score"]
-        
+
         # Determine active analytical layers
         weights = {"network": 0.25, "process": 0.35, "sequence": 0.15, "rule": 0.25}
         active_models = ["rule"]
         if self.if_detector: active_models.append("network")
         if self.ae_detector: active_models.append("process")
         if self.lstm_detector: active_models.append("sequence")
-        
+
         # Graceful weight redistribution logic
         inactive = set(weights.keys()) - set(active_models)
         total_inactive_weight = sum(weights[m] for m in inactive)
-        
+
         for m in inactive:
             weights[m] = 0.0
-            
+
         if total_inactive_weight > 0 and len(active_models) > 0:
             redist = total_inactive_weight / len(active_models)
             for m in active_models:
                 weights[m] += redist
-                
+
         threat_score = (
             weights["network"] * net_score +
             weights["process"] * proc_score +
             weights["sequence"] * seq_score +
             weights["rule"] * rule_score
         )
-        
+
         if threat_score < 0.3:
             threat_level = "low"
         elif threat_score < 0.6:
@@ -147,7 +146,7 @@ class ModelManager:
             threat_level = "high"
         else:
             threat_level = "critical"
-            
+
         return ScoringResult(
             entity_key=str(feature_row.get("entity_key", "unknown")),
             window_bucket=str(feature_row.get("window_bucket", "unknown")),
@@ -172,13 +171,13 @@ class ModelManager:
         """Pushes massive Pandas datasets extracting chronological execution boundaries per-entity inside parallel ML evaluations using vectorized batches."""
         if feature_df.empty:
             return []
-            
+
         results = []
-        
+
         # Split into batches
         for start_idx in range(0, len(feature_df), batch_size):
             batch_df = feature_df.iloc[start_idx:start_idx + batch_size]
-            
+
             # Vectorized IF scoring
             net_scores = np.zeros(len(batch_df))
             if self.if_detector and self.net_scaler:
@@ -188,7 +187,7 @@ class ModelManager:
                     net_scores = self.if_detector.score_batch(scaled_net_vecs)
                 except Exception as e:
                     logger.error(f"Batch IF scoring error: {e}")
-            
+
             # Vectorized AE scoring
             proc_scores = np.zeros(len(batch_df))
             if self.ae_detector and self.proc_scaler:
@@ -198,53 +197,53 @@ class ModelManager:
                     proc_scores = self.ae_detector.score_batch(scaled_proc_vecs)
                 except Exception as e:
                     logger.error(f"Batch AE scoring error: {e}")
-                    
+
             # Process each entity in the batch
             for idx, (_, row) in enumerate(batch_df.iterrows()):
                 row_dict = row.to_dict()
                 entity_key = row_dict.get("entity_key")
-                
+
                 seq_score = 0.0
                 if self.lstm_detector and not normalized_df.empty and entity_key:
                     seqs = build_event_sequences(normalized_df, entity_key, sequence_len=20)
                     if seqs:
                         scores = [self.lstm_detector.sequence_anomaly_score(seq) for seq in seqs]
                         seq_score = float(max(scores)) if scores else 0.0
-                
+
                 rule_eval = evaluate_rules(row_dict)
                 rule_score = rule_eval["rule_score"]
-                
+
                 # Combine scores
                 net_score = float(net_scores[idx])
                 proc_score = float(proc_scores[idx])
-                
+
                 weights = {"network": 0.25, "process": 0.35, "sequence": 0.15, "rule": 0.25}
                 active_models = ["rule"]
                 if self.if_detector: active_models.append("network")
                 if self.ae_detector: active_models.append("process")
                 if self.lstm_detector: active_models.append("sequence")
-                
+
                 inactive = set(weights.keys()) - set(active_models)
                 total_inactive_weight = sum(weights[m] for m in inactive)
                 for m in inactive:
                     weights[m] = 0.0
-                    
+
                 if total_inactive_weight > 0 and len(active_models) > 0:
                     redist = total_inactive_weight / len(active_models)
                     for m in active_models:
                         weights[m] += redist
-                        
+
                 model_scores = {"network": net_score, "process": proc_score, "sequence": seq_score, "rule": rule_score}
                 vote = self.ensemble.vote(model_scores, weights)
                 threat_score = vote.final_score
-                
+
                 if threat_score < 0.3: threat_level = "low"
                 elif threat_score < 0.6: threat_level = "medium"
                 elif threat_score < 0.8: threat_level = "high"
                 else: threat_level = "critical"
-                
+
                 recommendation = self.ensemble.get_recommendation(vote)
-                    
+
                 res = ScoringResult(
                     entity_key=str(entity_key or "unknown"),
                     window_bucket=str(row_dict.get("window_bucket", "unknown")),
@@ -264,7 +263,7 @@ class ModelManager:
                     human_explanation=get_rule_explanation(rule_eval["triggered_rules"])
                 )
                 results.append(res)
-                
+
             # Memory optimization: Explicitly delete large batch allocations
             if 'raw_net_vecs' in locals(): del raw_net_vecs
             if 'scaled_net_vecs' in locals(): del scaled_net_vecs
@@ -276,23 +275,23 @@ class ModelManager:
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-                
+
         return results
 
     async def train_all_models(self, feature_df: pd.DataFrame, normalized_df: pd.DataFrame):
         """Orchestrates comprehensive cross-system local training loops executing isolation forests, autoencoders, and LSTMs!"""
-        from app.models.isolation_forest import train_isolation_forest
         from app.models.autoencoder import train_autoencoder
+        from app.models.isolation_forest import train_isolation_forest
         from app.models.lstm_detector import train_lstm
-        
+
         logger.info("Initiating model training for all ML detectors.")
         self.if_detector = train_isolation_forest(feature_df)
         self.ae_detector = train_autoencoder(feature_df)
         self.lstm_detector = train_lstm(normalized_df)
-        
+
         self.net_scaler = load_scaler(os.path.join(settings.MODEL_DIR, "network_scaler.pkl"))
         self.proc_scaler = load_scaler(os.path.join(settings.MODEL_DIR, "process_scaler.pkl"))
-        
+
         logger.info("All ML models trained and loaded successfully into ModelManager.")
 
 def get_model_manager() -> ModelManager:

@@ -1,9 +1,10 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from typing import List
-import json
-from datetime import datetime
-import logging
 import asyncio
+import json
+import logging
+from datetime import datetime
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
 from app.ingestion.es_client import get_es_client
 
 router = APIRouter()
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
         self._alert_buffer = []
         self._buffer_lock = asyncio.Lock()
         self._flush_task = None
@@ -34,7 +35,7 @@ class ConnectionManager:
                 if self._alert_buffer:
                     batch = self._alert_buffer.copy()
                     self._alert_buffer.clear()
-            
+
             if batch:
                 batch_msg = {
                     "type": "new_alerts_batch",
@@ -54,7 +55,7 @@ class ConnectionManager:
             async with self._buffer_lock:
                 self._alert_buffer.append(message.get("data"))
             return
-            
+
         msg_str = json.dumps(message, default=str)
         # Convert to list to avoid modifying during iteration
         for connection in list(self.active_connections):
@@ -88,7 +89,7 @@ async def websocket_alerts(websocket: WebSocket):
             res = await es.search(index="soc-processed-alerts", body=query, ignore_unavailable=True)
             hits = res.get("hits", {}).get("hits", [])
             initial_alerts = [{"id": h["_id"], **h["_source"]} for h in hits]
-            
+
             await manager.send_personal({
                 "type": "initial_alerts",
                 "data": initial_alerts,
@@ -101,11 +102,11 @@ async def websocket_alerts(websocket: WebSocket):
                 "data": {"status": "connected", "message": "Initial fetch failed"},
                 "timestamp": datetime.utcnow().isoformat()
             }, websocket)
-        
+
         while True:
             # Keep connection alive natively
             data = await websocket.receive_text()
-            
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:

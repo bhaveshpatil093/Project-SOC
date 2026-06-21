@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
-from pydantic import BaseModel, Field
-import json
 import os
 
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+
 from app.api.auth import require_role
-from app.db.elasticsearch import get_es_client, INDEX_NAMES
+from app.db.elasticsearch import INDEX_NAMES, get_es_client
 
 router = APIRouter(tags=["kibana", "es"])
 
@@ -54,13 +54,13 @@ async def run_es_query(req: ESQueryRequest):
     # 1. Validate Index Whitelist
     if req.index not in INDEX_NAMES.values() and req.index != "soc-*":
         raise HTTPException(status_code=403, detail="Index not whitelisted for direct query.")
-        
+
     # 2. Validate No Scripts
     try:
         _validate_no_scripts(req.query)
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
-        
+
     # 3. Execute
     es = await get_es_client()
     body = {
@@ -69,7 +69,7 @@ async def run_es_query(req: ESQueryRequest):
     }
     if req.sort:
         body["sort"] = req.sort
-        
+
     try:
         res = await es.search(index=req.index, body=body)
         return {"data": res}

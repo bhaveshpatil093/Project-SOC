@@ -1,21 +1,21 @@
-from dataclasses import dataclass, asdict
-from typing import List, Dict, Optional
+from dataclasses import asdict, dataclass
+
 
 @dataclass
 class PlaybookStep:
     step_id: int
     title: str
     instruction: str
-    soc_question: Optional[str] = None
-    suggested_slm_query: Optional[str] = None
+    soc_question: str | None = None
+    suggested_slm_query: str | None = None
 
 @dataclass
 class Playbook:
     id: str
     name: str
-    trigger_rules: List[str]
-    trigger_tactics: List[str]
-    steps: List[PlaybookStep]
+    trigger_rules: list[str]
+    trigger_tactics: list[str]
+    steps: list[PlaybookStep]
     escalation_criteria: str
 
 PLAYBOOKS = {
@@ -45,7 +45,7 @@ PLAYBOOKS = {
                 suggested_slm_query="Show me any process events or alerts for {entity_key} in the last 30 minutes.",
             ),
             PlaybookStep(
-                step_id=4, 
+                step_id=4,
                 title="Make triage decision",
                 instruction="Based on steps 1–3, determine if this is TP, FP, or needs escalation.",
                 suggested_slm_query="Based on the evidence, is this port scan a true threat or a false positive?",
@@ -148,16 +148,16 @@ PLAYBOOKS = {
 def substitute_context(text: str, alert: dict) -> str:
     if not text:
         return text
-    
+
     src_ip = alert.get("src_ip", "UNKNOWN_IP")
     entity_key = alert.get("entity_key", "UNKNOWN_ENTITY")
-    
+
     # Safe substitution
     res = text.replace("{src_ip}", src_ip)
     res = res.replace("{entity_key}", entity_key)
     return res
 
-def get_playbook_for_alert(alert: dict) -> Optional[dict]:
+def get_playbook_for_alert(alert: dict) -> dict | None:
     # Match logic
     triggered_rules = set()
     if alert.get("triggered_rules"):
@@ -166,29 +166,29 @@ def get_playbook_for_alert(alert: dict) -> Optional[dict]:
                 triggered_rules.add(r["id"])
             elif isinstance(r, str):
                 triggered_rules.add(r)
-                
+
     mitre_tactics = set(alert.get("mitre_tactics", []))
-    
+
     matched_pb = None
-    
+
     # Simple evaluation: If any rule matches or any tactic matches
     for pb_key, pb in PLAYBOOKS.items():
         if any(tr in pb.trigger_rules for tr in triggered_rules) or \
            any(mt in pb.trigger_tactics for mt in mitre_tactics):
             matched_pb = pb
             break
-            
+
     if not matched_pb:
         # Fallback to port scan for purely anomalous network spikes if no rule triggers but its purely network
         if "network" in alert.get("top_features", [{}])[0] if alert.get("top_features") else []:
              matched_pb = PLAYBOOKS["port_scan"]
-             
+
     if not matched_pb:
         return None
-        
+
     # Serialize and substitute context into the steps
     pb_dict = asdict(matched_pb)
-    
+
     for step in pb_dict["steps"]:
         if step.get("instruction"):
             step["instruction"] = substitute_context(step["instruction"], alert)
@@ -196,5 +196,5 @@ def get_playbook_for_alert(alert: dict) -> Optional[dict]:
             step["soc_question"] = substitute_context(step["soc_question"], alert)
         if step.get("suggested_slm_query"):
             step["suggested_slm_query"] = substitute_context(step["suggested_slm_query"], alert)
-            
+
     return pb_dict

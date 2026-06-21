@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+
 from app.api.dependencies import require_role
 from app.ingestion.es_client import get_es_client
 from app.scoring.entity_risk import EntityRiskScorer
 from app.scoring.score_history import get_score_history, get_score_trends, get_system_score_trends
-from pydantic import BaseModel
 
 router = APIRouter()
 scorer = EntityRiskScorer()

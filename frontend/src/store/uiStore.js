@@ -1,27 +1,28 @@
-import { create } from 'zustand';
-import { getInitialTheme, applyTheme } from '../utils/theme';
+import { create } from 'zustand'
+import { getInitialTheme, applyTheme } from '../utils/theme'
 
 export const useUiStore = create((set) => ({
   sidebarOpen: true,
   toasts: [],
-  
-  toggleSidebar: () => set(state => ({ sidebarOpen: !state.sidebarOpen })),
+
+  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   setSidebarOpen: (isOpen) => set({ sidebarOpen: isOpen }),
-  
+
   addToast: (message, type = 'success') => {
-    const id = Date.now() + Math.random();
-    set(state => ({
-      toasts: [...state.toasts, { id, message, type }]
-    }));
-    
+    const id = Date.now() + Math.random()
+    set((state) => ({
+      toasts: [...state.toasts, { id, message, type }],
+    }))
+
     setTimeout(() => {
-      set(state => ({
-        toasts: state.toasts.filter(t => t.id !== id)
-      }));
-    }, 4000);
+      set((state) => ({
+        toasts: state.toasts.filter((t) => t.id !== id),
+      }))
+    }, 4000)
   },
-  
-  removeToast: (id) => set(state => ({
-    toasts: state.toasts.filter(t => t.id !== id)
-  }))
-}));
+
+  removeToast: (id) =>
+    set((state) => ({
+      toasts: state.toasts.filter((t) => t.id !== id),
+    })),
+}))

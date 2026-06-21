@@ -1,8 +1,8 @@
-from fastapi import APIRouter
-from app.ingestion.scheduler import scheduler_state, run_ingestion_cycle
-from app.ingestion.es_client import get_es_client
+from fastapi import APIRouter, Depends
+
 from app.auth.jwt import require_role
-from fastapi import Depends
+from app.ingestion.es_client import get_es_client
+from app.ingestion.scheduler import run_ingestion_cycle, scheduler_state
 
 router = APIRouter(dependencies=[Depends(require_role("admin", "analyst"))])
 

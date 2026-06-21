@@ -1,6 +1,6 @@
 import json
-import random
 import os
+import random
 
 # Definitions
 THREAT_LEVELS = ["critical", "high", "medium", "low"]
@@ -55,17 +55,17 @@ def generate_mock_alert(log_type, threat_level) -> dict:
 
 def generate_explanation_sample(alert) -> dict:
     alert_json = json.dumps(alert)
-    
+
     summary = f"An anomaly of type '{alert['log_type']}' was detected on {alert['entity_key']} triggering {alert['triggered_rules'][0]}."
     evidence = "Evidence: " + ", ".join([f"{k} has high SHAP impact ({v})" for k, v in alert["shap_features"].items()])
-    
+
     if alert["threat_level"] in ["critical", "high"]:
         action = f"Recommended Action: Isolate {alert['entity_key'].split('|')[0]}, check for {alert['mitre_tactic'][0]}, and escalate to L2."
     else:
         action = "Recommended Action: Monitor the entity for further anomalies. False positive probability is moderate."
-        
+
     output = f"Summary: {summary} {evidence} {action}"
-    
+
     return {
         "instruction": "Explain this security alert for a Level-1 SOC engineer.",
         "input": alert_json,
@@ -74,12 +74,12 @@ def generate_explanation_sample(alert) -> dict:
 
 def generate_mitre_qa_sample(technique_id) -> dict:
     tech = next((t for t in MITRE_TECHNIQUES if t["id"] == technique_id), MITRE_TECHNIQUES[0])
-    
+
     q_type = random.choice(["What is", "How does", "Explain"])
     input_text = f"{q_type} {tech['name']} ({tech['id']})?"
-    
+
     output = f"{tech['name']} ({tech['id']}) is a technique categorized under the {tech['tactic']} tactic. It involves anomalous behaviors typical of {tech['tactic'].lower()} strategies used by adversaries. Detection typically involves baseline monitoring and specific rule signatures targeting its unique execution footprints."
-    
+
     return {
         "instruction": "Answer the following question regarding the MITRE ATT&CK framework.",
         "input": input_text,
@@ -89,13 +89,13 @@ def generate_mitre_qa_sample(technique_id) -> dict:
 def generate_triage_sample() -> dict:
     is_fp = random.choice([True, False])
     alert = generate_mock_alert(random.choice(LOG_TYPES), random.choice(THREAT_LEVELS))
-    
+
     if is_fp:
         scenario = random.choice(["Qualys security scanner", "SCCM patch management", "admin backup script"])
         out = f"This is a FALSE POSITIVE because the observed behaviors align with authorized {scenario} activities originating from known administrative subnets."
     else:
         out = f"This is a TRUE POSITIVE because the execution pattern deviates significantly from baseline and lacks administrative authorization, aligning closely with {alert['mitre_tactic'][0]}."
-        
+
     return {
         "instruction": "Determine if this alert is a TRUE POSITIVE or FALSE POSITIVE and explain why.",
         "input": json.dumps(alert),
@@ -109,7 +109,7 @@ def generate_investigation_steps_sample() -> dict:
         ("large outbound data transfer", "1. Identify the destination IP address.\n2. Determine the application performing the transfer.\n3. Inspect the transferred file types or packet captures if available.\n4. Block the destination IP at the firewall.")
     ]
     scenario, steps = random.choice(scenarios)
-    
+
     return {
         "instruction": "Provide a step-by-step investigation checklist for this alert type.",
         "input": scenario,
@@ -149,47 +149,47 @@ def save_dataset(samples: list, path: str):
 
 def load_dataset(path: str) -> list:
     samples = []
-    with open(path, 'r') as f:
+    with open(path) as f:
         for line in f:
             samples.append(json.loads(line.strip()))
     return samples
 
 def main():
     samples = []
-    
+
     # Cat 1: Alert Explanations (50)
     for _ in range(50):
         alert = generate_mock_alert(random.choice(LOG_TYPES), random.choice(THREAT_LEVELS))
         samples.append(generate_explanation_sample(alert))
-        
+
     # Cat 2: MITRE Q&A (40)
     for i in range(40):
         tech_id = MITRE_TECHNIQUES[i % len(MITRE_TECHNIQUES)]["id"]
         samples.append(generate_mitre_qa_sample(tech_id))
-        
+
     # Cat 3: Triage (40)
     for _ in range(40):
         samples.append(generate_triage_sample())
-        
+
     # Cat 4: Investigation (30)
     for _ in range(30):
         samples.append(generate_investigation_steps_sample())
-        
+
     # Cat 5: Log Pattern (20)
     for _ in range(20):
         samples.append(generate_log_pattern_sample())
-        
+
     # Cat 6: Remediation (20)
     for _ in range(20):
         samples.append(generate_remediation_sample())
-        
+
     random.shuffle(samples)
-    
+
     path = os.path.join(os.path.dirname(__file__), "soc_finetune.jsonl")
     save_dataset(samples, path)
-    
+
     print(f"Generated {len(samples)} samples successfully.")
-    
+
     stats = {
         "Category 1 (Alert Explanation)": 50,
         "Category 2 (MITRE Q&A)": 40,
@@ -200,7 +200,7 @@ def main():
     }
     for k, v in stats.items():
         print(f" - {k}: {v} samples")
-        
+
     print(f"Dataset saved to {path}")
 
 if __name__ == "__main__":

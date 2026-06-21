@@ -1,16 +1,11 @@
-import os
-import sys
-import torch
-import logging
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    TrainingArguments
-)
-from peft import LoraConfig, get_peft_model
-from datasets import load_dataset, Dataset
 import argparse
+import logging
+import os
+
+import torch
+from datasets import load_dataset
+from peft import LoraConfig, get_peft_model
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, TrainingArguments
 
 try:
     from trl import SFTTrainer
@@ -69,21 +64,21 @@ def format_sample_for_training(sample: dict) -> dict:
 def load_and_prepare_dataset(path: str):
     logger.info(f"Loading dataset directly mapping bounds from {path}")
     raw_dataset = load_dataset("json", data_files=path, split="train")
-    
+
     # Apply format_sample_for_training cleanly avoiding implicit column clashes
     formatted_dataset = raw_dataset.map(format_sample_for_training, remove_columns=raw_dataset.column_names)
-    
+
     # 90/10 train/eval split
     split_dataset = formatted_dataset.train_test_split(test_size=0.1, seed=42)
     return split_dataset
 
 def run_finetuning(dry_run=False):
     has_gpu = torch.cuda.is_available()
-    
+
     model_name = MODEL_NAME
     bnb_config = BNB_CONFIG
     fp16 = True
-    
+
     if not has_gpu:
         logger.warning("No CUDA GPU detected! Falling back to TinyLlama fp32 full tuning bounds.")
         model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
@@ -91,41 +86,41 @@ def run_finetuning(dry_run=False):
         fp16 = False
         TRAINING_ARGS.fp16 = False
         LORA_CONFIG.target_modules = ["q_proj", "v_proj"]
-        
+
     logger.info(f"Targeting native model architecture: {model_name}")
-    
+
     # 1. Dataset Prep
     if not os.path.exists(DATASET_PATH):
         logger.error(f"Dataset not found strictly bound at {DATASET_PATH}.")
         return
-        
+
     dataset = load_and_prepare_dataset(DATASET_PATH)
     logger.info(f"Train split size strictly bounded: {len(dataset['train'])}")
     logger.info(f"Eval split size strictly bounded: {len(dataset['test'])}")
-    
+
     if dry_run:
         logger.info("Dry run enabled. Safely printing explicit generation format sample 0:")
         print(dataset['train'][0]['text'])
         logger.info("Dry run natively completed. Exiting securely.")
         return
-        
+
     # 2. Load Tokenizer & Model explicitly mapped globally
     logger.info("Loading Tokenizer and Base Model via native AutoClasses...")
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-        
+
     model_kwargs = {"device_map": "auto", "trust_remote_code": True}
     if bnb_config:
         model_kwargs["quantization_config"] = bnb_config
-        
+
     model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
-    
+
     # 3. Apply LoRA securely bypassing explicit limits
     logger.info("Injecting LoRA specific boundaries via get_peft_model...")
     model = get_peft_model(model, LORA_CONFIG)
     model.print_trainable_parameters()
-    
+
     # 4. Train
     logger.info("Initializing SFTTrainer tracking evaluation bounds...")
     trainer = SFTTrainer(
@@ -137,14 +132,14 @@ def run_finetuning(dry_run=False):
         tokenizer=tokenizer,
         args=TRAINING_ARGS
     )
-    
+
     logger.info("Starting Fine-tuning Sequence mapped autonomously...")
     train_result = trainer.train()
-    
+
     logger.info("Training Complete! Evaluating models natively against split distributions...")
     metrics = trainer.evaluate()
     logger.info(f"Final Eval Metrics: {metrics}")
-    
+
     # Save adapter cleanly globally
     logger.info(f"Saving LoRA adapter boundaries locally mapped to {OUTPUT_DIR}")
     trainer.save_model(OUTPUT_DIR)
@@ -152,29 +147,29 @@ def run_finetuning(dry_run=False):
 def merge_and_save_full_model():
     has_gpu = torch.cuda.is_available()
     model_name = MODEL_NAME if has_gpu else "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-    
+
     logger.info("Reloading unquantized Base Model explicitly for global merging processes...")
     base_model = AutoModelForCausalLM.from_pretrained(
-        model_name, 
+        model_name,
         device_map="auto" if has_gpu else "cpu",
         torch_dtype=torch.float16 if has_gpu else torch.float32,
         trust_remote_code=True
     )
-    
+
     from peft import PeftModel
     logger.info("Attaching LoRA Adapter explicitly targeting the local base mapping...")
     model = PeftModel.from_pretrained(base_model, OUTPUT_DIR)
-    
+
     logger.info("Merging LoRA weights actively onto Base tensors mapping natively...")
     merged_model = model.merge_and_unload()
-    
+
     merged_dir = os.path.join(OUTPUT_DIR, "merged")
     logger.info(f"Saving fully integrated merged models dynamically targeting {merged_dir}")
     merged_model.save_pretrained(merged_dir)
-    
+
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     tokenizer.save_pretrained(merged_dir)
-    
+
     logger.info("Merge sequence actively completed natively tracking OS directories!")
 
 if __name__ == "__main__":
@@ -182,7 +177,7 @@ if __name__ == "__main__":
     parser.add_argument("--dry-run", action="store_true", help="Validate formats mapped dynamically.")
     parser.add_argument("--merge", action="store_true", help="Merge LoRA explicitly skipping mapping training.")
     args = parser.parse_args()
-    
+
     if args.merge:
         merge_and_save_full_model()
     else:

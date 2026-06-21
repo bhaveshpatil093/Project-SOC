@@ -1,5 +1,5 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React from 'react'
+import PropTypes from 'prop-types'
 
 export const PageHeader = ({ title, subtitle, actions }) => {
   return (
@@ -8,17 +8,13 @@ export const PageHeader = ({ title, subtitle, actions }) => {
         <h1 className="text-3xl font-bold text-[var(--text_primary)] tracking-tight">{title}</h1>
         {subtitle && <p className="text-[var(--text_secondary)] mt-2">{subtitle}</p>}
       </div>
-      {actions && (
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          {actions}
-        </div>
-      )}
+      {actions && <div className="flex items-center gap-3 w-full md:w-auto">{actions}</div>}
     </div>
-  );
-};
+  )
+}
 
 PageHeader.propTypes = {
   title: PropTypes.string.isRequired,
   subtitle: PropTypes.string,
-  actions: PropTypes.node
-};
+  actions: PropTypes.node,
+}

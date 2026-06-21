@@ -1,7 +1,6 @@
 import logging
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
-from collections import Counter
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -37,23 +36,23 @@ class EntityRiskScorer:
     def _determine_trend(self, recent_scores: list[float]) -> str:
         if len(recent_scores) < 3:
             return "stable"
-        
+
         mid = len(recent_scores) // 2
         older = recent_scores[:mid]
         newer = recent_scores[mid:]
-        
+
         older_avg = sum(older) / len(older)
         newer_avg = sum(newer) / len(newer)
-        
+
         if newer_avg > older_avg + 5:
             return "increasing"
-        elif newer_avg < older_avg - 5:
+        if newer_avg < older_avg - 5:
             return "decreasing"
         return "stable"
 
     def update_risk_profile(self, profile: EntityRiskProfile, new_alert_score: float, new_alert: dict) -> EntityRiskProfile:
         now = datetime.utcnow()
-        
+
         if profile.last_alert_at:
             try:
                 last_dt = datetime.fromisoformat(profile.last_alert_at.replace("Z", ""))
@@ -62,31 +61,31 @@ class EntityRiskScorer:
                 hours_since_last = 0.0
         else:
             hours_since_last = 0.0
-            
+
         # Decay the score
         decay_factor = 0.5 ** (hours_since_last / self.decay_half_life_hours) if hours_since_last > 0 else 1.0
         decayed = profile.current_risk_score * decay_factor
-        
+
         # Add new alert contribution
         # new_alert_score is 0.0-1.0 from ThreatEngine
         # We scale it to 20 points per 1.0 alert score to cumulatively build up.
         new_cumulative = min(100.0, decayed + (new_alert_score * 20))
-        
+
         profile.current_risk_score = float(new_cumulative)
         profile.peak_risk_score = max(profile.peak_risk_score, profile.current_risk_score)
         profile.risk_level = self.compute_risk_level(profile.current_risk_score)
-        
+
         profile.total_alerts += 1
         profile.last_alert_at = now.isoformat() + "Z"
         profile.last_updated = now.isoformat() + "Z"
-        
+
         # Keep recent scores queue
         profile.recent_scores.append(float(new_cumulative))
         if len(profile.recent_scores) > 10:
             profile.recent_scores = profile.recent_scores[-10:]
-            
+
         profile.risk_trend = self._determine_trend(profile.recent_scores)
-        
+
         # Update Tactics/Techniques aggregations heuristically
         tactics = set(profile.top_tactics)
         techniques = set(profile.top_techniques)
@@ -94,7 +93,7 @@ class EntityRiskScorer:
             tactics.update(new_alert["mitre_tactics"])
         if new_alert.get("mitre_technique_ids"):
             techniques.update(new_alert["mitre_technique_ids"])
-            
+
         profile.top_tactics = list(tactics)[:5]
         profile.top_techniques = list(techniques)[:10]
 
@@ -108,7 +107,7 @@ class EntityRiskScorer:
                 return EntityRiskProfile(**data)
         except Exception as e:
             logger.debug(f"Profile not found for {entity_key}, returning new. {e}")
-            
+
         return EntityRiskProfile(entity_key=entity_key)
 
     async def save_profile(self, es, profile: EntityRiskProfile):

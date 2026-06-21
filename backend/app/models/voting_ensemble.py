@@ -1,6 +1,7 @@
-import numpy as np
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +31,11 @@ class VotingEnsemble:
         std = np.std(scores)
         if std < 0.1:
             return "strong"
-        elif std < 0.2:
+        if std < 0.2:
             return "moderate"
-        elif std < 0.35:
+        if std < 0.35:
             return "weak"
-        else:
-            return "split"
+        return "split"
 
     def compute_confidence_interval(self, scores: list[float], weights: list[float]) -> tuple[float, float]:
         if not scores:
@@ -63,23 +63,23 @@ class VotingEnsemble:
 
     def vote(self, model_scores: dict[str, float], model_weights: dict[str, float], model_confidences: dict[str, float] = None) -> EnsembleVote:
         scores_list = list(model_scores.values())
-        weights_list = [model_weights.get(m, 0.0) for m in model_scores.keys()]
-        
+        weights_list = [model_weights.get(m, 0.0) for m in model_scores]
+
         # Normalize weights
         total_w = sum(weights_list)
         if total_w > 0:
             weights_list = [w / total_w for w in weights_list]
         else:
             weights_list = [1.0 / len(scores_list)] * len(scores_list)
-            
+
         final_score = float(np.average(scores_list, weights=weights_list))
-        
+
         ci = self.compute_confidence_interval(scores_list, weights_list)
         consensus = self.compute_consensus_level(scores_list)
         outlier = self.detect_outlier_model(model_scores)
-        
+
         dominant = max(model_scores.keys(), key=lambda m: model_scores[m] * model_weights.get(m, 0.0))
-        
+
         details = {}
         for idx, (model, score) in enumerate(model_scores.items()):
             w = weights_list[idx]
@@ -90,7 +90,7 @@ class VotingEnsemble:
                 weighted_contribution=score * w,
                 is_outlier=(model == outlier)
             )
-            
+
         return EnsembleVote(
             final_score=final_score,
             confidence_interval=ci,
@@ -102,14 +102,13 @@ class VotingEnsemble:
     def get_recommendation(self, vote: EnsembleVote) -> str:
         score = vote.final_score
         consensus = vote.consensus_level
-        
+
         if score > 0.8 and consensus == "strong":
             return "ESCALATE"
-        elif score > 0.5 or consensus == "split":
+        if score > 0.5 or consensus == "split":
             return "INVESTIGATE"
-        elif score > 0.3:
+        if score > 0.3:
             return "MONITOR"
-        else:
-            if consensus == "strong":
-                return "SAFE"
-            return "MONITOR"
+        if consensus == "strong":
+            return "SAFE"
+        return "MONITOR"

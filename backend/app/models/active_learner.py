@@ -1,5 +1,7 @@
-import numpy as np
 import logging
+
+import numpy as np
+
 from app.models.model_manager import ScoringResult
 
 logger = logging.getLogger(__name__)
@@ -24,18 +26,18 @@ class ActiveLearner:
         """
         # Proximity to 0.5: Maximum uncertainty (1.0) is at 0.5, minimum (0.0) is at 0 or 1.
         proximity = 1.0 - (abs(scoring_result.threat_score - 0.5) * 2)
-        
+
         # Disagreement
         disagreement = self.compute_model_disagreement(scoring_result)
-        
+
         # Combined
         uncertainty = (0.6 * proximity) + (0.4 * disagreement)
-        
+
         # Bound between 0 and 1
         return float(np.clip(uncertainty, 0.0, 1.0))
 
-    def select_samples_for_labeling(self, scoring_results: list[ScoringResult], 
-                                   already_labeled: set[str], 
+    def select_samples_for_labeling(self, scoring_results: list[ScoringResult],
+                                   already_labeled: set[str],
                                    n_samples: int = 10) -> list[dict]:
         """
         Selects top n_samples based on uncertainty, filtering out already labeled ones.
@@ -46,9 +48,9 @@ class ActiveLearner:
         for res in scoring_results:
             if res.entity_key in already_labeled:
                 continue
-            
+
             uncertainty = self.compute_uncertainty_score(res)
-            
+
             # Form reason
             disagreement = self.compute_model_disagreement(res)
             if disagreement > 0.2:
@@ -57,7 +59,7 @@ class ActiveLearner:
                 reason = f"Boundary score ({res.threat_score:.2f}): highly uncertain."
             else:
                 reason = "High general uncertainty."
-                
+
             candidates.append({
                 "alert": res.__dict__,
                 "uncertainty_score": uncertainty,
@@ -69,14 +71,14 @@ class ActiveLearner:
                 },
                 "reason_for_selection": reason
             })
-            
+
         # Sort descending by uncertainty
         candidates.sort(key=lambda x: x["uncertainty_score"], reverse=True)
-        
+
         # Diversity filter
         final_selection = []
         entity_counts = {}
-        
+
         for cand in candidates:
             ekey = cand["alert"]["entity_key"]
             if entity_counts.get(ekey, 0) < 2:
@@ -84,7 +86,7 @@ class ActiveLearner:
                 entity_counts[ekey] = entity_counts.get(ekey, 0) + 1
             if len(final_selection) >= n_samples:
                 break
-                
+
         return final_selection
 
     async def get_labeling_queue(self, es, n_samples: int = 10) -> list[dict]:
@@ -92,13 +94,14 @@ class ActiveLearner:
         Fetches recent unscored alerts (last 24h) lacking feedback, evaluates uncertainty,
         and returns the top n_samples for labeling.
         """
-        from app.feedback.label_store import FEEDBACK_INDEX
         from datetime import datetime, timedelta
-        
+
+        from app.feedback.label_store import FEEDBACK_INDEX
+
         yesterday = (datetime.utcnow() - timedelta(days=1)).isoformat()
-        
+
         # 1. Fetch already labeled entity keys (to avoid asking again)
-        # In a real system we'd check if the specific alert was labeled, but 
+        # In a real system we'd check if the specific alert was labeled, but
         # we'll fetch recently labeled alerts.
         query_feedback = {
             "size": 10000,
@@ -126,7 +129,7 @@ class ActiveLearner:
                 "range": {"timestamp": {"gte": yesterday}}
             }
         }
-        
+
         raw_alerts = []
         try:
             res_alerts = await es.search(index="soc-processed-alerts", body=query_alerts, ignore_unavailable=True)
@@ -166,14 +169,14 @@ class ActiveLearner:
 
         # 4. Select top candidates
         selected = self.select_samples_for_labeling(scoring_results, already_labeled_keys, n_samples)
-        
+
         # Put id and timestamp back into alert dict
         for cand in selected:
             # retrieve from monkey patch
             raw_obj = [sr for sr in scoring_results if sr.entity_key == cand["alert"]["entity_key"] and sr.window_bucket == cand["alert"]["window_bucket"]][0]
             cand["alert"]["id"] = getattr(raw_obj, "_raw_id", "")
             cand["alert"]["timestamp"] = getattr(raw_obj, "_timestamp", "")
-            
+
         return selected
 
     async def get_labeling_stats(self, es) -> dict:
@@ -189,15 +192,15 @@ class ActiveLearner:
                     "high_uncertainty_count": 0,
                     "estimated_labels_needed_for_retrain": 50
                 }
-                
+
             total = len(queue)
             avg_u = sum(c["uncertainty_score"] for c in queue) / total
             high_u = sum(1 for c in queue if c["uncertainty_score"] > 0.6)
-            
+
             # Simple heuristic: 1 label = 0.01 reduction in uncertainty
             # Require at least 50 labels
             needed = max(50, int(high_u * 0.5))
-            
+
             return {
                 "total_unlabeled": total,
                 "avg_uncertainty": round(avg_u, 3),

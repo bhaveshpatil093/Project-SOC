@@ -1,6 +1,6 @@
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Any
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ def evaluate_rules(feature_row: dict) -> dict:
     tactics = set()
     techniques = set()
     max_score = 0.0
-    
+
     for rule in RULES:
         try:
             if rule.condition(feature_row):
@@ -138,7 +138,7 @@ def evaluate_rules(feature_row: dict) -> dict:
                     max_score = rule.score
         except Exception as e:
             logger.error(f"Error evaluating deterministic rule {rule.rule_id}: {e}")
-            
+
     return {
         "triggered_rules": triggered,
         "rule_score": float(max_score),
@@ -150,9 +150,9 @@ def get_rule_explanation(triggered_rules: list[Rule]) -> str:
     """Provides a human-readable threat summary formatted for SLM injection."""
     if not triggered_rules:
         return "No deterministic threat rules triggered."
-        
+
     lines = ["Deterministic rules triggered:"]
     for r in triggered_rules:
         lines.append(f"- {r.rule_id} ({r.name}): {r.description} (MITRE {r.mitre_technique_id} - {r.mitre_tactic}, Severity: {r.severity.upper()})")
-        
+
     return "\n".join(lines)

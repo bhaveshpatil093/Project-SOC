@@ -1,7 +1,7 @@
-import numpy as np
-from dataclasses import dataclass
-import copy
 import logging
+from dataclasses import dataclass
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -28,10 +28,10 @@ class CounterfactualExplainer:
         self.ae_detector = autoencoder_detector
         self.feature_names = feature_names or []
         self.score_threshold = score_threshold
-        
+
         # Determine global baseline for all features. In a robust system, this comes from training data medians.
         # Here we default to 0.0 for anomalies, as 0 typically indicates baseline non-activity in scaled features.
-        self.feature_medians = {f: 0.0 for f in self.feature_names}
+        self.feature_medians = dict.fromkeys(self.feature_names, 0.0)
 
     def _predict_score(self, x: np.ndarray) -> float:
         """Helper to get a composite threat score for a given feature vector."""
@@ -58,7 +58,7 @@ class CounterfactualExplainer:
         for _ in range(max_changes):
             if current_score <= target_score:
                 break
-            
+
             best_improvement = 0
             best_feature_idx = -1
             best_candidate_x = None
@@ -67,16 +67,16 @@ class CounterfactualExplainer:
             for i in range(x_cf.shape[1]):
                 if i in changed_indices:
                     continue
-                
+
                 # Perturb to baseline (median)
                 temp_x = x_cf.copy()
                 baseline_val = 0.0  # Assumed baseline
                 if abs(temp_x[0, i] - baseline_val) < 1e-4:
                     continue  # Already at baseline
-                    
+
                 temp_x[0, i] = baseline_val
                 new_score = self._predict_score(temp_x)
-                
+
                 improvement = current_score - new_score
                 if improvement > best_improvement:
                     best_improvement = improvement
@@ -89,24 +89,24 @@ class CounterfactualExplainer:
                 changed_indices.append(best_feature_idx)
             else:
                 break
-                
+
         return x_cf, changed_indices
 
     def generate_counterfactual(self, feature_row: dict, current_score: float, max_changes: int = 3) -> CounterfactualResult:
         if current_score < self.score_threshold:
             return CounterfactualResult(current_score, current_score, [], True, 1.0)
-            
+
         if not self.feature_names:
             return CounterfactualResult(current_score, current_score, [], False, 0.0)
 
         # Build raw vector
         x_raw = np.array([float(feature_row.get(f, 0.0)) for f in self.feature_names]).reshape(1, -1)
-        
+
         # Calculate counterfactual
         x_cf, changed_indices = self._find_counterfactual(x_raw, target_score=self.score_threshold - 0.1, max_changes=max_changes)
-        
+
         new_score = self._predict_score(x_cf)
-        
+
         changes = []
         for idx in changed_indices:
             feat = self.feature_names[idx]
@@ -114,13 +114,13 @@ class CounterfactualExplainer:
             new_val = float(x_cf[0, idx])
             direction = "decreased" if new_val < orig_val else "increased"
             magnitude = abs(orig_val - new_val)
-            
+
             # Format nicely
             orig_fmt = f"{orig_val:.1f}" if orig_val % 1 != 0 else f"{int(orig_val)}"
             new_fmt = f"{new_val:.1f}" if new_val % 1 != 0 else f"{int(new_val)}"
-            
+
             human_readable = f"{feat} {direction} from {orig_fmt} to {new_fmt}"
-            
+
             changes.append(FeatureChange(
                 feature_name=feat,
                 original_value=orig_val,
@@ -132,7 +132,7 @@ class CounterfactualExplainer:
 
         is_feasible = new_score < self.score_threshold
         confidence = 0.9 if is_feasible else 0.4
-        
+
         return CounterfactualResult(
             original_score=current_score,
             counterfactual_score=new_score,
@@ -144,14 +144,14 @@ class CounterfactualExplainer:
     def format_counterfactual(self, result: CounterfactualResult) -> str:
         if not result.changes_needed:
             return ""
-            
+
         lines = ["This alert would be BENIGN if:"]
         for i, change in enumerate(result.changes_needed, 1):
             action = "reduce" if change.direction == "decreased" else "increase"
             lines.append(f"  {i}. {change.human_readable}")
             lines.append(f"     ({action} activity related to {change.feature_name})")
-            
+
         if not result.is_feasible:
             lines.append("\nNote: Even with these changes, the anomaly score remains elevated.")
-            
+
         return "\n".join(lines)

@@ -1,6 +1,6 @@
-import logging
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.exceptions import ConnectionError
+
 from app.config import settings
 from app.logging_config import get_logger
 
@@ -56,7 +56,7 @@ async def check_connection() -> bool:
 
 async def create_soc_indices(es: AsyncElasticsearch):
     """Creates the necessary custom indices for the SOC platform with their mappings."""
-    
+
     # 1. soc-processed-alerts
     alerts_index = INDEX_NAMES["alerts_processed"]
     if not await es.indices.exists(index=alerts_index):

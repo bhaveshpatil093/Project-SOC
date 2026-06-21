@@ -1,8 +1,7 @@
-import uuid
 import logging
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,20 +10,20 @@ class ConversationTurn:
     turn_id: str
     role: str
     content: str
-    parsed_response: Optional[dict]
-    alert_id: Optional[str]
-    tools_used: List[str]
+    parsed_response: dict | None
+    alert_id: str | None
+    tools_used: list[str]
     timestamp: datetime
-    response_time_ms: Optional[float]
+    response_time_ms: float | None
 
 @dataclass
 class Conversation:
     conversation_id: str
     started_at: datetime
     last_active: datetime
-    alert_id: Optional[str]
-    entity_key: Optional[str]
-    turns: List[ConversationTurn]
+    alert_id: str | None
+    entity_key: str | None
+    turns: list[ConversationTurn]
     metadata: dict = field(default_factory=dict)
 
 class ConversationManager:
@@ -32,13 +31,13 @@ class ConversationManager:
         self.max_conversations = max_conversations
         self.max_turns_per_conv = max_turns_per_conv
         self.ttl_hours = ttl_hours
-        self._store: Dict[str, Conversation] = {}
+        self._store: dict[str, Conversation] = {}
 
     def create_conversation(self, alert_id: str = None, entity_key: str = None) -> Conversation:
         # Enforce max memory bound globally
         if len(self._store) >= self.max_conversations:
             self._evict_oldest()
-            
+
         conv_id = str(uuid.uuid4())
         now = datetime.utcnow()
         conv = Conversation(
@@ -58,23 +57,23 @@ class ConversationManager:
         oldest_id = min(self._store.keys(), key=lambda k: self._store[k].last_active)
         del self._store[oldest_id]
 
-    def get_conversation(self, conversation_id: str) -> Optional[Conversation]:
+    def get_conversation(self, conversation_id: str) -> Conversation | None:
         conv = self._store.get(conversation_id)
         if conv:
             conv.last_active = datetime.utcnow()
         return conv
 
-    def add_turn(self, conversation_id: str, role: str, content: str, 
-                 parsed_response: dict = None, alert_id: str = None, 
+    def add_turn(self, conversation_id: str, role: str, content: str,
+                 parsed_response: dict = None, alert_id: str = None,
                  tools_used: list = None, response_time_ms: float = None) -> ConversationTurn:
         conv = self.get_conversation(conversation_id)
         if not conv:
             raise ValueError(f"Conversation {conversation_id} not found natively inside state map.")
-            
-        # Track sliding window vectors natively dropping deepest tokens 
+
+        # Track sliding window vectors natively dropping deepest tokens
         if len(conv.turns) >= self.max_turns_per_conv:
             conv.turns.pop(0)
-            
+
         turn = ConversationTurn(
             turn_id=str(uuid.uuid4()),
             role=role,
@@ -89,16 +88,16 @@ class ConversationManager:
         conv.last_active = datetime.utcnow()
         return turn
 
-    def get_history_for_prompt(self, conversation_id: str, max_turns: int = 6) -> List[Dict[str, str]]:
+    def get_history_for_prompt(self, conversation_id: str, max_turns: int = 6) -> list[dict[str, str]]:
         conv = self.get_conversation(conversation_id)
         if not conv:
             return []
-        
+
         # We slice exactly N sequential bounding objects natively
         recent = conv.turns[-max_turns:]
         return [{"role": t.role, "content": t.content} for t in recent]
 
-    def list_conversations(self) -> List[dict]:
+    def list_conversations(self) -> list[dict]:
         out = []
         for c in sorted(self._store.values(), key=lambda x: x.last_active, reverse=True):
             out.append({
@@ -127,18 +126,18 @@ class ConversationManager:
         total_convs = len(self._store)
         now = datetime.utcnow()
         active_1h = len([c for c in self._store.values() if c.last_active > now - timedelta(hours=1)])
-        
+
         total_turns = sum(len(c.turns) for c in self._store.values())
         avg_turns = total_turns / total_convs if total_convs > 0 else 0.0
-        
+
         resp_times = []
         for c in self._store.values():
             for t in c.turns:
                 if t.response_time_ms:
                     resp_times.append(t.response_time_ms)
-        
+
         avg_resp = sum(resp_times) / len(resp_times) if resp_times else 0.0
-        
+
         return {
             "total_conversations": total_convs,
             "active_last_1h": active_1h,

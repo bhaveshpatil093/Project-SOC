@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
+
 from pydantic import BaseModel
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -11,13 +11,13 @@ class AnalystFeedback(BaseModel):
     alert_id: str
     analyst_name: str
     label: str  # TP, FP, Benign
-    notes: Optional[str] = ""
-    mitre_override: Optional[list[str]] = []
+    notes: str | None = ""
+    mitre_override: list[str] | None = []
 
 async def submit_feedback(es, feedback: AnalystFeedback) -> dict:
     doc = feedback.dict()
     doc["timestamp"] = datetime.utcnow().isoformat() + "Z"
-    
+
     try:
         from app.ingestion.es_client import INDEX_NAMES
         alert_resp = await es.get(index=INDEX_NAMES["alerts_processed"], id=feedback.alert_id, ignore_unavailable=True)
@@ -25,7 +25,7 @@ async def submit_feedback(es, feedback: AnalystFeedback) -> dict:
             alert_doc = alert_resp["_source"]
             doc["entity_key"] = alert_doc.get("entity_key", "")
             doc["triggered_rules"] = alert_doc.get("triggered_rules", [])
-        
+
         resp = await es.index(index=FEEDBACK_INDEX, document=doc)
         return {"status": "success", "id": resp["_id"]}
     except Exception as e:
@@ -43,7 +43,7 @@ async def get_feedback_for_alert(es, alert_id: str) -> list[dict]:
 async def get_all_feedback(es, label: str = None, limit: int = 500) -> list[dict]:
     must = []
     if label: must.append({"match": {"label.keyword": label}})
-    
+
     query = {
         "size": limit,
         "sort": [{"timestamp": {"order": "desc"}}],

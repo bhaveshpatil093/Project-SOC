@@ -1,8 +1,8 @@
-import uuid
-from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
-from typing import List, Dict, Any
 import logging
+import uuid
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from typing import Any
 
 from app.slm.engine import SLMEngine
 
@@ -25,14 +25,14 @@ class ShiftReport:
     alerts_escalated: int
     feedback_submitted: int
 
-    top_threats: List[Dict[str, Any]]
-    active_incidents: List[Dict[str, Any]]
-    watchlisted_entity_activity: List[Dict[str, Any]]
+    top_threats: list[dict[str, Any]]
+    active_incidents: list[dict[str, Any]]
+    watchlisted_entity_activity: list[dict[str, Any]]
 
     shift_narrative: str
-    key_findings: List[str]
-    open_items: List[str]
-    recommendations: List[str]
+    key_findings: list[str]
+    open_items: list[str]
+    recommendations: list[str]
 
 async def _fetch_metrics(es, start_time: datetime, end_time: datetime) -> dict:
     # 1. Alerts within window
@@ -53,16 +53,16 @@ async def _fetch_metrics(es, start_time: datetime, end_time: datetime) -> dict:
         "size": 5,
         "sort": [{"threat_score": {"order": "desc"}}]
     }
-    
+
     alert_res = await es.search(index="soc-processed-alerts", body=query)
-    
+
     total_alerts = alert_res["hits"]["total"]["value"] if isinstance(alert_res["hits"]["total"], dict) else alert_res["hits"]["total"]
     top_threats = [hit["_source"] for hit in alert_res["hits"]["hits"]]
-    
+
     aggs = alert_res.get("aggregations", {})
     levels = {b["key"]: b["doc_count"] for b in aggs.get("threat_levels", {}).get("buckets", [])}
     statuses = {b["key"]: b["doc_count"] for b in aggs.get("status", {}).get("buckets", [])}
-    
+
     # 2. Incidents within window
     inc_query = {
         "query": {
@@ -76,7 +76,7 @@ async def _fetch_metrics(es, start_time: datetime, end_time: datetime) -> dict:
     }
     inc_res = await es.search(index="soc-incidents", body=inc_query)
     new_incidents = inc_res["hits"]["total"]["value"] if isinstance(inc_res["hits"]["total"], dict) else inc_res["hits"]["total"]
-    
+
     # 3. Active incidents (regardless of creation time, just status=open)
     active_inc_query = {
         "query": {"term": {"status.keyword": "open"}},
@@ -85,7 +85,7 @@ async def _fetch_metrics(es, start_time: datetime, end_time: datetime) -> dict:
     }
     active_inc_res = await es.search(index="soc-incidents", body=active_inc_query)
     active_incidents = [hit["_source"] for hit in active_inc_res["hits"]["hits"]]
-    
+
     # 4. Watchlisted entity activity
     wl_query = {
         "query": {
@@ -100,7 +100,7 @@ async def _fetch_metrics(es, start_time: datetime, end_time: datetime) -> dict:
     }
     wl_res = await es.search(index="soc-entity-profiles", body=wl_query)
     watchlisted = [hit["_source"] for hit in wl_res["hits"]["hits"]]
-    
+
     return {
         "total_alerts": total_alerts,
         "critical_alerts": levels.get("critical", 0),
@@ -117,9 +117,9 @@ async def _fetch_metrics(es, start_time: datetime, end_time: datetime) -> dict:
 async def generate_shift_report(es, slm_engine: SLMEngine, shift_hours: int = 8) -> ShiftReport:
     end_time = datetime.utcnow()
     start_time = end_time - timedelta(hours=shift_hours)
-    
+
     metrics = await _fetch_metrics(es, start_time, end_time)
-    
+
     # Prepare prompt data
     prompt_data = f"""
 Shift metrics: {metrics['total_alerts']} total alerts ({metrics['critical_alerts']} critical, {metrics['high_alerts']} high).
@@ -128,35 +128,35 @@ Alerts closed: {metrics['alerts_closed']}. Escalated: {metrics['alerts_escalated
 Top Threat Entities: {', '.join([a.get('entity_key', 'Unknown') for a in metrics['top_threats']])}.
 Active Incidents: {len(metrics['active_incidents'])} still open.
 """
-    
+
     narrative_prompt = f"Write a professional 2-paragraph summary of this SOC shift for the handover report.\\n{prompt_data}"
     findings_prompt = f"List exactly 3 bullet points highlighting the key security findings from this shift.\\n{prompt_data}"
     open_items_prompt = f"List exactly 2-3 open items needing attention by the next shift analyst.\\n{prompt_data}"
     recommendations_prompt = f"Provide 2 actionable recommendations for the next shift analyst.\\n{prompt_data}"
-    
+
     try:
         narrative = await slm_engine.generate(narrative_prompt, max_tokens=250)
     except:
         narrative = f"Shift concluded with {metrics['total_alerts']} alerts processed."
-        
+
     try:
         findings_text = await slm_engine.generate(findings_prompt, max_tokens=150)
         findings = [f.replace("- ", "").replace("* ", "").strip() for f in findings_text.split("\\n") if f.strip() and (f.strip().startswith("-") or f.strip().startswith("*"))]
     except:
         findings = [f"{metrics['critical_alerts']} critical alerts detected."]
-        
+
     try:
         open_text = await slm_engine.generate(open_items_prompt, max_tokens=150)
         open_items = [f.replace("- ", "").replace("* ", "").strip() for f in open_text.split("\\n") if f.strip() and (f.strip().startswith("-") or f.strip().startswith("*"))]
     except:
         open_items = [f"Review {len(metrics['active_incidents'])} open incidents."]
-        
+
     try:
         recs_text = await slm_engine.generate(recommendations_prompt, max_tokens=150)
         recommendations = [f.replace("- ", "").replace("* ", "").strip() for f in recs_text.split("\\n") if f.strip() and (f.strip().startswith("-") or f.strip().startswith("*"))]
     except:
         recommendations = ["Monitor watchlisted entities closely."]
-        
+
     # Build report
     report = ShiftReport(
         report_id=str(uuid.uuid4()),
@@ -178,14 +178,14 @@ Active Incidents: {len(metrics['active_incidents'])} still open.
         open_items=open_items if open_items else ["None."],
         recommendations=recommendations if recommendations else ["None."]
     )
-    
+
     # Save to ES
     try:
         await es.index(index=INDEX_NAME, document=asdict(report))
         logger.info(f"Generated shift report: {report.report_id}")
     except Exception as e:
         logger.error(f"Failed to save shift report: {e}")
-        
+
     return report
 
 async def get_latest_shift_report(es, max_hours: int = 8) -> dict:

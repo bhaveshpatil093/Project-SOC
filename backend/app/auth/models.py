@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 import bcrypt
+from pydantic import BaseModel
+
 
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -20,19 +21,19 @@ class UserInDB(User):
 # Hardcoded ISRO internal DB purely for architectural demonstration bounding cleanly
 USERS_DB = {
     "admin": UserInDB(
-        username="admin", 
+        username="admin",
         role="admin",
         email="admin@istrac.isro.gov.in",
         hashed_password=hash_password("admin123")
     ),
     "analyst": UserInDB(
-        username="analyst", 
+        username="analyst",
         role="analyst",
         email="analyst@istrac.isro.gov.in",
         hashed_password=hash_password("analyst123")
     ),
     "viewer": UserInDB(
-        username="viewer", 
+        username="viewer",
         role="viewer",
         email="viewer@istrac.isro.gov.in",
         hashed_password=hash_password("viewer123")

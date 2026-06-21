@@ -1,41 +1,41 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { LoadingSpinner } from './LoadingSpinner';
-import { EmptyState } from './EmptyState';
+import React, { useState } from 'react'
+import PropTypes from 'prop-types'
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { LoadingSpinner } from './LoadingSpinner'
+import { EmptyState } from './EmptyState'
 
 export const DataTable = ({ columns, data, loading, emptyMessage }) => {
-  const [sortKey, setSortKey] = useState(null);
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [sortKey, setSortKey] = useState(null)
+  const [sortOrder, setSortOrder] = useState('asc')
 
   const handleSort = (key, sortable) => {
-    if (!sortable) return;
+    if (!sortable) return
     if (sortKey === key) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
     } else {
-      setSortKey(key);
-      setSortOrder('asc');
+      setSortKey(key)
+      setSortOrder('asc')
     }
-  };
+  }
 
   const sortedData = React.useMemo(() => {
-    const arr = [...(data || [])];
-    if (!sortKey) return arr;
-    
+    const arr = [...(data || [])]
+    if (!sortKey) return arr
+
     return arr.sort((a, b) => {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
-      
-      if (aVal === bVal) return 0;
-      if (aVal === null || aVal === undefined) return 1;
-      if (bVal === null || bVal === undefined) return -1;
-      
+      const aVal = a[sortKey]
+      const bVal = b[sortKey]
+
+      if (aVal === bVal) return 0
+      if (aVal === null || aVal === undefined) return 1
+      if (bVal === null || bVal === undefined) return -1
+
       if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal)
       }
-      return sortOrder === 'asc' ? (aVal < bVal ? -1 : 1) : (aVal > bVal ? -1 : 1);
-    });
-  }, [data, sortKey, sortOrder]);
+      return sortOrder === 'asc' ? (aVal < bVal ? -1 : 1) : aVal > bVal ? -1 : 1
+    })
+  }, [data, sortKey, sortOrder])
 
   return (
     <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg w-full">
@@ -44,8 +44,8 @@ export const DataTable = ({ columns, data, loading, emptyMessage }) => {
           <thead className="bg-[var(--bg_primary)]/80 border-b border-[var(--border)]">
             <tr>
               {columns.map((col, idx) => (
-                <th 
-                  key={idx} 
+                <th
+                  key={idx}
                   className={`px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider ${col.sortable ? 'cursor-pointer hover:text-[var(--text_primary)] select-none' : ''}`}
                   onClick={() => handleSort(col.key, col.sortable)}
                 >
@@ -54,7 +54,11 @@ export const DataTable = ({ columns, data, loading, emptyMessage }) => {
                     {col.sortable && (
                       <span className="text-[var(--text_secondary)]">
                         {sortKey === col.key ? (
-                          sortOrder === 'asc' ? <ArrowUp className="h-3 w-3 text-blue-400" /> : <ArrowDown className="h-3 w-3 text-blue-400" />
+                          sortOrder === 'asc' ? (
+                            <ArrowUp className="h-3 w-3 text-blue-400" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3 text-blue-400" />
+                          )
                         ) : (
                           <ArrowUpDown className="h-3 w-3" />
                         )}
@@ -75,15 +79,27 @@ export const DataTable = ({ columns, data, loading, emptyMessage }) => {
             ) : sortedData.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-6 py-16">
-                  <EmptyState title="No Records Found" description={emptyMessage || "There is no data to display here."} />
+                  <EmptyState
+                    title="No Records Found"
+                    description={emptyMessage || 'There is no data to display here.'}
+                  />
                 </td>
               </tr>
             ) : (
               sortedData.map((row, rIndex) => (
-                <tr key={row.id || row._id || rIndex} className="hover:bg-[var(--bg_tertiary)]/70 transition-colors">
+                <tr
+                  key={row.id || row._id || rIndex}
+                  className="hover:bg-[var(--bg_tertiary)]/70 transition-colors"
+                >
                   {columns.map((col, cIndex) => (
                     <td key={cIndex} className="px-6 py-4">
-                      {col.render ? col.render(row[col.key], row) : <span className="text-sm text-[var(--text_secondary)]">{row[col.key] || "—"}</span>}
+                      {col.render ? (
+                        col.render(row[col.key], row)
+                      ) : (
+                        <span className="text-sm text-[var(--text_secondary)]">
+                          {row[col.key] || '—'}
+                        </span>
+                      )}
                     </td>
                   ))}
                 </tr>
@@ -93,17 +109,19 @@ export const DataTable = ({ columns, data, loading, emptyMessage }) => {
         </table>
       </div>
     </div>
-  );
-};
+  )
+}
 
 DataTable.propTypes = {
-  columns: PropTypes.arrayOf(PropTypes.shape({
-    key: PropTypes.string.isRequired,
-    label: PropTypes.string.isRequired,
-    render: PropTypes.func,
-    sortable: PropTypes.bool
-  })).isRequired,
+  columns: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      render: PropTypes.func,
+      sortable: PropTypes.bool,
+    }),
+  ).isRequired,
   data: PropTypes.array,
   loading: PropTypes.bool,
-  emptyMessage: PropTypes.string
-};
+  emptyMessage: PropTypes.string,
+}

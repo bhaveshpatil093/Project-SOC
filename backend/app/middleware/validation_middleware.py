@@ -1,7 +1,8 @@
 import re
-from fastapi import Request, HTTPException
+
+from fastapi import HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
-import json
+
 
 class InputSanitizer:
     MAX_STRING_LENGTH = 10000
@@ -17,30 +18,30 @@ class InputSanitizer:
     def sanitize_string(cls, value: str) -> str:
         if not isinstance(value, str):
             return value
-            
+
         value = value.strip()
         if len(value) > cls.MAX_STRING_LENGTH:
             value = value[:cls.MAX_STRING_LENGTH]
-            
+
         for pattern in cls.FORBIDDEN_PATTERNS:
             if re.search(pattern, value, re.IGNORECASE):
                 raise HTTPException(status_code=400, detail="Forbidden input pattern detected.")
-                
+
         return value
 
     @classmethod
     def sanitize_chat_message(cls, message: str) -> str:
         if not isinstance(message, str):
             return message
-            
+
         # Remove any content between <|system|> tags (prompt injection)
         message = re.sub(r"<\|system\|>.*?</\|system\|>", "", message, flags=re.IGNORECASE | re.DOTALL)
         message = message.replace("<|system|>", "").replace("</|system|>", "")
-        
+
         message = message.strip()
         if len(message) > cls.MAX_MESSAGE_LENGTH:
             message = message[:cls.MAX_MESSAGE_LENGTH]
-            
+
         return cls.sanitize_string(message)
 
 class RequestSizeMiddleware(BaseHTTPMiddleware):
@@ -56,6 +57,6 @@ class RequestSizeMiddleware(BaseHTTPMiddleware):
                     raise HTTPException(status_code=413, detail="Request entity too large. Limit is 1MB.")
             except ValueError:
                 pass
-        
+
         response = await call_next(request)
         return response

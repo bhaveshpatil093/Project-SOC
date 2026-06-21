@@ -1,6 +1,5 @@
-import numpy as np
 import time
-from typing import Dict, Any
+
 
 class InterpretabilityReporter:
     def __init__(self):
@@ -119,7 +118,7 @@ class InterpretabilityReporter:
         ae_report = await self.generate_autoencoder_report(es, model_manager.ae_detector)
         lstm_report = await self.generate_lstm_report(model_manager.lstm_detector)
         rule_report = await self.generate_rule_engine_report(es)
-        
+
         calib_stats = {}
         if model_manager.calibrator and model_manager.calibrator.is_fitted():
             try:

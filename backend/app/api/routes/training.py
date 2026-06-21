@@ -1,14 +1,18 @@
 import uuid
-from fastapi import APIRouter, BackgroundTasks, HTTPException
-from typing import Dict, Any
 
-from app.models.trainer import run_initial_training, run_incremental_retraining, get_model_versions, TRAINING_JOBS
-from app.models.interpretability import InterpretabilityReporter
-from app.ingestion.es_client import get_es_client
-from app.models.model_manager import get_model_manager
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+
 from app.auth.jwt import require_role
-from fastapi import Depends, Request
+from app.ingestion.es_client import get_es_client
 from app.middleware.rate_limiter import limiter
+from app.models.interpretability import InterpretabilityReporter
+from app.models.model_manager import get_model_manager
+from app.models.trainer import (
+    TRAINING_JOBS,
+    get_model_versions,
+    run_incremental_retraining,
+    run_initial_training,
+)
 
 router = APIRouter()
 reporter = InterpretabilityReporter()
@@ -20,7 +24,7 @@ async def trigger_initial_training(request: Request, background_tasks: Backgroun
     job_id = str(uuid.uuid4())
     es = await get_es_client()
     mm = get_model_manager()
-    
+
     background_tasks.add_task(run_initial_training, es, mm, job_id)
     return {"job_id": job_id, "status": "started"}
 
@@ -31,7 +35,7 @@ async def trigger_incremental_retraining(request: Request, background_tasks: Bac
     job_id = str(uuid.uuid4())
     es = await get_es_client()
     mm = get_model_manager()
-    
+
     background_tasks.add_task(run_incremental_retraining, es, mm, job_id)
     return {"job_id": job_id, "status": "started"}
 
@@ -76,8 +80,8 @@ async def get_interpretability_report():
 
 # --- MLflow Endpoints ---
 
-import mlflow
 from mlflow.tracking import MlflowClient
+
 
 @router.get("/mlflow/experiments", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def list_experiments():
@@ -114,7 +118,7 @@ async def list_runs(experiment_id: str):
 async def get_run_details(run_id: str):
     client = MlflowClient()
     run = client.get_run(run_id)
-    
+
     # Try to fetch metric history if possible
     metric_history = {}
     for key in run.data.metrics.keys():
@@ -123,7 +127,7 @@ async def get_run_details(run_id: str):
             metric_history[key] = [{"step": h.step, "value": h.value, "timestamp": h.timestamp} for h in history]
         except:
             pass
-            
+
     return {
         "run_id": run.info.run_id,
         "status": run.info.status,
@@ -140,13 +144,13 @@ async def compare_runs(run_ids: str):
     ids = [i.strip() for i in run_ids.split(",") if i.strip()]
     if not ids:
         raise HTTPException(status_code=400, detail="No run IDs provided")
-        
+
     client = MlflowClient()
     runs = []
     for rid in ids:
         try:
             run = client.get_run(rid)
-            
+
             # Fetch history for loss if available
             loss_history = []
             try:
@@ -154,7 +158,7 @@ async def compare_runs(run_ids: str):
                 loss_history = [{"step": h.step, "value": h.value} for h in hist]
             except:
                 pass
-                
+
             runs.append({
                 "run_id": run.info.run_id,
                 "name": run.data.tags.get("mlflow.runName", run.info.run_id[:8]),
@@ -165,7 +169,7 @@ async def compare_runs(run_ids: str):
             })
         except:
             continue
-            
+
     return {"runs": runs}
 
 @router.get("/calibration", dependencies=[Depends(require_role("admin", "analyst"))])

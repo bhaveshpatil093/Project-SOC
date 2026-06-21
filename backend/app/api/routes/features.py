@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Any
-from app.ingestion.es_client import get_es_client, INDEX_NAMES
-from app.features.feature_merger import run_feature_pipeline, store_feature_vectors
+
+from fastapi import APIRouter, Depends, HTTPException
+
 from app.auth.jwt import require_role
 from app.cache.cache_manager import cache_result
+from app.features.feature_merger import run_feature_pipeline, store_feature_vectors
+from app.ingestion.es_client import INDEX_NAMES, get_es_client
 
 router = APIRouter(dependencies=[Depends(require_role("admin", "analyst"))])
 
@@ -15,17 +16,17 @@ async def run_features_manually():
         merged_df, _ = await run_feature_pipeline(es, since_minutes=5)
         if merged_df.empty:
             return {"entities_processed": 0, "window": "None", "top_entities": []}
-            
+
         await store_feature_vectors(es, merged_df)
-        
+
         if 'conn_per_minute' in merged_df.columns:
             top_df = merged_df.nlargest(5, 'conn_per_minute')
         else:
             top_df = merged_df.head(5)
-            
+
         top_entities = top_df['entity_key'].tolist() if 'entity_key' in top_df.columns else []
         window = merged_df['window_bucket'].iloc[0] if 'window_bucket' in merged_df.columns else "unknown"
-        
+
         return {
             "entities_processed": len(merged_df),
             "window": window,

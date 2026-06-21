@@ -1,22 +1,22 @@
-import time
 import asyncio
-import psutil
+import time
 from dataclasses import dataclass, field
-from typing import Dict, Any
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
 from app.ingestion.es_client import get_es_client
 from app.models.model_manager import get_model_manager
 from app.slm.model_loader import get_slm_engine
 from app.slm.rag_pipeline import get_rag_pipeline
 
+
 @dataclass
 class ComponentHealth:
     name: str
     status: str          # "healthy" | "degraded" | "unhealthy"
     latency_ms: float
-    details: Dict[str, Any]
-    last_checked: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    details: dict[str, Any]
+    last_checked: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 class HealthChecker:
     async def check_elasticsearch(self) -> ComponentHealth:
@@ -34,7 +34,7 @@ class HealthChecker:
             latency = (time.time() - start) * 1000
             status = "unhealthy"
             details = {"error": str(e)}
-            
+
         return ComponentHealth(name="elasticsearch", status=status, latency_ms=latency, details=details)
 
     async def check_models(self) -> ComponentHealth:
@@ -70,11 +70,11 @@ class HealthChecker:
         except Exception as e:
             status = "unhealthy"
             details["error"] = str(e)
-            
+
         latency = (time.time() - start) * 1000
         if status == "healthy" and latency > 5000:
             status = "degraded"
-            
+
         return ComponentHealth(name="slm_engine", status=status, latency_ms=latency, details=details)
 
     async def check_rag(self) -> ComponentHealth:
@@ -103,14 +103,14 @@ class HealthChecker:
             sched = IngestionScheduler()
             is_running = sched.scheduler.running if sched.scheduler else False
             details["is_running"] = is_running
-            
+
             # Check last run
             from app.ingestion.state import IngestionState
             state = IngestionState()
             last_run = state.get_last_run()
             if last_run:
                 details["last_run"] = last_run
-                diff = (datetime.now(timezone.utc) - datetime.fromisoformat(last_run.replace('Z', '+00:00'))).total_seconds()
+                diff = (datetime.now(UTC) - datetime.fromisoformat(last_run.replace('Z', '+00:00'))).total_seconds()
                 if diff > 600: # 10 min
                     status = "degraded"
                     details["warning"] = "Last ingestion cycle was over 10 minutes ago."
@@ -118,17 +118,17 @@ class HealthChecker:
                 details["last_run"] = None
                 status = "degraded"
                 details["warning"] = "No ingestion cycle has run yet."
-                
+
             if not is_running:
                 status = "degraded"
-                
+
         except Exception as e:
             status = "unhealthy"
             details = {"error": str(e)}
         latency = (time.time() - start) * 1000
         return ComponentHealth(name="ingestion_scheduler", status=status, latency_ms=latency, details=details)
 
-    async def run_all_checks(self) -> Dict[str, Any]:
+    async def run_all_checks(self) -> dict[str, Any]:
         results = await asyncio.gather(
             self.check_elasticsearch(),
             self.check_models(),
@@ -136,15 +136,15 @@ class HealthChecker:
             self.check_rag(),
             self.check_scheduler()
         )
-        
+
         overall = "healthy"
         for r in results:
             if r.status == "unhealthy":
                 overall = "unhealthy"
                 break
-            elif r.status == "degraded":
+            if r.status == "degraded":
                 overall = "degraded"
-                
+
         return {
             "status": overall,
             "components": [

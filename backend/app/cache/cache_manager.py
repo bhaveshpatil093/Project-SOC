@@ -1,7 +1,8 @@
-from functools import wraps
-import asyncio
 import time
-from typing import Any, Optional, Callable
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
+
 
 class CacheEntry:
     def __init__(self, value, ttl_seconds: int):
@@ -20,15 +21,14 @@ class InMemoryCache:
         self.hits = 0
         self.misses = 0
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         if key in self._store:
             entry = self._store[key]
             if not entry.is_expired:
                 entry.hit_count += 1
                 self.hits += 1
                 return entry.value
-            else:
-                del self._store[key]
+            del self._store[key]
         self.misses += 1
         return None
 
@@ -68,11 +68,11 @@ def cache_result(ttl_seconds: int = 300, key_fn: Callable = None):
                 cache_key = key_fn(*args, **kwargs)
             else:
                 cache_key = f"{func.__name__}:{args}:{kwargs}"
-                
+
             cached = await cache.get(cache_key)
             if cached is not None:
                 return cached
-                
+
             result = await func(*args, **kwargs)
             await cache.set(cache_key, result, ttl_seconds)
             return result

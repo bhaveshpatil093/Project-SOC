@@ -1,9 +1,11 @@
 import re
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Any
+
 import pandas as pd
 from dateutil import parser
+
 
 @dataclass
 class NormalizedLog:
@@ -15,7 +17,7 @@ class NormalizedLog:
     host_ip: str | None = None
     host_os_type: str | None = None
     user_name: str | None = None
-    
+
     # Network fields (syslog)
     src_ip: str | None = None
     dst_ip: str | None = None
@@ -23,7 +25,7 @@ class NormalizedLog:
     src_port: int | None = None
     dst_port: int | None = None
     network_interface: str | None = None
-    
+
     # Process fields
     process_name: str | None = None
     process_executable: str | None = None
@@ -38,7 +40,7 @@ class NormalizedLog:
     process_parent_command_line: str | None = None
     event_action: str | None = None
     event_category: list[str] = field(default_factory=list)
-    
+
     # Security alert fields
     winlog_event_id: int | None = None
     alert_severity: str | None = None
@@ -63,7 +65,7 @@ def _parse_timestamp(ts_str: Any) -> datetime:
 def _extract_base_fields(raw: dict) -> dict:
     host_data = raw.get("host", {})
     user_data = raw.get("user", {})
-    
+
     host_ip_raw = host_data.get("ip")
     host_ip = None
     if isinstance(host_ip_raw, list) and len(host_ip_raw) > 0:
@@ -84,9 +86,9 @@ def _extract_base_fields(raw: dict) -> dict:
 def normalize_syslog(raw: dict) -> NormalizedLog:
     base = _extract_base_fields(raw)
     base["log_type"] = "network"
-    
+
     message = str(raw.get("message", ""))
-    
+
     # Parse syslog message field with exact regex patterns
     src_match = re.search(r"SRC=([^\s]+)", message)
     dst_match = re.search(r"DST=([^\s]+)", message)
@@ -94,7 +96,7 @@ def normalize_syslog(raw: dict) -> NormalizedLog:
     spt_match = re.search(r"SPT=([^\s]+)", message)
     dpt_match = re.search(r"DPT=([^\s]+)", message)
     in_match = re.search(r"IN=([^\s]+)", message)
-    
+
     return NormalizedLog(
         **base,
         src_ip=src_match.group(1) if src_match else None,
@@ -108,19 +110,19 @@ def normalize_syslog(raw: dict) -> NormalizedLog:
 def normalize_process(raw: dict) -> NormalizedLog:
     base = _extract_base_fields(raw)
     base["log_type"] = "process"
-    
+
     process_data = raw.get("process", {})
     parent_data = process_data.get("parent", {})
     event_data = raw.get("event", {})
-    
+
     process_args = process_data.get("args", [])
     if not isinstance(process_args, list):
         process_args = [str(process_args)] if process_args else []
-        
+
     event_category = event_data.get("category", [])
     if not isinstance(event_category, list):
         event_category = [str(event_category)] if event_category else []
-        
+
     return NormalizedLog(
         **base,
         process_name=process_data.get("name"),
@@ -141,30 +143,30 @@ def normalize_process(raw: dict) -> NormalizedLog:
 def normalize_security_alert(raw: dict) -> NormalizedLog:
     base = _extract_base_fields(raw)
     base["log_type"] = "security_alert"
-    
+
     winlog_data = raw.get("winlog", {})
     kibana_data = raw.get("kibana", {})
     alert_data = kibana_data.get("alert", {})
     rule_data = alert_data.get("rule", {})
-    
+
     # Extract threat context (tactic and technique)
     threats = rule_data.get("threat", [])
     alert_mitre_tactic = None
     alert_mitre_technique_id = None
-    
+
     if isinstance(threats, list) and len(threats) > 0:
         first_threat = threats[0]
         if isinstance(first_threat, dict):
             tactic = first_threat.get("tactic", {})
             if isinstance(tactic, dict):
                 alert_mitre_tactic = tactic.get("name")
-            
+
             techniques = first_threat.get("technique", [])
             if isinstance(techniques, list) and len(techniques) > 0:
                 first_tech = techniques[0]
                 if isinstance(first_tech, dict):
                     alert_mitre_technique_id = first_tech.get("id")
-                    
+
     # Safe float parsing
     risk_score_raw = alert_data.get("risk_score")
     risk_score = None
@@ -199,17 +201,17 @@ def normalize_security_alert(raw: dict) -> NormalizedLog:
 def normalize_batch(raw_docs: list[dict], log_type: str) -> list[NormalizedLog]:
     if not raw_docs:
         return []
-        
+
     if log_type == "network":
         # Vectorized parsing for network logs (syslog regex)
         # Using list comprehension for simple dict lookups (faster than json_normalize on highly nested dicts)
         base_dicts = [_extract_base_fields(doc) for doc in raw_docs]
         base_df = pd.DataFrame(base_dicts)
         base_df["log_type"] = "network"
-        
+
         # Extract messages
         messages = pd.Series([str(doc.get("message", "")) for doc in raw_docs])
-        
+
         # Pure pandas vectorized regex extraction (No python loops)
         extracted = pd.DataFrame({
             "src_ip": messages.str.extract(r"SRC=([^\s]+)", expand=False),
@@ -219,31 +221,30 @@ def normalize_batch(raw_docs: list[dict], log_type: str) -> list[NormalizedLog]:
             "dst_port": pd.to_numeric(messages.str.extract(r"DPT=([^\s]+)", expand=False), errors="coerce").astype("Int64"),
             "network_interface": messages.str.extract(r"IN=([^\s]+)", expand=False)
         })
-        
+
         # Combine base fields and extracted regex fields
         combined = pd.concat([base_df, extracted], axis=1)
-        
+
         # Convert back to dataclass objects (cleaning pd.NaT / pd.NA)
         records = combined.to_dict('records')
-        
+
         normalized = []
         for rec in records:
             cleaned = {k: (None if pd.isna(v) else v) for k, v in rec.items()}
             normalized.append(NormalizedLog(**cleaned))
-            
+
         return normalized
-    else:
-        # Process and Security Alerts: list comprehension is extremely fast for direct dict mapping
-        normalized = []
-        for doc in raw_docs:
-            try:
-                if log_type == "process":
-                    normalized.append(normalize_process(doc))
-                elif log_type == "security_alert":
-                    normalized.append(normalize_security_alert(doc))
-            except Exception:
-                pass
-        return normalized
+    # Process and Security Alerts: list comprehension is extremely fast for direct dict mapping
+    normalized = []
+    for doc in raw_docs:
+        try:
+            if log_type == "process":
+                normalized.append(normalize_process(doc))
+            elif log_type == "security_alert":
+                normalized.append(normalize_security_alert(doc))
+        except Exception:
+            pass
+    return normalized
 
 def to_dataframe(logs: list[NormalizedLog]) -> pd.DataFrame:
     data = [asdict(log) for log in logs]

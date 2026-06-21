@@ -1,9 +1,11 @@
-from fastapi import Request, status
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
-from app.exceptions import SOCBaseException, AlertNotFoundError
-import uuid
 import datetime
+import uuid
+
+from fastapi import Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+from app.exceptions import AlertNotFoundError, SOCBaseException
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -11,7 +13,7 @@ logger = get_logger(__name__)
 async def soc_exception_handler(request: Request, exc: SOCBaseException):
     correlation_id = str(uuid.uuid4())
     logger.error("soc_exception", code=exc.code, message=exc.message, details=exc.details, correlation_id=correlation_id)
-    
+
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
     if isinstance(exc, AlertNotFoundError):
         status_code = status.HTTP_404_NOT_FOUND
@@ -27,14 +29,14 @@ async def soc_exception_handler(request: Request, exc: SOCBaseException):
             "message": exc.message,
             "details": exc.details,
             "correlation_id": correlation_id,
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat()
         }
     )
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     correlation_id = str(uuid.uuid4())
     logger.warning("validation_error", errors=exc.errors(), correlation_id=correlation_id)
-    
+
     fields = {}
     for err in exc.errors():
         field_name = ".".join(str(loc) for loc in err["loc"]) if err["loc"] else "unknown"
@@ -47,14 +49,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "message": "Input validation failed",
             "fields": fields,
             "correlation_id": correlation_id,
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat()
         }
     )
 
 async def generic_exception_handler(request: Request, exc: Exception):
     correlation_id = str(uuid.uuid4())
     logger.error("unhandled_exception", error=str(exc), correlation_id=correlation_id, exc_info=exc)
-    
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
@@ -62,6 +64,6 @@ async def generic_exception_handler(request: Request, exc: Exception):
             "message": "An unexpected error occurred",
             "correlation_id": correlation_id,
             "support": "Contact ISTRAC SOC admin",
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat()
         }
     )

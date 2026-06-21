@@ -1,8 +1,15 @@
-from fastapi import APIRouter, HTTPException, Query, Depends
-from app.feedback.label_store import AnalystFeedback, submit_feedback, get_all_feedback, get_fp_suppression_patterns, FEEDBACK_INDEX
-from app.feedback.suppressor import get_suppressor
-from app.ingestion.es_client import get_es_client, INDEX_NAMES
+from fastapi import APIRouter, Depends, Query
+
 from app.auth.jwt import require_role
+from app.feedback.label_store import (
+    FEEDBACK_INDEX,
+    AnalystFeedback,
+    get_all_feedback,
+    get_fp_suppression_patterns,
+    submit_feedback,
+)
+from app.feedback.suppressor import get_suppressor
+from app.ingestion.es_client import get_es_client
 
 router = APIRouter()
 
@@ -11,11 +18,11 @@ async def post_feedback(feedback: AnalystFeedback):
     """Submits manual triage labels dropping mapped boundaries sequentially matching ES indices."""
     es = await get_es_client()
     res = await submit_feedback(es, feedback)
-    
+
     # Auto-triggers internal mappings dynamically refreshing memory buffers.
     suppressor = get_suppressor()
     await suppressor.refresh_suppression_list(es)
-    
+
     return res
 
 @router.get("")
@@ -41,12 +48,12 @@ async def get_stats():
         buckets = resp.get("aggregations", {}).get("labels", {}).get("buckets", [])
         counts = {b["key"]: b["doc_count"] for b in buckets}
         total = sum(counts.values())
-        
+
         tp = counts.get("TP", 0)
         fp = counts.get("FP", 0)
         benign = counts.get("Benign", 0)
         fp_rate = fp / total if total > 0 else 0.0
-        
+
         return {
             "TP": tp,
             "FP": fp,

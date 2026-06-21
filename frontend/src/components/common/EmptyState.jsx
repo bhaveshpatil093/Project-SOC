@@ -1,17 +1,25 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { PackageOpen } from 'lucide-react';
+import React from 'react'
+import PropTypes from 'prop-types'
+import { PackageOpen } from 'lucide-react'
 
-export const EmptyState = ({ icon: Icon = PackageOpen, title, description, actionLabel, onAction }) => {
+export const EmptyState = ({
+  icon: Icon = PackageOpen,
+  title,
+  description,
+  actionLabel,
+  onAction,
+}) => {
   return (
     <div className="flex flex-col items-center justify-center p-12 text-center bg-[var(--bg_secondary)]/50 rounded-xl border border-dashed border-[var(--border)] animate-in fade-in duration-300">
       <div className="w-16 h-16 bg-[var(--bg_secondary)] rounded-full flex items-center justify-center mb-4 border border-[var(--border)]">
         <Icon className="h-8 w-8 text-[var(--text_secondary)]" />
       </div>
       <h3 className="text-lg font-bold text-[var(--text_primary)] mb-2">{title}</h3>
-      <p className="text-[var(--text_secondary)] max-w-sm text-sm leading-relaxed mb-6">{description}</p>
+      <p className="text-[var(--text_secondary)] max-w-sm text-sm leading-relaxed mb-6">
+        {description}
+      </p>
       {actionLabel && onAction && (
-        <button 
+        <button
           onClick={onAction}
           className="bg-[var(--bg_secondary)] hover:bg-[var(--bg_tertiary)] border border-[var(--border)] text-[var(--text_primary)] px-6 py-2 rounded-lg font-medium transition-colors"
         >
@@ -19,13 +27,13 @@ export const EmptyState = ({ icon: Icon = PackageOpen, title, description, actio
         </button>
       )}
     </div>
-  );
-};
+  )
+}
 
 EmptyState.propTypes = {
   icon: PropTypes.elementType,
   title: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
   actionLabel: PropTypes.string,
-  onAction: PropTypes.func
-};
+  onAction: PropTypes.func,
+}

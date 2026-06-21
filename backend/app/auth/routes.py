@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from app.auth.models import USERS_DB, verify_password, User
+
 from app.auth.jwt import create_access_token, get_current_user
+from app.auth.models import USERS_DB, User, verify_password
 from app.logging_config import get_logger
-from fastapi import Request
 from app.middleware.rate_limiter import limiter
 
 logger = get_logger(__name__)
@@ -21,10 +21,10 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-        
+
     access_token = create_access_token(data={"sub": user_data.username, "role": user_data.role})
     logger.info("auth_success", username=form_data.username, role=user_data.role)
-    
+
     return {
         "access_token": access_token,
         "token_type": "bearer",

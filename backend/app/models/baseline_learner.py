@@ -1,11 +1,12 @@
 import math
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Optional, Dict, List
+
 import pandas as pd
-from app.logging_config import get_logger
-from app.ingestion.es_client import INDEX_NAMES
+
 from app.cache.cache_manager import cache, cache_result
+from app.ingestion.es_client import INDEX_NAMES
+from app.logging_config import get_logger
 
 logger = get_logger(__name__)
 
@@ -37,7 +38,7 @@ class BaselineLearner:
         self.decay_factor = decay_factor
 
     @cache_result(ttl_seconds=300, key_fn=lambda self, es, entity_key: f"baseline:{entity_key}")
-    async def get_baseline(self, es, entity_key: str) -> Optional[EntityBaseline]:
+    async def get_baseline(self, es, entity_key: str) -> EntityBaseline | None:
         try:
             resp = await es.get(index=INDEX_NAMES["baselines"], id=entity_key)
             source = resp.get("_source", {})
@@ -56,7 +57,7 @@ class BaselineLearner:
 
     async def update_baseline(self, es, entity_key: str, feature_row: dict):
         baseline = await self.get_baseline(es, entity_key)
-        
+
         if baseline is None:
             baseline = EntityBaseline(
                 entity_key=entity_key,
@@ -79,86 +80,86 @@ class BaselineLearner:
         else:
             baseline.observation_count += 1
             baseline.last_updated = datetime.utcnow()
-            
+
             # Network Updates
             c_val = float(feature_row.get("conn_count_1m", 0))
             baseline.avg_conn_per_minute, baseline.std_conn_per_minute = self._update_ema(
                 baseline.avg_conn_per_minute, baseline.std_conn_per_minute, c_val
             )
-            
+
             p_val = float(feature_row.get("unique_dst_ports_1m", 0))
             baseline.avg_unique_dst_ports, baseline.std_unique_dst_ports = self._update_ema(
                 baseline.avg_unique_dst_ports, baseline.std_unique_dst_ports, p_val
             )
-            
+
             # Process Updates
             sp_val = float(feature_row.get("process_spawn_count_1m", 0))
             baseline.avg_process_spawn_count, baseline.std_process_spawn_count = self._update_ema(
                 baseline.avg_process_spawn_count, baseline.std_process_spawn_count, sp_val
             )
-            
+
             arg_val = float(feature_row.get("avg_args_count", 0))
             baseline.avg_args_count = self.decay_factor * baseline.avg_args_count + (1 - self.decay_factor) * arg_val
-            
+
             # Alert Updates
             al_val = float(feature_row.get("recent_alert_count", 0))
             baseline.avg_alert_count, baseline.std_alert_count = self._update_ema(
                 baseline.avg_alert_count, baseline.std_alert_count, al_val
             )
-            
+
             r_val = float(feature_row.get("avg_risk_score", 0))
             baseline.avg_risk_score = self.decay_factor * baseline.avg_risk_score + (1 - self.decay_factor) * r_val
-            
+
         doc = asdict(baseline)
         doc["last_updated"] = doc["last_updated"].isoformat()
-        
+
         try:
             await es.index(index=INDEX_NAMES["baselines"], id=entity_key, document=doc)
         except Exception as e:
             logger.warning("failed_to_store_baseline", entity_key=entity_key, error=str(e))
 
-    def compute_deviation_ratios(self, baseline: EntityBaseline, feature_row: dict) -> Dict[str, float]:
+    def compute_deviation_ratios(self, baseline: EntityBaseline, feature_row: dict) -> dict[str, float]:
         if baseline.observation_count < self.min_observations:
             return {}
 
         deviations = {}
-        
+
         def calc_dev(current: float, avg: float, std: float) -> float:
             ratio = abs(current - avg) / max(std, 0.01)
             return min(ratio, 10.0) # Cap at 10x
 
         if "conn_count_1m" in feature_row:
             deviations["conn_count_1m"] = calc_dev(
-                float(feature_row["conn_count_1m"]), 
-                baseline.avg_conn_per_minute, 
+                float(feature_row["conn_count_1m"]),
+                baseline.avg_conn_per_minute,
                 baseline.std_conn_per_minute
             )
-            
+
         if "unique_dst_ports_1m" in feature_row:
             deviations["unique_dst_ports_1m"] = calc_dev(
-                float(feature_row["unique_dst_ports_1m"]), 
-                baseline.avg_unique_dst_ports, 
+                float(feature_row["unique_dst_ports_1m"]),
+                baseline.avg_unique_dst_ports,
                 baseline.std_unique_dst_ports
             )
-            
+
         if "process_spawn_count_1m" in feature_row:
             deviations["process_spawn_count_1m"] = calc_dev(
-                float(feature_row["process_spawn_count_1m"]), 
-                baseline.avg_process_spawn_count, 
+                float(feature_row["process_spawn_count_1m"]),
+                baseline.avg_process_spawn_count,
                 baseline.std_process_spawn_count
             )
 
         return deviations
 
-    def format_deviation_context(self, deviations: Dict[str, float], feature_row: dict, baseline: EntityBaseline) -> str:
+    def format_deviation_context(self, deviations: dict[str, float], feature_row: dict, baseline: EntityBaseline) -> str:
         parts = []
-        
+
         mapping = {
             "conn_count_1m": ("conn_per_minute", baseline.avg_conn_per_minute, baseline.std_conn_per_minute),
             "unique_dst_ports_1m": ("unique_dst_ports", baseline.avg_unique_dst_ports, baseline.std_unique_dst_ports),
             "process_spawn_count_1m": ("process_spawn_count", baseline.avg_process_spawn_count, baseline.std_process_spawn_count)
         }
-        
+
         for feat, dev in deviations.items():
             if dev > 2.0 and feat in mapping:
                 friendly_name, avg, std = mapping[feat]
@@ -170,7 +171,7 @@ class BaselineLearner:
     async def update_all_baselines(self, es, feature_df: pd.DataFrame):
         if feature_df.empty:
             return
-            
+
         grouped = feature_df.groupby("entity_key")
         for entity_key, group in grouped:
             latest_row = group.iloc[-1].to_dict()

@@ -1,6 +1,6 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import React from 'react'
+import PropTypes from 'prop-types'
+import { AlertCircle, RefreshCw } from 'lucide-react'
 
 export const ErrorBanner = ({ message, onRetry }) => {
   return (
@@ -11,12 +11,14 @@ export const ErrorBanner = ({ message, onRetry }) => {
         </div>
         <div>
           <h3 className="text-red-400 font-bold mb-1">System Error Encountered</h3>
-          <p className="text-[var(--text_secondary)] text-sm leading-relaxed max-w-3xl">{message || "An unexpected network or system error occurred."}</p>
+          <p className="text-[var(--text_secondary)] text-sm leading-relaxed max-w-3xl">
+            {message || 'An unexpected network or system error occurred.'}
+          </p>
         </div>
       </div>
-      
+
       {onRetry && (
-        <button 
+        <button
           onClick={onRetry}
           className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-[var(--text_primary)] font-medium rounded-lg text-sm transition-colors shrink-0"
         >
@@ -25,10 +27,10 @@ export const ErrorBanner = ({ message, onRetry }) => {
         </button>
       )}
     </div>
-  );
-};
+  )
+}
 
 ErrorBanner.propTypes = {
   message: PropTypes.string.isRequired,
-  onRetry: PropTypes.func
-};
+  onRetry: PropTypes.func,
+}

@@ -1,8 +1,9 @@
+import logging
 import os
+
 import joblib
 import numpy as np
 import pandas as pd
-import logging
 from sklearn.ensemble import IsolationForest
 
 logger = logging.getLogger(__name__)
@@ -72,35 +73,36 @@ class IsolationForestDetector:
 
 def train_isolation_forest(feature_df: pd.DataFrame) -> IsolationForestDetector | None:
     import mlflow
-    from app.features.feature_merger import fit_scaler, save_scaler, scale_features
+
     from app.config import settings
-    
+    from app.features.feature_merger import fit_scaler, save_scaler, scale_features
+
     mlflow.set_experiment("soc-anomaly-detection")
-    
+
     with mlflow.start_run():
         if feature_df.empty:
             logger.warning("Empty dataframe provided to train_isolation_forest. Cannot train.")
             return None
-            
+
         # Ensure mapping consistency backing up missing network dimensions
         for col in NETWORK_FEATURE_COLS:
             if col not in feature_df.columns:
                 feature_df[col] = 0.0
-                
+
         X_df = feature_df[NETWORK_FEATURE_COLS].fillna(0)
         X_raw = X_df.values
-        
+
         # Fit independent sub-scaler
         scaler = fit_scaler(X_raw)
         X_scaled = scale_features(X_raw, scaler)
-        
+
         scaler_path = os.path.join(settings.MODEL_DIR, "network_scaler.pkl")
         save_scaler(scaler, scaler_path)
-        
+
         # Train ML construct
         detector = IsolationForestDetector()
         train_stats = detector.train(X_scaled)
-        
+
         mlflow.log_params({
             "contamination": detector.contamination,
             "n_estimators": detector.model.n_estimators,
@@ -109,11 +111,11 @@ def train_isolation_forest(feature_df: pd.DataFrame) -> IsolationForestDetector 
         mlflow.log_metrics({
             "n_samples": train_stats["n_samples"]
         })
-        
+
         # Save artifacts locally
         model_path = os.path.join(settings.MODEL_DIR, "isolation_forest.pkl")
         detector.save(model_path)
-        
+
         logger.info(f"Isolation Forest trained on {train_stats['n_samples']} samples and saved to {model_path}.")
         return detector
 
@@ -121,6 +123,5 @@ def load_or_train(feature_df: pd.DataFrame, model_path: str) -> IsolationForestD
     if os.path.exists(model_path):
         logger.info(f"Loading existing Isolation Forest model from {model_path}")
         return IsolationForestDetector.load(model_path)
-    else:
-        logger.info(f"Model not found at {model_path}. Training fresh Isolation Forest.")
-        return train_isolation_forest(feature_df)
+    logger.info(f"Model not found at {model_path}. Training fresh Isolation Forest.")
+    return train_isolation_forest(feature_df)
