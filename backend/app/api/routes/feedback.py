@@ -64,3 +64,21 @@ async def fetch_suppression_rules():
     patterns = await get_fp_suppression_patterns(es)
     stats = get_suppressor().get_suppression_stats()
     return {"patterns": patterns, "stats": stats}
+
+from app.models.active_learner import ActiveLearner
+
+active_learner = ActiveLearner()
+
+@router.get("/labeling-queue", dependencies=[Depends(require_role("admin", "analyst"))])
+async def get_labeling_queue_api(n: int = Query(10, le=50)):
+    """Returns prioritized list from get_labeling_queue"""
+    es = await get_es_client()
+    queue = await active_learner.get_labeling_queue(es, n_samples=n)
+    return {"data": queue}
+
+@router.get("/labeling-stats", dependencies=[Depends(require_role("admin", "analyst"))])
+async def get_labeling_stats_api():
+    """Returns stats from get_labeling_stats"""
+    es = await get_es_client()
+    stats = await active_learner.get_labeling_stats(es)
+    return {"data": stats}

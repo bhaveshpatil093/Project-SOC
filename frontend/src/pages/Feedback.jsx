@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { submitFeedback, getFeedback, getFeedbackStats, getSuppressionRules } from "../api/feedback";
+import { submitFeedback, getFeedback, getFeedbackStats, getSuppressionRules, getLabelingQueue, getLabelingStats } from "../api/feedback";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorBanner } from "../components/common/ErrorBanner";
 import { Badge } from "../components/common/Badge";
 import { formatDate } from "../utils/formatters";
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { CheckCircle, ShieldOff, AlertTriangle, MessageSquare, BarChart2, Shield, Download } from "lucide-react";
+import { CheckCircle, ShieldOff, AlertTriangle, MessageSquare, BarChart2, Shield, Download, Target, XCircle, CheckSquare } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
 import { THEMES } from "../utils/theme";
 import { exportFeedbackToCSV } from "../utils/exporters";
@@ -16,6 +16,8 @@ import { exportFeedbackToCSV } from "../utils/exporters";
 const useFeedback = (limit = 50) => useQuery({ queryKey: ["feedback", limit], queryFn: () => getFeedback({ limit }) });
 const useFeedbackStats = () => useQuery({ queryKey: ["feedbackStats"], queryFn: () => getFeedbackStats() });
 const useSuppressionRules = () => useQuery({ queryKey: ["suppressionRules"], queryFn: () => getSuppressionRules() });
+const useLabelingQueue = () => useQuery({ queryKey: ["labelingQueue"], queryFn: () => getLabelingQueue() });
+const useLabelingStats = () => useQuery({ queryKey: ["labelingStats"], queryFn: () => getLabelingStats() });
 
 const TabSubmitFeedback = () => {
   const [searchParams] = useSearchParams();
@@ -374,6 +376,122 @@ const TabSuppressionRules = () => {
   );
 };
 
+
+const TabLabelingQueue = () => {
+  const { data: queueData, isLoading, isError, refetch } = useLabelingQueue();
+  const queue = queueData?.data || [];
+  const queryClient = useQueryClient();
+  const [toast, setToast] = useState(null);
+  const { defaultAnalystName } = usePreferencesStore();
+  
+  const mutation = useMutation({
+    mutationFn: submitFeedback,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["labelingQueue"]);
+      queryClient.invalidateQueries(["labelingStats"]);
+      queryClient.invalidateQueries(["feedback"]);
+      queryClient.invalidateQueries(["feedbackStats"]);
+      setToast({ message: "Feedback submitted successfully. Next alert loaded.", type: "success" });
+      setTimeout(() => setToast(null), 3000);
+      refetch();
+    },
+    onError: () => {
+      setToast({ message: "Failed to submit feedback.", type: "error" });
+      setTimeout(() => setToast(null), 3000);
+    }
+  });
+
+  const handleLabel = (alertItem, labelStr) => {
+    mutation.mutate({
+      alert_id: alertItem.id || alertItem._id || "",
+      analyst_name: defaultAnalystName || "Analyst",
+      label: labelStr,
+      notes: `Active learning queue submission (Uncertainty: ${(alertItem.uncertainty_score * 100).toFixed(0)}%)`
+    });
+  };
+
+  if (isLoading) return <div className="py-12"><LoadingSpinner /></div>;
+  if (isError) return <div className="py-8"><ErrorBanner message="Failed to load labeling queue." /></div>;
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-xl border shadow-xl flex items-center gap-3 animate-in slide-in-from-top-4 ${
+          toast.type === "success" ? "bg-green-900/40 border-green-500/50 text-green-400" : "bg-red-900/40 border-red-500/50 text-red-400"
+        }`}>
+          {toast.type === "success" ? <CheckCircle className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
+          {toast.message}
+        </div>
+      )}
+
+      <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg p-6">
+        <h3 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2 mb-2">
+          <Target className="h-6 w-6 text-blue-500" />
+          High-Value Alerts to Label (Active Learning)
+        </h3>
+        <p className="text-[var(--text_secondary)] mb-6">These alerts will improve the model most — please label them first.</p>
+
+        {queue.length === 0 ? (
+          <div className="text-center py-12 border-2 border-dashed border-[var(--border)] rounded-xl">
+            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+            <h4 className="text-lg font-medium text-[var(--text_primary)]">Queue Empty!</h4>
+            <p className="text-[var(--text_secondary)] mt-2">All high-uncertainty alerts have been labeled. Great job.</p>
+          </div>
+        ) : (
+          <div className="space-y-4 relative">
+            {mutation.isPending && (
+              <div className="absolute inset-0 bg-[var(--bg_primary)]/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+                <LoadingSpinner size={8} />
+              </div>
+            )}
+            {queue.slice(0, 5).map((item, idx) => (
+              <div key={idx} className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl p-5 shadow flex flex-col md:flex-row gap-6 items-center">
+                <div className="flex-1 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant={item.alert.threat_level}>{item.alert.threat_level.toUpperCase()}</Badge>
+                        <span className="text-xs text-[var(--text_secondary)]">{formatDate(item.alert.timestamp)}</span>
+                      </div>
+                      <h4 className="text-lg font-bold text-[var(--text_primary)]">{item.alert.entity_key}</h4>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-[var(--text_primary)] mb-1">Model Uncertainty: {(item.uncertainty_score * 100).toFixed(0)}%</div>
+                      <div className="w-32 h-2 bg-[var(--bg_tertiary)] rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-blue-500 rounded-full" 
+                          style={{ width: `${item.uncertainty_score * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-[var(--bg_tertiary)]/50 rounded-lg p-3 text-sm border border-[var(--border)]">
+                    <span className="font-semibold text-[var(--text_primary)]">Reason for Selection: </span>
+                    <span className="text-[var(--text_secondary)]">{item.reason_for_selection}</span>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-2 min-w-[160px]">
+                  <button onClick={() => handleLabel(item.alert, "TP")} className="w-full flex items-center justify-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 px-4 py-2 rounded-lg transition-colors">
+                    <CheckSquare className="h-4 w-4" /> True Positive
+                  </button>
+                  <button onClick={() => handleLabel(item.alert, "FP")} className="w-full flex items-center justify-center gap-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-500/30 px-4 py-2 rounded-lg transition-colors">
+                    <XCircle className="h-4 w-4" /> False Positive
+                  </button>
+                  <button onClick={() => handleLabel(item.alert, "Benign")} className="w-full flex items-center justify-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-lg transition-colors">
+                    <Shield className="h-4 w-4" /> Benign
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const Feedback = () => {
   const [activeTab, setActiveTab] = useState("submit");
 
@@ -411,12 +529,22 @@ export const Feedback = () => {
         >
           <ShieldOff className="h-4 w-4" /> Suppression Rules
         </button>
+        <button 
+          onClick={() => setActiveTab("queue")}
+          className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
+            activeTab === "queue" ? "bg-blue-600 text-[var(--text_primary)] shadow-lg" : "text-[var(--text_secondary)] hover:text-[var(--text_primary)] hover:bg-[var(--bg_secondary)]"
+          }`}
+        >
+          <Target className="h-4 w-4" /> Labeling Queue
+        </button>
+
       </div>
 
       <div className="pt-2">
         {activeTab === "submit" && <TabSubmitFeedback />}
         {activeTab === "stats" && <TabFeedbackStats />}
         {activeTab === "rules" && <TabSuppressionRules />}
+        {activeTab === "queue" && <TabLabelingQueue />}
       </div>
     </div>
   );

@@ -8,6 +8,11 @@ from app.features.feature_merger import run_feature_pipeline, store_feature_vect
 from app.models.model_manager import ModelManager, get_model_manager
 from app.models.baseline_learner import BaselineLearner
 from app.models.pattern_detector import PatternDetector
+from app.models.temporal_analyzer import TemporalAnalyzer, TemporalBaseline
+from app.scoring.entity_risk import EntityRiskScorer
+from app.scoring.deduplicator import AlertDeduplicator
+from app.scoring.score_history import record_score_history
+from datetime import datetime
 from app.scoring.threat_intel import ThreatIntelEnricher
 from app.scoring.explainability import ExplainabilityEngine, explain_scoring_result, build_explanation_context
 from app.scoring.correlator import AlertCorrelator
@@ -28,6 +33,8 @@ class ThreatEngine:
         self.baseline_learner = BaselineLearner()
         self.intel_enricher = ThreatIntelEnricher()
         self.pattern_detector = PatternDetector()
+        self.temporal_analyzer = TemporalAnalyzer()
+        self.entity_risk_scorer = EntityRiskScorer()
 
     async def run_scoring_cycle(self, since_minutes=5) -> dict:
         start_t = time.time()
@@ -68,6 +75,30 @@ class ThreatEngine:
                     res.threat_score *= 0.1
                     res.threat_level = "low"
                     
+                # Temporal Pattern Analysis
+                timestamp_str = feature_row.get("timestamp") or datetime.utcnow().isoformat()
+                try:
+                    ts = pd.to_datetime(timestamp_str)
+                except:
+                    ts = datetime.utcnow()
+                    
+                temporal_baseline = await self.temporal_analyzer.load_temporal_baseline(self.es, res.entity_key)
+                if not temporal_baseline:
+                    # Create empty/default for the function if missing
+                    temporal_baseline = TemporalBaseline(res.entity_key, {}, (9, 18), False)
+                
+                temporal_ctx = self.temporal_analyzer.compute_temporal_anomaly_score(feature_row, temporal_baseline, ts)
+                
+                # Boost threat score based on temporal anomaly
+                res.threat_score = min(1.0, res.threat_score * temporal_ctx["off_hours_severity"])
+                
+                # Append temporal context string
+                res.human_explanation = f"Time Context: {temporal_ctx['context']}\n\n{res.human_explanation or ''}".strip()
+                
+                # Add to row dict for downstream indexing (we'll inject it into ctx later)
+                feature_row["temporal_context"] = temporal_ctx['context']
+                feature_row["is_off_hours"] = temporal_ctx['is_off_hours']
+                
                 # Inject Baseline Behavior Deviations
                 baseline = await self.baseline_learner.get_baseline(self.es, res.entity_key)
                 if baseline:

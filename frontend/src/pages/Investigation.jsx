@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Bot, Send, Trash2, ChevronRight, Activity, Zap, FileText, Share2, Search, ShieldAlert, CheckCircle, AlertTriangle, CheckSquare, Square } from 'lucide-react';
+import { Bot, Send, Trash2, ChevronRight, Activity, Zap, FileText, Share2, Search, ShieldAlert, CheckCircle, AlertTriangle, CheckSquare, Square, ClipboardList, ArrowRight, SkipForward, Check } from 'lucide-react';
 
 import { getAlert } from '../api/alerts';
 import { getIncidentDetail } from '../api/incidents';
-import { sendMessage, clearConversation, getSlmStatus } from '../api/slm';
+import { sendMessage, clearConversation, getSlmStatus, getAlertPlaybook } from '../api/slm';
 import { useAlertStore } from '../store/alertStore';
 import { ThreatGauge } from '../components/common/ThreatGauge';
 import { MitrePanel } from '../components/common/MitrePanel';
@@ -27,6 +27,17 @@ export const Investigation = () => {
     const [searchId, setSearchId] = useState('');
     const [activeTab, setActiveTab] = useState('chat'); // 'chat' | 'context'
     const isMobile = useIsMobile();
+
+    const { data: playbookData } = useQuery({
+        queryKey: ['playbook', alertIdParam],
+        queryFn: () => getAlertPlaybook(alertIdParam),
+        enabled: !!alertIdParam
+    });
+    const playbook = playbookData?.data;
+    
+    const [activeStepIndex, setActiveStepIndex] = useState(0);
+    const [playbookCompleted, setPlaybookCompleted] = useState(false);
+
     
     const messagesEndRef = useRef(null);
     const alerts = useAlertStore((state) => state.alerts);
@@ -282,6 +293,83 @@ export const Investigation = () => {
                     </button>
                 </div>
                 
+                
+                {/* Guided Investigation Panel */}
+                {playbook && !playbookCompleted && (
+                    <div className="bg-[var(--bg_secondary)] border-b border-[var(--border)] p-4 shadow-sm relative z-10">
+                        <div className="flex items-center gap-2 text-sm font-bold text-[var(--text_primary)] mb-2">
+                            <ClipboardList className="w-4 h-4 text-purple-400" />
+                            {playbook.id}: {playbook.name}
+                        </div>
+                        
+                        <div className="flex items-center gap-1 mb-3">
+                            <span className="text-xs text-[var(--text_secondary)] mr-2">Step {activeStepIndex + 1} of {playbook.steps.length}</span>
+                            <div className="flex gap-1">
+                                {playbook.steps.map((_, i) => (
+                                    <div key={i} className={`w-2 h-2 rounded-full ${i === activeStepIndex ? 'bg-purple-500' : i < activeStepIndex ? 'bg-green-500' : 'bg-[var(--bg_tertiary)] border border-[var(--border)]'}`} />
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div className="bg-[var(--bg_primary)] p-3 rounded-lg border border-[var(--border)]">
+                            <h4 className="text-sm font-bold text-[var(--text_primary)] mb-1">{playbook.steps[activeStepIndex].title}</h4>
+                            <p className="text-sm text-[var(--text_secondary)] mb-3">{playbook.steps[activeStepIndex].instruction}</p>
+                            
+                            {playbook.steps[activeStepIndex].suggested_slm_query && (
+                                <button 
+                                    onClick={() => setInput(playbook.steps[activeStepIndex].suggested_slm_query)}
+                                    className="w-full text-left bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 p-2 rounded-md transition-colors group mb-4"
+                                >
+                                    <span className="text-xs font-bold text-purple-400 block mb-1">Ask SLM →</span>
+                                    <span className="text-sm text-[var(--text_primary)] italic">"{playbook.steps[activeStepIndex].suggested_slm_query}"</span>
+                                </button>
+                            )}
+                            
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => {
+                                        if (activeStepIndex < playbook.steps.length - 1) setActiveStepIndex(prev => prev + 1);
+                                        else setPlaybookCompleted(true);
+                                    }}
+                                    className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                                >
+                                    <Check className="w-4 h-4" /> {activeStepIndex < playbook.steps.length - 1 ? 'Done' : 'Finish Playbook'}
+                                </button>
+                                {activeStepIndex < playbook.steps.length - 1 && (
+                                    <button 
+                                        onClick={() => setActiveStepIndex(prev => prev + 1)}
+                                        className="flex items-center gap-1 bg-[var(--bg_tertiary)] hover:bg-[var(--border)] text-[var(--text_secondary)] hover:text-[var(--text_primary)] px-3 py-1.5 rounded-lg text-sm transition-colors"
+                                    >
+                                        <SkipForward className="w-4 h-4" /> Skip
+                                    </button>
+                                )}
+                                {activeStepIndex > 0 && (
+                                    <button 
+                                        onClick={() => setActiveStepIndex(prev => prev - 1)}
+                                        className="text-xs text-[var(--text_secondary)] hover:text-[var(--text_primary)] ml-auto"
+                                    >
+                                        ◀ Back
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
+                {playbook && playbookCompleted && (
+                    <div className="bg-green-900/20 border-b border-green-500/30 p-4 relative z-10 flex flex-col items-center justify-center text-center">
+                        <CheckCircle className="w-8 h-8 text-green-500 mb-2" />
+                        <h3 className="text-lg font-bold text-green-400 mb-2">Investigation Complete</h3>
+                        <div className="bg-[var(--bg_primary)] p-3 rounded-lg border border-[var(--border)] max-w-sm mb-4">
+                            <h4 className="text-xs font-bold text-[var(--text_secondary)] uppercase tracking-wider mb-1">Escalation Criteria</h4>
+                            <p className="text-sm text-[var(--text_primary)]">{playbook.escalation_criteria}</p>
+                        </div>
+                        <Link to="/workbench" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                            Return to Workbench
+                        </Link>
+                    </div>
+                )}
+
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-[var(--bg_primary)]/20">
                     {messages.map((msg, idx) => (
                         <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>

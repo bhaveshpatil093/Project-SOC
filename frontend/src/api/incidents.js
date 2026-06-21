@@ -31,3 +31,14 @@ export const getIncidentStats = async () => {
 export const investigateIncident = async (incidentId) => {
   return await apiClient.get(`/api/incidents/${incidentId}/investigate`);
 };
+
+
+export const generateIncidentReport = async (incidentId) => {
+    const response = await apiClient.post(`/api/incidents/${incidentId}/generate-report`);
+    return response.data;
+};
+
+export const getIncidentReport = async (incidentId) => {
+    const response = await apiClient.get(`/api/incidents/${incidentId}/report`);
+    return response.data;
+};

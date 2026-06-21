@@ -147,6 +147,25 @@ def explain_scoring_result(result: ScoringResult, feature_row: dict, engine: Exp
             X = scale_features(X, mm.proc_scaler)
         shap_res = engine.explain_process_anomaly(X, PROCESS_FEATURE_COLS)
         
+    # Counterfactual Explanations
+    cf_explanation = ""
+    if result.threat_level in ["critical", "high"]:
+        from app.scoring.counterfactual import CounterfactualExplainer
+        from app.models.model_manager import get_model_manager
+        mm = get_model_manager()
+        features = NETWORK_FEATURE_COLS if log_type == "network" else PROCESS_FEATURE_COLS
+        cf_explainer = CounterfactualExplainer(
+            isolation_forest_detector=mm.if_detector,
+            autoencoder_detector=mm.ae_detector,
+            feature_names=features,
+            score_threshold=0.5
+        )
+        try:
+            cf_result = cf_explainer.generate_counterfactual(feature_row, result.threat_score)
+            cf_explanation = cf_explainer.format_counterfactual(cf_result)
+        except Exception as e:
+            cf_explanation = ""
+
     rule_res = {"triggered_rules": result.triggered_rules}
     
     human_exp = engine.get_human_explanation(shap_res, rule_res, log_type)

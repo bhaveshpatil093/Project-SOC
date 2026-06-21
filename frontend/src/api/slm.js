@@ -54,3 +54,9 @@ export const getSlmMetrics = async (sinceHours = 24) => {
     const response = await apiClient.get(`/api/slm/metrics?since_hours=${sinceHours}`);
     return response.data;
 };
+
+
+export const getAlertPlaybook = async (alertId) => {
+    const response = await apiClient.get(`/api/slm/playbook/${alertId}`);
+    return response.data;
+};

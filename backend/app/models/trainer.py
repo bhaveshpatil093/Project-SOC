@@ -144,3 +144,71 @@ async def get_model_versions() -> list[dict]:
     except Exception as e:
         logger.error(f"Error accessing MLFlow artifact states natively: {e}")
         return []
+
+async def train_calibrator(es, model_manager) -> dict:
+    import numpy as np
+    import mlflow
+    from app.feedback.label_store import get_all_feedback
+    from app.models.calibrator import ScoreCalibrator
+    
+    logger.info("Starting Score Calibrator training...")
+    try:
+        feedback = await get_all_feedback(es, limit=10000)
+        
+        # In a real system, we would query the historical raw scores.
+        # But for this simulation, we'll try to extract them if they are in the feedback notes
+        # or we might just use some heuristics if we don't have them explicitly joined in feedback.
+        # Actually, let's query the alerts matching the feedback alert_ids.
+        
+        alert_ids = [fb["alert_id"] for fb in feedback if fb["alert_id"]]
+        if not alert_ids:
+            return {"status": "skipped", "reason": "No feedback available."}
+            
+        # Fetch the original alerts
+        query = {
+            "size": len(alert_ids),
+            "query": {
+                "ids": {
+                    "values": alert_ids
+                }
+            }
+        }
+        res = await es.search(index="soc-processed-alerts", body=query, ignore_unavailable=True)
+        alerts_map = {hit["_id"]: hit["_source"] for hit in res.get("hits", {}).get("hits", [])}
+        
+        raw_scores = []
+        labels = []
+        
+        for fb in feedback:
+            aid = fb["alert_id"]
+            if aid in alerts_map:
+                alert = alerts_map[aid]
+                raw_score = alert.get("raw_threat_score", alert.get("threat_score", 0.5))
+                label_val = 1 if fb["label"] == "TP" else 0  # FP and Benign are 0
+                
+                raw_scores.append(raw_score)
+                labels.append(label_val)
+                
+        if len(raw_scores) < 50:
+            logger.info(f"Skipping calibration. Need 50 labeled samples, found {len(raw_scores)}")
+            return {"status": "skipped", "reason": f"Need 50 labeled samples, found {len(raw_scores)}"}
+            
+        calibrator = ScoreCalibrator()
+        stats = calibrator.fit(np.array(raw_scores), np.array(labels))
+        
+        calibrator_path = os.path.join(settings.MODEL_DIR, "calibrator.pkl")
+        calibrator.save(calibrator_path)
+        
+        # Load it into the model manager
+        model_manager.calibrator = calibrator
+        
+        mlflow.set_experiment("SOC_Ensemble_Calibration")
+        with mlflow.start_run(run_name="Calibrator_Update"):
+            mlflow.log_params({"method": stats["method"], "n_samples": stats["n_samples_used"]})
+            mlflow.log_metrics({"brier_score": stats["brier_score"], "auc_roc": stats["auc_roc"]})
+            
+        return {"status": "success", "stats": stats}
+        
+    except Exception as e:
+        logger.error(f"Error training calibrator: {e}")
+        return {"status": "error", "error": str(e)}

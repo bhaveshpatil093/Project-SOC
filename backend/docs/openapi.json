@@ -749,6 +749,79 @@
         ]
       }
     },
+    "/api/feedback/labeling-queue": {
+      "get": {
+        "tags": [
+          "Feedback"
+        ],
+        "summary": "Get Labeling Queue Api",
+        "description": "Returns prioritized list from get_labeling_queue",
+        "operationId": "get_labeling_queue_api_api_feedback_labeling_queue_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "n",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "default": 10,
+              "title": "N"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/feedback/labeling-stats": {
+      "get": {
+        "tags": [
+          "Feedback"
+        ],
+        "summary": "Get Labeling Stats Api",
+        "description": "Returns stats from get_labeling_stats",
+        "operationId": "get_labeling_stats_api_api_feedback_labeling_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/api/training/initial": {
       "post": {
         "tags": [
@@ -848,6 +921,55 @@
         "summary": "Get Training Status",
         "description": "Generates complete model versioning mapping cleanly leveraging underlying MLFlow experiment log pipelines.",
         "operationId": "get_training_status_api_training_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/training/drift": {
+      "get": {
+        "tags": [
+          "Training"
+        ],
+        "summary": "Get Drift Status",
+        "description": "Returns the latest model drift report.",
+        "operationId": "get_drift_status_api_training_drift_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/training/interpretability": {
+      "get": {
+        "tags": [
+          "Training"
+        ],
+        "summary": "Get Interpretability Report",
+        "operationId": "get_interpretability_report_api_training_interpretability_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1022,6 +1144,54 @@
             }
           }
         }
+      }
+    },
+    "/api/training/calibration": {
+      "get": {
+        "tags": [
+          "Training"
+        ],
+        "summary": "Get Calibration Stats",
+        "description": "Returns calibration stats, AUC-ROC, Brier score, n_samples",
+        "operationId": "get_calibration_stats_api_training_calibration_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Training"
+        ],
+        "summary": "Trigger Calibration Training",
+        "description": "Manually trigger calibration training",
+        "operationId": "trigger_calibration_training_api_training_calibration_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
       }
     },
     "/api/slm/chat": {

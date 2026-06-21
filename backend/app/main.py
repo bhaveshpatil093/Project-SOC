@@ -115,6 +115,7 @@ async def lifespan(app: FastAPI):
     # Shutdown: Clean up client
     await stop_scheduler()
     await close_es_client()
+    scheduler.shutdown()
 
 from app.exceptions import SOCBaseException
 from app.middleware.exception_handlers import (

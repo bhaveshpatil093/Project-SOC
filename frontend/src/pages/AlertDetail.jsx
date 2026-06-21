@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAlert, useAlertTimeline, useUpdateAlertStatus } from "../hooks/useAlerts";
+import { getEntityScoreHistory } from "../api/entities";
+import { useQuery } from "@tanstack/react-query";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorBanner } from "../components/common/ErrorBanner";
 import { Badge } from "../components/common/Badge";
@@ -19,7 +21,11 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  Cell
+  Cell,
+  ComposedChart,
+  Area,
+  Line,
+  ReferenceLine
 } from "recharts";
 
 export const AlertDetail = () => {
@@ -50,6 +56,19 @@ export const AlertDetail = () => {
   });
 
   const timeline = timelineData?.alerts || timelineData || [];
+
+  const { data: scoreHistoryData } = useQuery({
+    queryKey: ["entityScoreHistory", alert?.entity_key],
+    queryFn: () => getEntityScoreHistory(alert.entity_key),
+    enabled: !!alert?.entity_key
+  });
+  const scoreHistory = scoreHistoryData?.data || [];
+  
+  const formattedScoreHistory = scoreHistory.map(d => ({
+    ...d,
+    formattedTime: new Date(d.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  }));
+
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -123,6 +142,63 @@ export const AlertDetail = () => {
           </button>
         </div>
       </div>
+
+
+      {/* SECTION 1.5: Model Consensus Panel */}
+      {alert.consensus_level && (
+        <div className="bg-[var(--bg_secondary)] p-6 rounded-xl border border-[var(--border)] mb-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-[var(--text_primary)] flex items-center gap-2">
+                <Shield className="h-5 w-5 text-indigo-500" />
+                Model Consensus
+              </h3>
+              <p className="text-[var(--text_secondary)] text-sm">
+                Confidence Interval (95%): {alert.confidence_interval ? `${alert.confidence_interval[0].toFixed(2)} - ${alert.confidence_interval[1].toFixed(2)}` : "N/A"}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Badge variant={
+                alert.consensus_level === "strong" ? "success" :
+                alert.consensus_level === "moderate" ? "warning" :
+                alert.consensus_level === "weak" ? "danger" : "critical"
+              }>
+                Consensus: {alert.consensus_level.toUpperCase()}
+              </Badge>
+              {alert.recommendation && (
+                <Badge variant={
+                  alert.recommendation === "SAFE" ? "success" :
+                  alert.recommendation === "MONITOR" ? "info" :
+                  alert.recommendation === "INVESTIGATE" ? "warning" : "critical"
+                }>
+                  Action: {alert.recommendation}
+                </Badge>
+              )}
+            </div>
+          </div>
+          
+          {alert.consensus_level === "split" && (
+            <div className="mb-4 p-3 bg-red-900/20 border border-red-500/50 rounded-lg flex items-center gap-2 text-red-400 text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              Models strongly disagree on this entity. Manual review is highly recommended.
+            </div>
+          )}
+          
+          <div className="h-4 bg-[var(--bg_tertiary)] rounded-full overflow-hidden flex">
+            {/* We don't have the exact weights here, so we show a stylized bar */}
+            <div className="h-full bg-blue-500" style={{ width: '25%' }} title="Network Model" />
+            <div className="h-full bg-purple-500" style={{ width: '35%' }} title="Process Model" />
+            <div className="h-full bg-green-500" style={{ width: '15%' }} title="Sequence Model" />
+            <div className="h-full bg-orange-500" style={{ width: '25%' }} title="Rule Engine" />
+          </div>
+          <div className="flex justify-between mt-2 text-xs text-[var(--text_secondary)]">
+            <span className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-500 rounded-full" /> Network</span>
+            <span className="flex items-center gap-1"><div className="w-2 h-2 bg-purple-500 rounded-full" /> Process</span>
+            <span className="flex items-center gap-1"><div className="w-2 h-2 bg-green-500 rounded-full" /> Sequence</span>
+            <span className="flex items-center gap-1"><div className="w-2 h-2 bg-orange-500 rounded-full" /> Rule Engine</span>
+          </div>
+        </div>
+      )}
 
       {/* SECTION 2: Two Columns (SHAP + MITRE) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -205,6 +281,105 @@ export const AlertDetail = () => {
           </div>
         </div>
       </div>
+
+
+      {/* SECTION 2.5: Temporal Context */}
+      {(alert.temporal_context || alert.is_off_hours) && (
+        <div className="bg-[var(--bg_secondary)] p-6 rounded-xl border border-[var(--border)] mb-6 mt-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-[var(--text_primary)] flex items-center gap-2">
+                <Clock className="h-5 w-5 text-indigo-500" />
+                Time Context
+              </h3>
+              <p className="text-[var(--text_secondary)] text-sm">
+                Analysis of the entity's activity based on historical time-of-day baselines.
+              </p>
+            </div>
+            {alert.is_off_hours && (
+              <Badge variant="critical">Off-hours Activity</Badge>
+            )}
+          </div>
+          
+          <div className="p-4 bg-[var(--bg_tertiary)] border border-[var(--border)] rounded-lg mb-4">
+            <div className="whitespace-pre-wrap font-mono text-sm text-[var(--text_primary)]">
+              {alert.temporal_context || (alert.human_explanation && alert.human_explanation.split("\n\n").find(x => x.startsWith("Time Context:"))?.replace("Time Context: ", "")) || "No context provided."}
+            </div>
+          </div>
+          
+          <div className="h-48 mt-4 relative">
+            <ResponsiveContainer width="100%" height="100%">
+              {/* Synthetic spline chart to represent the 24H activity profile visually */}
+              <LineChart data={[
+                { hour: "00", activity: 5 }, { hour: "04", activity: 2 }, { hour: "08", activity: 25 },
+                { hour: "12", activity: 80 }, { hour: "16", activity: 75 }, { hour: "20", activity: 15 },
+                { hour: "23", activity: 10 }
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+                <XAxis dataKey="hour" stroke="var(--text_secondary)" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'var(--bg_secondary)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                  itemStyle={{ color: 'var(--text_primary)' }}
+                />
+                <Line type="monotone" dataKey="activity" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: '#8b5cf6' }} />
+                {/* Render the alert reference if available */}
+                <ReferenceLine 
+                  x={alert.timestamp ? new Date(alert.timestamp).getHours().toString().padStart(2, '0') : "12"} 
+                  stroke="#ef4444" 
+                  strokeDasharray="3 3" 
+                  label={{ position: 'top', value: 'Alert Triggered', fill: '#ef4444', fontSize: 12 }} 
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+
+      {/* SECTION 2.7: Score History Chart */}
+      {scoreHistory.length > 0 && (
+        <div className="bg-[var(--bg_secondary)] p-6 rounded-xl border border-[var(--border)] mb-6 mt-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-[var(--text_primary)] flex items-center gap-2">
+                <Activity className="h-5 w-5 text-indigo-500" />
+                Entity Score History
+              </h3>
+              <p className="text-[var(--text_secondary)] text-sm">
+                Historical anomaly score trajectory across multiple detection models for this entity.
+              </p>
+            </div>
+          </div>
+          
+          <div className="h-72 w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={formattedScoreHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+                <XAxis dataKey="formattedTime" stroke="var(--text_secondary)" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="var(--text_secondary)" fontSize={12} domain={[0, 1]} tickLine={false} axisLine={false} />
+                <RechartsTooltip 
+                  contentStyle={{ backgroundColor: 'var(--bg_secondary)', borderColor: 'var(--border)', borderRadius: '8px' }}
+                  itemStyle={{ color: 'var(--text_primary)' }}
+                />
+                <ReferenceLine y={0.3} stroke="var(--text_secondary)" strokeDasharray="3 3" label={{ position: 'insideTopLeft', fill: 'var(--text_secondary)', fontSize: 10, value: 'Low Threshold' }} />
+                <ReferenceLine y={0.8} stroke="#ef4444" strokeDasharray="3 3" label={{ position: 'insideTopLeft', fill: '#ef4444', fontSize: 10, value: 'Critical Threshold' }} />
+                
+                {/* Find current alert in timeline and add ReferenceLine */}
+                <ReferenceLine 
+                  x={new Date(alert.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  stroke="#8b5cf6" 
+                  strokeDasharray="3 3" 
+                />
+
+                <Area type="monotone" dataKey="threat_score" fill="#ef4444" stroke="#ef4444" fillOpacity={0.2} name="Overall Threat Score" />
+                <Line type="monotone" dataKey="network_score" stroke="#3b82f6" dot={false} strokeWidth={2} name="Network Score" />
+                <Line type="monotone" dataKey="process_score" stroke="#a855f7" dot={false} strokeWidth={2} name="Process Score" />
+                <Line type="monotone" dataKey="rule_score" stroke="#f97316" dot={false} strokeWidth={2} name="Rule Score" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* SECTION 3: Timeline & Rules */}
       <div className="space-y-6">

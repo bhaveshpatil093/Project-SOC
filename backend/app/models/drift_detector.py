@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from app.logging_config import get_logger
 from app.ingestion.es_client import get_es_client, INDEX_NAMES
 from app.api.routes.websocket import manager
-from app.models.trainer import run_incremental_retraining
 from app.models.model_manager import get_model_manager
 
 logger = get_logger(__name__)

@@ -8,7 +8,9 @@ import {
   getMlflowRuns, 
   getMlflowRunDetail,
   compareMlflowRuns,
-  getDriftStatus
+  getDriftStatus,
+  getCalibrationStats,
+  getInterpretabilityReport
 } from "../api/training";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorBanner } from "../components/common/ErrorBanner";
@@ -16,10 +18,10 @@ import { Badge } from "../components/common/Badge";
 import { formatDate } from "../utils/formatters";
 import { 
   Brain, Play, RotateCw, Activity, Calendar, Server, 
-  CheckCircle, Database, Network, Clock, Loader2, GitCommit, GitCompare, AlertTriangle
+  CheckCircle, Database, Network, Clock, Loader2, GitCommit, GitCompare, AlertTriangle, Eye
 } from "lucide-react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { useUiStore } from '../store/uiStore';
 import { THEMES } from '../utils/theme';
@@ -42,6 +44,8 @@ const useJobStatus = (jobId) => {
   });
 };
 
+const useCalibration = () => useQuery({ queryKey: ["calibrationStatus"], queryFn: () => getCalibrationStats(), refetchInterval: 10000 });
+
 const TabButton = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
@@ -55,6 +59,7 @@ const TabButton = ({ active, onClick, children }) => (
   </button>
 );
 
+import { Eye, ShieldAlert } from 'lucide-react';
 export const Training = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("status"); // status, runs, compare, schedule
@@ -101,6 +106,15 @@ export const Training = () => {
     queryFn: () => getMlflowRunDetail(expandedRun),
     enabled: !!expandedRun
   });
+
+  
+  const { data: interpretabilityData, isLoading: interpretLoading } = useQuery({
+    queryKey: ["interpretability"],
+    queryFn: () => getInterpretabilityReport(),
+    enabled: activeTab === "interpretability",
+    staleTime: 3600000 // Cache for 1 hour on frontend too
+  });
+  const interpretability = interpretabilityData?.data || interpretabilityData;
 
   const { data: statusResp } = useJobStatus(jobId);
   const statusData = statusResp?.data || statusResp;
@@ -159,6 +173,9 @@ export const Training = () => {
   const latestAE = ae_runs[0] || null;
   const latestLSTM = lstm_runs[0] || null;
 
+  const drift = driftData?.data || { has_drift: false, features: {} };
+  const calibration = calibrationData?.data?.data || calibrationData?.data || { is_calibrated: false };
+
   // Process data for comparison chart
   const compareRuns = compareData?.data?.runs || compareData?.runs || [];
   
@@ -194,6 +211,7 @@ export const Training = () => {
           Compare ({selectedRuns.length})
         </TabButton>
         <TabButton active={activeTab === "schedule"} onClick={() => setActiveTab("schedule")}>Training Schedule</TabButton>
+        <TabButton active={activeTab === "interpretability"} onClick={() => setActiveTab("interpretability")}>Interpretability</TabButton>
       </div>
 
       {/* TAB 1: Model Status */}

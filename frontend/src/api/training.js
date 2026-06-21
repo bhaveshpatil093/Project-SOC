@@ -11,3 +11,10 @@ export const getMlflowRuns = (experimentId) => apiClient.get(`/api/training/mlfl
 export const getMlflowRunDetail = (runId) => apiClient.get(`/api/training/mlflow/runs/detail/${runId}`);
 export const compareMlflowRuns = (runIds) => apiClient.get(`/api/training/mlflow/compare?run_ids=${runIds.join(',')}`);
 export const getDriftStatus = () => apiClient.get("/api/training/drift");
+
+export const getCalibrationStats = () => apiClient.get('/api/training/calibration');
+
+export const getInterpretabilityReport = async () => {
+    const response = await apiClient.get('/api/training/interpretability');
+    return response.data;
+};

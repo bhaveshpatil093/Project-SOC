@@ -261,3 +261,17 @@ async def chat_stream(request: Request):
             yield f"data: {json.dumps({'type': 'done', 'data': ''})}\n\n"
             
     return StreamingResponse(token_generator(), media_type="text/event-stream")
+
+
+@router.get("/playbook/{alert_id}", dependencies=[Depends(require_role("admin", "analyst"))])
+async def fetch_playbook(alert_id: str):
+    es = await get_es_client()
+    try:
+        res = await es.get(index="soc-processed-alerts", id=alert_id)
+        alert = res["_source"]
+        
+        playbook = get_playbook_for_alert(alert)
+        return {"data": playbook}
+    except Exception as e:
+        # Alert not found or other ES error
+        return {"data": None}

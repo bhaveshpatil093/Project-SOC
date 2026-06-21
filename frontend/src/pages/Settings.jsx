@@ -11,6 +11,36 @@ import { formatDate } from "../utils/formatters";
 import { PreferencesForm } from "../components/preferences/PreferencesForm";
 
 export const Settings = () => {
+    const [activeTab, setActiveTab] = useState('general');
+
+    // Advanced ES Tool State
+    const [esQuery, setEsQuery] = useState('{\n  "query": {"match_all": {}},\n  "size": 10,\n  "sort": [{"@timestamp": {"order": "desc"}}]\n}');
+    const [selectedIdx, setSelectedIdx] = useState('soc-processed-alerts');
+    const [queryResult, setQueryResult] = useState('');
+    const [isQuerying, setIsQuerying] = useState(false);
+
+    const { data: kibanaUrlData } = useQuery({ queryKey: ['kibanaUrl'], queryFn: getKibanaUrl });
+    const { data: esIndicesData } = useQuery({ queryKey: ['esIndices'], queryFn: getEsIndices, refetchInterval: 60000 });
+    
+    const handleRunQuery = async () => {
+        setIsQuerying(true);
+        try {
+            const parsedQuery = JSON.parse(esQuery);
+            const payload = {
+                index: selectedIdx,
+                query: parsedQuery.query || {"match_all": {}},
+                size: parsedQuery.size || 10,
+                sort: parsedQuery.sort || []
+            };
+            const result = await runEsQuery(payload);
+            setQueryResult(JSON.stringify(result.data, null, 2));
+        } catch (e) {
+            setQueryResult(JSON.stringify({ error: e.message }, null, 2));
+        } finally {
+            setIsQuerying(false);
+        }
+    };
+
   const [activeTab, setActiveTab] = useState("health");
   const queryClient = useQueryClient();
   const { connected: wsConnected, reconnecting: wsReconnecting } = useWebSocket();
@@ -197,6 +227,10 @@ export const Settings = () => {
           {/* SECTION 1: Deep Health Panel */}
       <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg">
         <div className="flex justify-between items-center mb-6">
+                <div className="flex gap-4">
+                    <button onClick={() => setActiveTab('general')} className={`px-4 py-2 font-bold rounded-md transition-colors ${activeTab === 'general' ? 'bg-blue-600 text-white' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}>General</button>
+                    <button onClick={() => setActiveTab('advanced')} className={`px-4 py-2 font-bold rounded-md transition-colors ${activeTab === 'advanced' ? 'bg-blue-600 text-white' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}>Advanced</button>
+                </div>
           <h2 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2">
             <Activity className="h-5 w-5 text-blue-400" />
             Platform Deep Health
@@ -257,6 +291,10 @@ export const Settings = () => {
       {/* SECTION SLM MODEL PANEL */}
       <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
+                <div className="flex gap-4">
+                    <button onClick={() => setActiveTab('general')} className={`px-4 py-2 font-bold rounded-md transition-colors ${activeTab === 'general' ? 'bg-blue-600 text-white' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}>General</button>
+                    <button onClick={() => setActiveTab('advanced')} className={`px-4 py-2 font-bold rounded-md transition-colors ${activeTab === 'advanced' ? 'bg-blue-600 text-white' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}>Advanced</button>
+                </div>
           <h2 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2">
             <Cpu className="h-5 w-5 text-blue-400" />
             SLM Engine Configuration
@@ -331,6 +369,10 @@ export const Settings = () => {
       {/* SECTION RAG PIPELINE PANEL */}
       <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
+                <div className="flex gap-4">
+                    <button onClick={() => setActiveTab('general')} className={`px-4 py-2 font-bold rounded-md transition-colors ${activeTab === 'general' ? 'bg-blue-600 text-white' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}>General</button>
+                    <button onClick={() => setActiveTab('advanced')} className={`px-4 py-2 font-bold rounded-md transition-colors ${activeTab === 'advanced' ? 'bg-blue-600 text-white' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}>Advanced</button>
+                </div>
           <h2 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2">
             <Network className="h-5 w-5 text-purple-400" />
             RAG Vector Database
@@ -403,6 +445,10 @@ export const Settings = () => {
       {/* SECTION SLM PERFORMANCE METRICS */}
       <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg p-6">
         <div className="flex justify-between items-center mb-6">
+                <div className="flex gap-4">
+                    <button onClick={() => setActiveTab('general')} className={`px-4 py-2 font-bold rounded-md transition-colors ${activeTab === 'general' ? 'bg-blue-600 text-white' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}>General</button>
+                    <button onClick={() => setActiveTab('advanced')} className={`px-4 py-2 font-bold rounded-md transition-colors ${activeTab === 'advanced' ? 'bg-blue-600 text-white' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}>Advanced</button>
+                </div>
           <h2 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2">
             <LineChart className="h-5 w-5 text-green-400" />
             SLM Quality & Performance Analytics

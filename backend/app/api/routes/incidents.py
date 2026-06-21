@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -278,3 +278,39 @@ async def investigate_incident(incident_id: str, current_user: User = Depends(ge
         return {"incident_id": incident_id, "analysis": response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def run_report_generation(incident_id: str):
+    es = await get_es_client()
+    try:
+        # Fetch incident
+        res = await es.get(index="soc-incidents", id=incident_id)
+        incident = res["_source"]
+        
+        # Fetch alerts
+        alerts = []
+        if incident.get("alert_ids"):
+            alerts_res = await es.search(
+                index="soc-processed-alerts",
+                body={"query": {"terms": {"_id": incident["alert_ids"]}}, "size": 100}
+            )
+            alerts = [hit["_source"] for hit in alerts_res.get("hits", {}).get("hits", [])]
+            
+        slm_engine = SLMEngine()
+        await generate_incident_report(es, slm_engine, incident_id, incident, alerts)
+    except Exception as e:
+        print(f"Error generating report in background: {e}")
+
+
+@router.post("/{incident_id}/generate-report", dependencies=[Depends(require_role("admin", "analyst"))])
+async def trigger_report_generation(incident_id: str, background_tasks: BackgroundTasks):
+    background_tasks.add_task(run_report_generation, incident_id)
+    return {"job_id": str(uuid.uuid4()), "status": "generating"}
+
+@router.get("/{incident_id}/report", dependencies=[Depends(require_role("admin", "analyst"))])
+async def fetch_incident_report(incident_id: str):
+    es = await get_es_client()
+    report = await get_incident_report(es, incident_id)
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found or still generating")
+    return {"data": report}

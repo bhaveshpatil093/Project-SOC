@@ -3,6 +3,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 from typing import Dict, Any
 
 from app.models.trainer import run_initial_training, run_incremental_retraining, get_model_versions, TRAINING_JOBS
+from app.models.interpretability import InterpretabilityReporter
 from app.ingestion.es_client import get_es_client
 from app.models.model_manager import get_model_manager
 from app.auth.jwt import require_role
@@ -10,6 +11,7 @@ from fastapi import Depends, Request
 from app.middleware.rate_limiter import limiter
 
 router = APIRouter()
+reporter = InterpretabilityReporter()
 
 @router.post("/initial", dependencies=[Depends(require_role("admin"))])
 @limiter.limit("5/minute")
@@ -63,6 +65,14 @@ async def get_drift_status():
         return {"status": "No Drift", "overall_drift_score": 0, "top_drifted_features": []}
     except Exception as e:
         return {"status": "Unknown", "overall_drift_score": 0, "error": str(e), "top_drifted_features": []}
+
+
+@router.get("/interpretability", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+async def get_interpretability_report():
+    es = await get_es_client()
+    manager = get_model_manager()
+    report = await reporter.generate_full_report(es, manager)
+    return {"data": report}
 
 # --- MLflow Endpoints ---
 
@@ -157,3 +167,21 @@ async def compare_runs(run_ids: str):
             continue
             
     return {"runs": runs}
+
+@router.get("/calibration", dependencies=[Depends(require_role("admin", "analyst"))])
+async def get_calibration_stats():
+    """Returns calibration stats, AUC-ROC, Brier score, n_samples"""
+    manager = get_model_manager()
+    if manager.calibrator:
+        stats = manager.calibrator.get_calibration_stats()
+        return {"data": stats}
+    return {"data": {"is_calibrated": False}}
+
+@router.post("/calibration", dependencies=[Depends(require_role("admin", "analyst"))])
+async def trigger_calibration_training():
+    """Manually trigger calibration training"""
+    es = await get_es_client()
+    manager = get_model_manager()
+    from app.models.trainer import train_calibrator
+    res = await train_calibrator(es, manager)
+    return res

@@ -12,6 +12,8 @@ from app.models.isolation_forest import IsolationForestDetector, NETWORK_FEATURE
 from app.models.autoencoder import AutoencoderDetector, PROCESS_FEATURE_COLS
 from app.models.lstm_detector import LSTMDetector, build_event_sequences
 from app.models.rule_engine import evaluate_rules, get_rule_explanation
+from app.models.calibrator import ScoreCalibrator
+from app.models.voting_ensemble import VotingEnsemble
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,13 @@ class ScoringResult:
     mitre_technique_ids: list[str]
     threat_score: float
     threat_level: str
+    raw_threat_score: float = 0.0
+    is_calibrated: bool = False
+    counterfactual_explanation: str = ""
+    confidence_interval: tuple = (0.0, 0.0)
+    consensus_level: str = "moderate"
+    dominant_model: str = ""
+    recommendation: str = ""
     top_features: list[str] = field(default_factory=list)
     human_explanation: str = ""
 
@@ -225,17 +234,16 @@ class ModelManager:
                     for m in active_models:
                         weights[m] += redist
                         
-                threat_score = (
-                    weights["network"] * net_score +
-                    weights["process"] * proc_score +
-                    weights["sequence"] * seq_score +
-                    weights["rule"] * rule_score
-                )
+                model_scores = {"network": net_score, "process": proc_score, "sequence": seq_score, "rule": rule_score}
+                vote = self.ensemble.vote(model_scores, weights)
+                threat_score = vote.final_score
                 
                 if threat_score < 0.3: threat_level = "low"
                 elif threat_score < 0.6: threat_level = "medium"
                 elif threat_score < 0.8: threat_level = "high"
                 else: threat_level = "critical"
+                
+                recommendation = self.ensemble.get_recommendation(vote)
                     
                 res = ScoringResult(
                     entity_key=str(entity_key or "unknown"),
@@ -249,6 +257,10 @@ class ModelManager:
                     mitre_technique_ids=rule_eval["mitre_techniques"],
                     threat_score=float(threat_score),
                     threat_level=threat_level,
+                    confidence_interval=vote.confidence_interval,
+                    consensus_level=vote.consensus_level,
+                    dominant_model=vote.dominant_model,
+                    recommendation=recommendation,
                     human_explanation=get_rule_explanation(rule_eval["triggered_rules"])
                 )
                 results.append(res)

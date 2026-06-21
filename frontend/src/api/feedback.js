@@ -7,3 +7,6 @@ export const getSuppressionRules = () => apiClient.get('/api/feedback/suppressio
 
 // Legacy backwards compatibility aliases
 export const fetchFeedbackStats = getFeedbackStats;
+
+export const getLabelingQueue = (params) => apiClient.get('/api/feedback/labeling-queue', { params });
+export const getLabelingStats = () => apiClient.get('/api/feedback/labeling-stats');
