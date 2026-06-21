@@ -11,14 +11,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Network,
+  Wrench,
 } from 'lucide-react'
 import { useIsTablet, useIsMobile } from '../../hooks/useMediaQuery'
+import { useAuth } from '../../contexts/AuthContext'
 
 export const Sidebar = () => {
   const { sidebarOpen, toggleSidebar } = useUiStore()
   const location = useLocation()
   const isTablet = useIsTablet()
   const isMobile = useIsMobile()
+  const { user } = useAuth()
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -94,20 +97,44 @@ export const Sidebar = () => {
         </nav>
 
         {/* Desktop Toggle Button */}
-        {!isTablet && (
-          <div className="p-4 border-t border-[var(--border)]/60 shrink-0 flex justify-end">
-            <button
-              onClick={toggleSidebar}
-              className="p-2 rounded-xl text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] hover:bg-[var(--bg\_secondary)] transition-colors w-full flex justify-center border border-transparent hover:border-[var(--border)]"
-            >
-              {sidebarOpen ? (
-                <ChevronLeft className="h-5 w-5" />
-              ) : (
-                <ChevronRight className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-        )}
+        <div className="border-t border-[var(--border)]/60 shrink-0 flex flex-col">
+          {user?.role === 'admin' && (
+            <div className="p-3">
+              <NavLink
+                to="/system"
+                onClick={() => isTablet && toggleSidebar()}
+                className={`flex items-center px-3 py-3 rounded-xl transition-all duration-200 group relative ${
+                  location.pathname.startsWith('/system')
+                    ? 'bg-orange-600/15 text-orange-400 font-bold border border-orange-500/20'
+                    : 'text-[var(--text\\_secondary)] font-medium hover:bg-[var(--bg\\_secondary)]/60 hover:text-[var(--text\\_primary)] border border-transparent'
+                }`}
+                title={!sidebarOpen && !isTablet ? 'System Monitor' : undefined}
+              >
+                {location.pathname.startsWith('/system') && sidebarOpen && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-orange-500 rounded-r-full"></div>
+                )}
+                <Wrench
+                  className={`h-5 w-5 shrink-0 ${location.pathname.startsWith('/system') ? 'text-orange-500' : 'text-[var(--text\\_secondary)] group-hover:text-[var(--text\\_secondary)]'} ${sidebarOpen ? 'ml-1' : 'mx-auto'}`}
+                />
+                {sidebarOpen && <span className="ml-3 whitespace-nowrap">System Monitor</span>}
+              </NavLink>
+            </div>
+          )}
+          {!isTablet && (
+            <div className="p-4 border-t border-[var(--border)]/60 flex justify-end">
+              <button
+                onClick={toggleSidebar}
+                className="p-2 rounded-xl text-[var(--text\\_secondary)] hover:text-[var(--text\\_primary)] hover:bg-[var(--bg\\_secondary)] transition-colors w-full flex justify-center border border-transparent hover:border-[var(--border)]"
+              >
+                {sidebarOpen ? (
+                  <ChevronLeft className="h-5 w-5" />
+                ) : (
+                  <ChevronRight className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   )

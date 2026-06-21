@@ -28,6 +28,7 @@ const Feedback = lazy(() => import('./pages/Feedback').then((m) => ({ default: m
 const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })))
 const Training = lazy(() => import('./pages/Training').then((m) => ({ default: m.Training })))
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
+const SystemMonitor = lazy(() => import('./pages/SystemMonitor').then((m) => ({ default: m.SystemMonitor })))
 
 const NotFound = () => (
   <div className="flex flex-col items-center justify-center h-full min-h-[500px]">
@@ -133,6 +134,14 @@ const AppContent = () => {
                 element={
                   <ErrorBoundary>
                     <Settings />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="system"
+                element={
+                  <ErrorBoundary>
+                    <SystemMonitor />
                   </ErrorBoundary>
                 }
               />
