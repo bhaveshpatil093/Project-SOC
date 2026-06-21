@@ -38,21 +38,21 @@ export const DataTable = ({ columns, data, loading, emptyMessage }) => {
   }, [data, sortKey, sortOrder])
 
   return (
-    <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg w-full">
+    <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg w-full">
       <div className="overflow-x-auto">
         <table className="w-full text-left whitespace-nowrap">
-          <thead className="bg-[var(--bg_primary)]/80 border-b border-[var(--border)]">
+          <thead className="bg-[var(--bg\_primary)]/80 border-b border-[var(--border)]">
             <tr>
               {columns.map((col, idx) => (
                 <th
                   key={idx}
-                  className={`px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider ${col.sortable ? 'cursor-pointer hover:text-[var(--text_primary)] select-none' : ''}`}
+                  className={`px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider ${col.sortable ? 'cursor-pointer hover:text-[var(--text\_primary)] select-none' : ''}`}
                   onClick={() => handleSort(col.key, col.sortable)}
                 >
                   <div className="flex items-center gap-1.5">
                     {col.label}
                     {col.sortable && (
-                      <span className="text-[var(--text_secondary)]">
+                      <span className="text-[var(--text\_secondary)]">
                         {sortKey === col.key ? (
                           sortOrder === 'asc' ? (
                             <ArrowUp className="h-3 w-3 text-blue-400" />
@@ -89,14 +89,14 @@ export const DataTable = ({ columns, data, loading, emptyMessage }) => {
               sortedData.map((row, rIndex) => (
                 <tr
                   key={row.id || row._id || rIndex}
-                  className="hover:bg-[var(--bg_tertiary)]/70 transition-colors"
+                  className="hover:bg-[var(--bg\_tertiary)]/70 transition-colors"
                 >
                   {columns.map((col, cIndex) => (
                     <td key={cIndex} className="px-6 py-4">
                       {col.render ? (
                         col.render(row[col.key], row)
                       ) : (
-                        <span className="text-sm text-[var(--text_secondary)]">
+                        <span className="text-sm text-[var(--text\_secondary)]">
                           {row[col.key] || '—'}
                         </span>
                       )}

@@ -44,7 +44,7 @@ export const Sidebar = () => {
 
       {/* Sidebar - Desktop fixed, Tablet overlay */}
       <div
-        className={`hidden sm:flex flex-col fixed top-0 left-0 bottom-0 bg-[var(--bg_primary)] border-r border-[var(--border)] transition-transform duration-300 z-50 shadow-2xl ${
+        className={`hidden sm:flex flex-col fixed top-0 left-0 bottom-0 bg-[var(--bg\_primary)] border-r border-[var(--border)] transition-transform duration-300 z-50 shadow-2xl ${
           isTablet
             ? sidebarOpen
               ? 'translate-x-0 w-64'
@@ -59,7 +59,7 @@ export const Sidebar = () => {
             <ShieldAlert className="h-5 w-5 text-blue-500" />
           </div>
           {sidebarOpen && (
-            <span className="ml-3 font-black text-[var(--text_primary)] tracking-widest uppercase truncate">
+            <span className="ml-3 font-black text-[var(--text\_primary)] tracking-widest uppercase truncate">
               ISRO SOC
             </span>
           )}
@@ -77,7 +77,7 @@ export const Sidebar = () => {
                 className={`flex items-center px-3 py-3 rounded-xl transition-all duration-200 group relative ${
                   isActive
                     ? 'bg-blue-600/15 text-blue-400 font-bold border border-blue-500/20'
-                    : 'text-[var(--text_secondary)] font-medium hover:bg-[var(--bg_secondary)]/60 hover:text-[var(--text_primary)] border border-transparent'
+                    : 'text-[var(--text\_secondary)] font-medium hover:bg-[var(--bg\_secondary)]/60 hover:text-[var(--text\_primary)] border border-transparent'
                 }`}
                 title={!sidebarOpen && !isTablet ? item.label : undefined}
               >
@@ -85,7 +85,7 @@ export const Sidebar = () => {
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full"></div>
                 )}
                 <Icon
-                  className={`h-5 w-5 shrink-0 ${isActive ? 'text-blue-500' : 'text-[var(--text_secondary)] group-hover:text-[var(--text_secondary)]'} ${sidebarOpen ? 'ml-1' : 'mx-auto'}`}
+                  className={`h-5 w-5 shrink-0 ${isActive ? 'text-blue-500' : 'text-[var(--text\_secondary)] group-hover:text-[var(--text\_secondary)]'} ${sidebarOpen ? 'ml-1' : 'mx-auto'}`}
                 />
                 {sidebarOpen && <span className="ml-3 whitespace-nowrap">{item.label}</span>}
               </NavLink>
@@ -98,7 +98,7 @@ export const Sidebar = () => {
           <div className="p-4 border-t border-[var(--border)]/60 shrink-0 flex justify-end">
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-xl text-[var(--text_secondary)] hover:text-[var(--text_primary)] hover:bg-[var(--bg_secondary)] transition-colors w-full flex justify-center border border-transparent hover:border-[var(--border)]"
+              className="p-2 rounded-xl text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] hover:bg-[var(--bg\_secondary)] transition-colors w-full flex justify-center border border-transparent hover:border-[var(--border)]"
             >
               {sidebarOpen ? (
                 <ChevronLeft className="h-5 w-5" />

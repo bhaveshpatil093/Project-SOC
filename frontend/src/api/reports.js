@@ -1,4 +1,4 @@
-import apiClient from './client'
+import { apiClient } from './client'
 
 export const getShiftReport = async (hours = 8) => {
   let endpoint = `/api/reports/shift?hours=${hours}`

@@ -24,30 +24,30 @@ export class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       const isDev = import.meta.env.DEV
       return (
-        <div className="min-h-[50vh] flex flex-col items-center justify-center p-6 m-4 bg-[var(--bg_primary)] border border-red-500/30 rounded-xl">
+        <div className="min-h-[50vh] flex flex-col items-center justify-center p-6 m-4 bg-[var(--bg\_primary)] border border-red-500/30 rounded-xl">
           <div className="max-w-3xl w-full text-center">
             <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500/20">
               <AlertCircle className="h-8 w-8" />
             </div>
-            <h1 className="text-2xl font-bold text-[var(--text_primary)] mb-2">
+            <h1 className="text-2xl font-bold text-[var(--text\_primary)] mb-2">
               Something went wrong
             </h1>
-            <p className="text-[var(--text_secondary)] mb-8 text-sm">
+            <p className="text-[var(--text\_secondary)] mb-8 text-sm">
               {this.state.error?.message || 'An unexpected error occurred.'}
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="mx-auto bg-blue-600 hover:bg-blue-700 text-[var(--text_primary)] font-medium px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg mb-8"
+              className="mx-auto bg-blue-600 hover:bg-blue-700 text-[var(--text\_primary)] font-medium px-6 py-3 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg mb-8"
             >
               <RefreshCw className="h-5 w-5" /> Reload page
             </button>
 
             {isDev && this.state.errorInfo && (
-              <div className="w-full bg-[var(--bg_primary)] border border-[var(--border)] rounded-lg p-4 overflow-auto text-left">
+              <div className="w-full bg-[var(--bg\_primary)] border border-[var(--border)] rounded-lg p-4 overflow-auto text-left">
                 <h3 className="text-red-400 font-mono text-sm mb-2 font-bold">
                   Stack Trace (DEV Only):
                 </h3>
-                <pre className="text-[var(--text_secondary)] font-mono text-xs whitespace-pre-wrap leading-relaxed">
+                <pre className="text-[var(--text\_secondary)] font-mono text-xs whitespace-pre-wrap leading-relaxed">
                   {this.state.error && this.state.error.stack}
                   <br />
                   {this.state.errorInfo.componentStack}

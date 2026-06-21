@@ -67,31 +67,31 @@ ${report.recommendations.map((r) => `* ${r}`).join('\\n')}
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text_primary)] flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-[var(--text\_primary)] flex items-center gap-2">
             <FileText className="h-6 w-6 text-blue-500" /> Automated SOC Reports
           </h1>
-          <p className="text-[var(--text_secondary)] text-sm">
+          <p className="text-[var(--text\_secondary)] text-sm">
             System-generated narrative summaries for handover and review.
           </p>
         </div>
 
         <div className="flex gap-4 print:hidden">
-          <div className="bg-[var(--bg_secondary)] p-1 rounded-lg border border-[var(--border)] flex">
+          <div className="bg-[var(--bg\_secondary)] p-1 rounded-lg border border-[var(--border)] flex">
             <button
               onClick={() => setActiveTab(8)}
-              className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${activeTab === 8 ? 'bg-blue-600 text-white' : 'text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}
+              className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${activeTab === 8 ? 'bg-blue-600 text-white' : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
             >
               Shift (8h)
             </button>
             <button
               onClick={() => setActiveTab(24)}
-              className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${activeTab === 24 ? 'bg-blue-600 text-white' : 'text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}
+              className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${activeTab === 24 ? 'bg-blue-600 text-white' : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
             >
               Daily (24h)
             </button>
             <button
               onClick={() => setActiveTab(168)}
-              className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${activeTab === 168 ? 'bg-blue-600 text-white' : 'text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}
+              className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${activeTab === 168 ? 'bg-blue-600 text-white' : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
             >
               Weekly (7d)
             </button>
@@ -100,7 +100,7 @@ ${report.recommendations.map((r) => `* ${r}`).join('\\n')}
       </div>
 
       {/* Document Body */}
-      <div className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl shadow-lg print:border-none print:shadow-none bg-white print:bg-white text-black font-sans max-w-5xl mx-auto overflow-hidden">
+      <div className="bg-[var(--bg\_primary)] border border-[var(--border)] rounded-xl shadow-lg print:border-none print:shadow-none bg-white print:bg-white text-black font-sans max-w-5xl mx-auto overflow-hidden">
         <div className="p-8 pb-4 border-b border-gray-200 flex justify-between items-end print:pb-8">
           <div>
             <h2 className="text-3xl font-black text-gray-900 tracking-tight uppercase">

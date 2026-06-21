@@ -4,6 +4,9 @@ import { getInitialTheme, applyTheme } from '../utils/theme'
 export const useUiStore = create((set) => ({
   sidebarOpen: true,
   toasts: [],
+  platformAlerts: [],
+  setPlatformAlerts: (alerts) => set({ platformAlerts: alerts }),
+
 
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   setSidebarOpen: (isOpen) => set({ sidebarOpen: isOpen }),

@@ -1,4 +1,4 @@
-import apiClient from './client'
+import { apiClient } from './client'
 
 export const getEntities = async (params) => {
   const response = await apiClient.get('/api/entities', { params })

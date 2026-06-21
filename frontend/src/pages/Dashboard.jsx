@@ -95,14 +95,14 @@ const StatCard = ({
 
   return (
     <div
-      className={`bg-[var(--bg_secondary)] p-6 rounded-xl border transition-colors duration-300 relative overflow-hidden flex flex-col justify-between h-32 ${isFlashing ? 'border-green-500 bg-[var(--bg_secondary)]/80 shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'border-[var(--border)]'}`}
+      className={`bg-[var(--bg\_secondary)] p-6 rounded-xl border transition-colors duration-300 relative overflow-hidden flex flex-col justify-between h-32 ${isFlashing ? 'border-green-500 bg-[var(--bg\_secondary)]/80 shadow-[0_0_15px_rgba(34,197,94,0.3)]' : 'border-[var(--border)]'}`}
     >
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-2">
           <Icon className={`h-5 w-5 ${colorClass} ${pulseIcon ? 'animate-pulse' : ''}`} />
-          <h3 className="text-[var(--text_secondary)] text-sm font-medium">{title}</h3>
+          <h3 className="text-[var(--text\_secondary)] text-sm font-medium">{title}</h3>
         </div>
-        <div className="bg-[var(--bg_tertiary)]/50 text-[var(--text_secondary)] text-[10px] px-2 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-wider font-semibold">
+        <div className="bg-[var(--bg\_tertiary)]/50 text-[var(--text\_secondary)] text-[10px] px-2 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-wider font-semibold">
           <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></div>
           Live
         </div>
@@ -138,35 +138,35 @@ const LiveMetricsTicker = () => {
   }, [lastIngestion])
 
   return (
-    <div className="w-full bg-[var(--bg_primary)] border-b border-[var(--border)] py-1.5 px-4 text-xs font-mono flex items-center justify-between shadow-sm overflow-x-auto whitespace-nowrap hide-scrollbar">
+    <div className="w-full bg-[var(--bg\_primary)] border-b border-[var(--border)] py-1.5 px-4 text-xs font-mono flex items-center justify-between shadow-sm overflow-x-auto whitespace-nowrap hide-scrollbar">
       <div className="flex items-center gap-4 sm:gap-6 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-[var(--text_secondary)]">Last ingestion:</span>
+          <span className="text-[var(--text\_secondary)]">Last ingestion:</span>
           {ingestionRunning ? (
             <span className="text-blue-400 flex items-center gap-1">
               <LoadingSpinner size="h-3 w-3" /> Running...
             </span>
           ) : (
-            <span className="text-[var(--text_secondary)]">
+            <span className="text-[var(--text\_secondary)]">
               {lastIngestion?.docs_indexed || 0} docs · {timeAgo}
             </span>
           )}
         </div>
-        <div className="w-px h-3 bg-[var(--bg_tertiary)]"></div>
+        <div className="w-px h-3 bg-[var(--bg\_tertiary)]"></div>
         <div className="flex items-center gap-2">
-          <span className="text-[var(--text_secondary)]">Last scoring:</span>
+          <span className="text-[var(--text\_secondary)]">Last scoring:</span>
           {scoringRunning ? (
             <span className="text-orange-400 flex items-center gap-1">
               <LoadingSpinner size="h-3 w-3" /> Running...
             </span>
           ) : (
-            <span className="text-[var(--text_secondary)]">{lastScoring?.scored || 0} alerts</span>
+            <span className="text-[var(--text\_secondary)]">{lastScoring?.scored || 0} alerts</span>
           )}
         </div>
       </div>
       <div className="flex items-center gap-4 sm:gap-6 shrink-0 ml-4 sm:ml-0">
         <div className="flex items-center gap-2">
-          <span className="text-[var(--text_secondary)]">Pipeline:</span>
+          <span className="text-[var(--text\_secondary)]">Pipeline:</span>
           {wsConnected ? (
             <span className="text-green-500 font-bold flex items-center gap-1">
               <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div> HEALTHY
@@ -177,9 +177,9 @@ const LiveMetricsTicker = () => {
             </span>
           )}
         </div>
-        <div className="w-px h-3 bg-[var(--bg_tertiary)]"></div>
+        <div className="w-px h-3 bg-[var(--bg\_tertiary)]"></div>
         <div className="flex items-center gap-2">
-          <span className="text-[var(--text_secondary)]">SLM:</span>
+          <span className="text-[var(--text\_secondary)]">SLM:</span>
           <span className="text-indigo-400 font-bold">Ready</span>
         </div>
       </div>
@@ -200,15 +200,15 @@ const LiveAlertFeed = () => {
   }, [liveAlerts, isPaused])
 
   return (
-    <div className="w-full xl:w-[300px] bg-[var(--bg_primary)] xl:border-l border-t xl:border-t-0 border-[var(--border)] flex flex-col xl:h-[calc(100vh-100px)] shrink-0 xl:sticky top-4 h-[400px]">
-      <div className="p-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg_primary)]/50">
-        <h3 className="text-sm font-bold text-[var(--text_primary)] flex items-center gap-2">
+    <div className="w-full xl:w-[300px] bg-[var(--bg\_primary)] xl:border-l border-t xl:border-t-0 border-[var(--border)] flex flex-col xl:h-[calc(100vh-100px)] shrink-0 xl:sticky top-4 h-[400px]">
+      <div className="p-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg\_primary)]/50">
+        <h3 className="text-sm font-bold text-[var(--text\_primary)] flex items-center gap-2">
           <Activity className="h-4 w-4 text-blue-500" />
           Live Alert Stream
         </h3>
         <button
           onClick={() => setIsPaused(!isPaused)}
-          className={`p-1.5 rounded-md transition-colors ${isPaused ? 'bg-orange-500/20 text-orange-400' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)]'}`}
+          className={`p-1.5 rounded-md transition-colors ${isPaused ? 'bg-orange-500/20 text-orange-400' : 'bg-[var(--bg\_secondary)] text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
           title={isPaused ? 'Resume stream' : 'Pause stream'}
         >
           {isPaused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
@@ -217,7 +217,7 @@ const LiveAlertFeed = () => {
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {displayedAlerts.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-[var(--text_secondary)] space-y-2">
+          <div className="h-full flex flex-col items-center justify-center text-[var(--text\_secondary)] space-y-2">
             <ShieldAlert className="h-8 w-8 opacity-20" />
             <p className="text-xs">Waiting for live alerts...</p>
           </div>
@@ -226,7 +226,7 @@ const LiveAlertFeed = () => {
             <div
               key={alert.id || alert._id}
               onClick={() => navigate(`/alerts/${alert.id || alert._id}`)}
-              className="bg-[var(--bg_secondary)] border border-[var(--border)] p-3 rounded-lg cursor-pointer hover:bg-[var(--bg_tertiary)] transition-all animate-in slide-in-from-top-2 fade-in duration-300 relative overflow-hidden group"
+              className="bg-[var(--bg\_secondary)] border border-[var(--border)] p-3 rounded-lg cursor-pointer hover:bg-[var(--bg\_tertiary)] transition-all animate-in slide-in-from-top-2 fade-in duration-300 relative overflow-hidden group"
             >
               <div
                 className={`absolute left-0 top-0 bottom-0 w-1 ${
@@ -240,7 +240,7 @@ const LiveAlertFeed = () => {
                 }`}
               ></div>
               <div className="flex justify-between items-start mb-1.5 ml-2">
-                <span className="text-[10px] text-[var(--text_secondary)] font-mono">
+                <span className="text-[10px] text-[var(--text\_secondary)] font-mono">
                   {new Date(alert.timestamp).toLocaleTimeString()}
                 </span>
                 <span
@@ -258,14 +258,14 @@ const LiveAlertFeed = () => {
                 </span>
               </div>
               <div className="ml-2">
-                <h4 className="text-xs font-bold text-[var(--text_primary)] truncate group-hover:text-[var(--text_primary)] transition-colors">
+                <h4 className="text-xs font-bold text-[var(--text\_primary)] truncate group-hover:text-[var(--text\_primary)] transition-colors">
                   {alert.entity_key}
                 </h4>
                 <div className="flex justify-between items-end mt-2">
-                  <p className="text-[10px] text-[var(--text_secondary)] truncate max-w-[150px]">
+                  <p className="text-[10px] text-[var(--text\_secondary)] truncate max-w-[150px]">
                     {alert.log_type}
                   </p>
-                  <span className="text-xs font-mono text-[var(--text_secondary)]">
+                  <span className="text-xs font-mono text-[var(--text\_secondary)]">
                     {(alert.threat_score * 100).toFixed(0)}
                   </span>
                 </div>
@@ -331,7 +331,7 @@ export const Dashboard = () => {
   const fpr = feedbackStats?.false_positive_rate || 0
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--bg_primary)] -m-4 md:-m-8">
+    <div className="flex flex-col min-h-screen bg-[var(--bg\_primary)] -m-4 md:-m-8">
       {/* Absolute top edge ticker */}
       <LiveMetricsTicker />
 
@@ -377,15 +377,15 @@ export const Dashboard = () => {
               title="False Positive Rate"
               value={`${(fpr * 100).toFixed(1)}%`}
               icon={Percent}
-              colorClass="text-[var(--text_primary)]"
+              colorClass="text-[var(--text\_primary)]"
             />
           </div>
 
           {/* Charts - Bottom Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Threat Level Donut */}
-            <div className="bg-[var(--bg_secondary)] p-4 md:p-6 rounded-xl border border-[var(--border)] h-[300px] md:h-[400px] flex flex-col relative">
-              <h3 className="text-lg font-semibold mb-4 text-[var(--text_primary)]">
+            <div className="bg-[var(--bg\_secondary)] p-4 md:p-6 rounded-xl border border-[var(--border)] h-[300px] md:h-[400px] flex flex-col relative">
+              <h3 className="text-lg font-semibold mb-4 text-[var(--text\_primary)]">
                 Threat Level Distribution
               </h3>
               <div className="flex-1 relative">
@@ -415,17 +415,17 @@ export const Dashboard = () => {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-4xl font-bold text-[var(--text_primary)]">
+                  <span className="text-4xl font-bold text-[var(--text\_primary)]">
                     {stats?.total || stats?.total_open || 0}
                   </span>
-                  <span className="text-sm text-[var(--text_secondary)]">Total Alerts</span>
+                  <span className="text-sm text-[var(--text\_secondary)]">Total Alerts</span>
                 </div>
               </div>
             </div>
 
             {/* Top MITRE Tactis Bar Chart */}
-            <div className="bg-[var(--bg_secondary)] p-4 md:p-6 rounded-xl border border-[var(--border)] h-[300px] md:h-[400px] flex flex-col">
-              <h3 className="text-lg font-semibold mb-4 text-[var(--text_primary)]">
+            <div className="bg-[var(--bg\_secondary)] p-4 md:p-6 rounded-xl border border-[var(--border)] h-[300px] md:h-[400px] flex flex-col">
+              <h3 className="text-lg font-semibold mb-4 text-[var(--text\_primary)]">
                 Top MITRE Tactics
               </h3>
               <div className="flex-1">
@@ -474,32 +474,32 @@ export const Dashboard = () => {
           </div>
 
           {/* Top Hosts Table */}
-          <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden mt-6">
+          <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] overflow-hidden mt-6">
             <div className="px-6 py-5 border-b border-[var(--border)]">
-              <h3 className="text-lg font-semibold text-[var(--text_primary)]">
+              <h3 className="text-lg font-semibold text-[var(--text\_primary)]">
                 Top Hosts by Threat Volume
               </h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-[var(--bg_primary)] border-b border-[var(--border)]">
+                <thead className="bg-[var(--bg\_primary)] border-b border-[var(--border)]">
                   <tr>
-                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text_secondary)]">
+                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text\_secondary)]">
                       Hostname
                     </th>
-                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text_secondary)]">
+                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text\_secondary)]">
                       Critical
                     </th>
-                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text_secondary)]">
+                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text\_secondary)]">
                       High
                     </th>
-                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text_secondary)]">
+                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text\_secondary)]">
                       Medium
                     </th>
-                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text_secondary)]">
+                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text\_secondary)]">
                       Low
                     </th>
-                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text_secondary)]">
+                    <th className="px-6 py-4 text-sm font-semibold text-[var(--text\_secondary)]">
                       Total
                     </th>
                   </tr>
@@ -509,7 +509,7 @@ export const Dashboard = () => {
                     topHosts.map((host, idx) => (
                       <tr
                         key={idx}
-                        className="hover:bg-[var(--bg_tertiary)] transition-colors cursor-pointer group"
+                        className="hover:bg-[var(--bg\_tertiary)] transition-colors cursor-pointer group"
                         onClick={() => navigate(`/alerts?host_id=${host.key || host.hostname}`)}
                       >
                         <td className="px-6 py-4 text-sm font-medium text-blue-400 group-hover:text-blue-300 transition-colors">
@@ -527,7 +527,7 @@ export const Dashboard = () => {
                         <td className="px-6 py-4 text-sm text-green-500 font-medium">
                           {host.low || 0}
                         </td>
-                        <td className="px-6 py-4 text-sm text-[var(--text_primary)] font-bold">
+                        <td className="px-6 py-4 text-sm text-[var(--text\_primary)] font-bold">
                           {host.doc_count || host.total || 0}
                         </td>
                       </tr>
@@ -536,7 +536,7 @@ export const Dashboard = () => {
                     <tr>
                       <td
                         colSpan="6"
-                        className="px-6 py-8 text-center text-[var(--text_secondary)]"
+                        className="px-6 py-8 text-center text-[var(--text\_secondary)]"
                       >
                         No host data available.
                       </td>

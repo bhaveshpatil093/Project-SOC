@@ -31,13 +31,13 @@ const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login
 
 const NotFound = () => (
   <div className="flex flex-col items-center justify-center h-full min-h-[500px]">
-    <div className="p-4 bg-[var(--bg_secondary)] rounded-full mb-6 text-[var(--text_secondary)]">
+    <div className="p-4 bg-[var(--bg\_secondary)] rounded-full mb-6 text-[var(--text\_secondary)]">
       <AlertTriangle className="h-12 w-12" />
     </div>
-    <h2 className="text-3xl font-bold text-[var(--text_primary)] mb-3">
+    <h2 className="text-3xl font-bold text-[var(--text\_primary)] mb-3">
       404 — Null Route Trajectory
     </h2>
-    <p className="text-[var(--text_secondary)]">
+    <p className="text-[var(--text\_secondary)]">
       The requested endpoint hash does not map to any active internal layout components.
     </p>
   </div>
@@ -54,7 +54,7 @@ const AppContent = () => {
       <AlertNotificationBanner />
       <Suspense
         fallback={
-          <div className="h-screen w-full flex items-center justify-center bg-[var(--bg_primary)]">
+          <div className="h-screen w-full flex items-center justify-center bg-[var(--bg\_primary)]">
             <LoadingSpinner />
           </div>
         }

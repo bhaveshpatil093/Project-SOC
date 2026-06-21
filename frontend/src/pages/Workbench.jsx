@@ -130,18 +130,18 @@ const Workbench = () => {
     metrics.triagedToday > 0 ? Math.round((metrics.tpCount / metrics.triagedToday) * 100) : 0
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden bg-[var(--bg_primary)]">
+    <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden bg-[var(--bg\_primary)]">
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT PANEL: Queue (30%) */}
-        <div className="w-[30%] min-w-[350px] border-r border-[var(--border)] bg-[var(--bg_secondary)] flex flex-col">
+        <div className="w-[30%] min-w-[350px] border-r border-[var(--border)] bg-[var(--bg\_secondary)] flex flex-col">
           <div className="p-4 border-b border-[var(--border)] flex flex-col gap-3">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold text-[var(--text_primary)]">Triage Queue</h2>
+              <h2 className="text-lg font-bold text-[var(--text\_primary)]">Triage Queue</h2>
               <Badge variant="info">{alerts.length} pending</Badge>
             </div>
             <button
               onClick={() => setShowUncertainOnly(!showUncertainOnly)}
-              className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border transition-colors ${showUncertainOnly ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-[var(--bg_primary)] border-[var(--border)] text-[var(--text_secondary)]'}`}
+              className={`flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border transition-colors ${showUncertainOnly ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-400' : 'bg-[var(--bg\_primary)] border-[var(--border)] text-[var(--text\_secondary)]'}`}
             >
               {showUncertainOnly ? (
                 <ToggleRight className="h-4 w-4" />
@@ -154,9 +154,9 @@ const Workbench = () => {
 
           <div className="flex-1 overflow-y-auto p-2 space-y-2">
             {isLoading ? (
-              <div className="p-4 text-center text-[var(--text_secondary)]">Loading queue...</div>
+              <div className="p-4 text-center text-[var(--text\_secondary)]">Loading queue...</div>
             ) : alerts.length === 0 ? (
-              <div className="p-8 text-center text-[var(--text_secondary)] border border-dashed border-[var(--border)] rounded-lg m-2">
+              <div className="p-8 text-center text-[var(--text\_secondary)] border border-dashed border-[var(--border)] rounded-lg m-2">
                 <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500/50" />
                 <p>Queue is empty. Great job!</p>
               </div>
@@ -176,10 +176,10 @@ const Workbench = () => {
                   <div
                     key={alert._id || alert.id}
                     onClick={() => setSelectedIndex(idx)}
-                    className={`cursor-pointer p-3 rounded-lg border-l-4 border-y border-r transition-all ${levelColor} ${isSelected ? 'bg-[var(--bg_tertiary)] border-y-blue-500/50 border-r-blue-500/50 shadow-md scale-[1.02]' : 'bg-[var(--bg_primary)] border-y-[var(--border)] border-r-[var(--border)] hover:bg-[var(--bg_tertiary)]'}`}
+                    className={`cursor-pointer p-3 rounded-lg border-l-4 border-y border-r transition-all ${levelColor} ${isSelected ? 'bg-[var(--bg\_tertiary)] border-y-blue-500/50 border-r-blue-500/50 shadow-md scale-[1.02]' : 'bg-[var(--bg\_primary)] border-y-[var(--border)] border-r-[var(--border)] hover:bg-[var(--bg\_tertiary)]'}`}
                   >
                     <div className="flex justify-between items-start mb-1">
-                      <span className="font-mono text-sm font-bold text-[var(--text_primary)] truncate pr-2">
+                      <span className="font-mono text-sm font-bold text-[var(--text\_primary)] truncate pr-2">
                         {alert.entity_key}
                       </span>
                       <span
@@ -188,7 +188,7 @@ const Workbench = () => {
                         {(alert.threat_score * 100).toFixed(0)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center text-xs text-[var(--text_secondary)]">
+                    <div className="flex justify-between items-center text-xs text-[var(--text\_secondary)]">
                       <div className="flex items-center gap-1">
                         <Terminal className="h-3 w-3" />
                         <span className="truncate max-w-[120px]">{alert.log_type}</span>
@@ -208,11 +208,11 @@ const Workbench = () => {
         </div>
 
         {/* RIGHT PANEL: Active Alert Detail (70%) */}
-        <div className="flex-1 flex flex-col bg-[var(--bg_primary)] overflow-y-auto">
+        <div className="flex-1 flex flex-col bg-[var(--bg\_primary)] overflow-y-auto">
           {selectedAlert ? (
             <div className="p-6 md:p-8 max-w-5xl mx-auto w-full flex-1 flex flex-col">
               {/* Header */}
-              <div className="flex items-start gap-6 bg-[var(--bg_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-sm mb-6">
+              <div className="flex items-start gap-6 bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-sm mb-6">
                 <ThreatGauge
                   score={selectedAlert.threat_score * 100}
                   size={100}
@@ -221,10 +221,10 @@ const Workbench = () => {
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h1 className="text-2xl font-bold font-mono text-[var(--text_primary)] mb-2">
+                      <h1 className="text-2xl font-bold font-mono text-[var(--text\_primary)] mb-2">
                         {selectedAlert.entity_key}
                       </h1>
-                      <div className="flex gap-4 text-sm text-[var(--text_secondary)]">
+                      <div className="flex gap-4 text-sm text-[var(--text\_secondary)]">
                         <span className="flex items-center gap-1">
                           <Server className="h-4 w-4" /> {selectedAlert.host_id || 'Unknown'}
                         </span>
@@ -258,11 +258,11 @@ const Workbench = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 flex-1">
                 {/* Details & Explanation */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
-                  <div className="bg-[var(--bg_secondary)] p-6 rounded-xl border border-[var(--border)] flex-1">
-                    <h3 className="text-sm font-bold text-[var(--text_secondary)] uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <div className="bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)] flex-1">
+                    <h3 className="text-sm font-bold text-[var(--text\_secondary)] uppercase tracking-wider mb-4 flex items-center gap-2">
                       <FileText className="h-4 w-4" /> AI Explanation
                     </h3>
-                    <div className="text-[var(--text_primary)] text-sm leading-relaxed bg-[var(--bg_primary)] p-4 rounded-lg border border-[var(--border)] h-full max-h-[300px] overflow-y-auto">
+                    <div className="text-[var(--text\_primary)] text-sm leading-relaxed bg-[var(--bg\_primary)] p-4 rounded-lg border border-[var(--border)] h-full max-h-[300px] overflow-y-auto">
                       {selectedAlert.human_explanation ||
                         'No explanation available. Review raw features.'}
                     </div>
@@ -272,8 +272,8 @@ const Workbench = () => {
                 {/* Features & Counterfactuals */}
                 <div className="flex flex-col gap-6">
                   {selectedAlert.consensus_level && (
-                    <div className="bg-[var(--bg_secondary)] p-4 rounded-xl border border-[var(--border)]">
-                      <h3 className="text-sm font-bold text-[var(--text_secondary)] uppercase tracking-wider mb-3">
+                    <div className="bg-[var(--bg\_secondary)] p-4 rounded-xl border border-[var(--border)]">
+                      <h3 className="text-sm font-bold text-[var(--text\_secondary)] uppercase tracking-wider mb-3">
                         Model Consensus
                       </h3>
                       <Badge
@@ -291,17 +291,17 @@ const Workbench = () => {
                     </div>
                   )}
 
-                  <div className="bg-[var(--bg_secondary)] p-4 rounded-xl border border-[var(--border)] flex-1">
-                    <h3 className="text-sm font-bold text-[var(--text_secondary)] uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <div className="bg-[var(--bg\_secondary)] p-4 rounded-xl border border-[var(--border)] flex-1">
+                    <h3 className="text-sm font-bold text-[var(--text\_secondary)] uppercase tracking-wider mb-4 flex items-center gap-2">
                       <Activity className="h-4 w-4" /> Key Drivers
                     </h3>
                     <div className="space-y-3">
                       {selectedAlert.top_features?.slice(0, 5).map((f, i) => (
                         <div
                           key={i}
-                          className="flex justify-between items-center text-sm p-2 bg-[var(--bg_primary)] rounded border border-[var(--border)]"
+                          className="flex justify-between items-center text-sm p-2 bg-[var(--bg\_primary)] rounded border border-[var(--border)]"
                         >
-                          <span className="font-mono text-[var(--text_secondary)] truncate max-w-[150px]">
+                          <span className="font-mono text-[var(--text\_secondary)] truncate max-w-[150px]">
                             {typeof f === 'string' ? f : f.feature}
                           </span>
                           <span className="text-red-400 font-mono">
@@ -331,7 +331,7 @@ const Workbench = () => {
               </div>
 
               {/* Quick Action Bar */}
-              <div className="bg-[var(--bg_secondary)] p-4 rounded-xl border border-[var(--border)] flex flex-wrap gap-4 items-center justify-between mt-auto shadow-lg">
+              <div className="bg-[var(--bg\_secondary)] p-4 rounded-xl border border-[var(--border)] flex flex-wrap gap-4 items-center justify-between mt-auto shadow-lg">
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleTriageAction(true, selectedAlert)}
@@ -356,10 +356,10 @@ const Workbench = () => {
                     onClick={() =>
                       navigate(`/investigation?alert_id=${selectedAlert._id || selectedAlert.id}`)
                     }
-                    className="flex items-center gap-2 px-3 py-2 bg-[var(--bg_primary)] hover:bg-[var(--bg_tertiary)] border border-[var(--border)] text-[var(--text_primary)] rounded-lg text-sm transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 bg-[var(--bg\_primary)] hover:bg-[var(--bg\_tertiary)] border border-[var(--border)] text-[var(--text\_primary)] rounded-lg text-sm transition-colors"
                   >
                     Investigate
-                    <kbd className="ml-1 px-1.5 py-0.5 bg-[var(--bg_tertiary)] border border-[var(--border)] rounded text-xs text-[var(--text_secondary)]">
+                    <kbd className="ml-1 px-1.5 py-0.5 bg-[var(--bg\_tertiary)] border border-[var(--border)] rounded text-xs text-[var(--text\_secondary)]">
                       I
                     </kbd>
                   </button>
@@ -370,10 +370,10 @@ const Workbench = () => {
                         status: 'in_progress',
                       })
                     }
-                    className="flex items-center gap-2 px-3 py-2 bg-[var(--bg_primary)] hover:bg-[var(--bg_tertiary)] border border-[var(--border)] text-[var(--text_primary)] rounded-lg text-sm transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 bg-[var(--bg\_primary)] hover:bg-[var(--bg\_tertiary)] border border-[var(--border)] text-[var(--text\_primary)] rounded-lg text-sm transition-colors"
                   >
                     Escalate
-                    <kbd className="ml-1 px-1.5 py-0.5 bg-[var(--bg_tertiary)] border border-[var(--border)] rounded text-xs text-[var(--text_secondary)]">
+                    <kbd className="ml-1 px-1.5 py-0.5 bg-[var(--bg\_tertiary)] border border-[var(--border)] rounded text-xs text-[var(--text\_secondary)]">
                       E
                     </kbd>
                   </button>
@@ -390,7 +390,7 @@ const Workbench = () => {
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-[var(--text_secondary)]">
+            <div className="flex-1 flex items-center justify-center text-[var(--text\_secondary)]">
               Select an alert from the queue to begin triage.
             </div>
           )}
@@ -398,24 +398,24 @@ const Workbench = () => {
       </div>
 
       {/* BOTTOM PANEL: Metrics Bar */}
-      <div className="h-10 bg-[var(--bg_tertiary)] border-t border-[var(--border)] flex items-center px-6 justify-between text-xs text-[var(--text_secondary)] font-mono">
+      <div className="h-10 bg-[var(--bg\_tertiary)] border-t border-[var(--border)] flex items-center px-6 justify-between text-xs text-[var(--text\_secondary)] font-mono">
         <div className="flex items-center gap-6">
           <span className="flex items-center gap-2">
             <CheckCircle className="h-3 w-3 text-green-500" />
             Triaged today:{' '}
-            <strong className="text-[var(--text_primary)]">{metrics.triagedToday}</strong>
+            <strong className="text-[var(--text\_primary)]">{metrics.triagedToday}</strong>
           </span>
           <span className="flex items-center gap-2">
             <Clock className="h-3 w-3 text-blue-500" />
-            Avg triage time: <strong className="text-[var(--text_primary)]">{avgTime}s</strong>
+            Avg triage time: <strong className="text-[var(--text\_primary)]">{avgTime}s</strong>
           </span>
           <span className="flex items-center gap-2">
             <Activity className="h-3 w-3 text-orange-500" />
-            TP Rate: <strong className="text-[var(--text_primary)]">{tpRate}%</strong>
+            TP Rate: <strong className="text-[var(--text\_primary)]">{tpRate}%</strong>
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-[var(--text_secondary)] opacity-50">
+          <span className="text-[var(--text\_secondary)] opacity-50">
             Press '?' for all shortcuts
           </span>
         </div>

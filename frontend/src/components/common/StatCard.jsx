@@ -16,7 +16,7 @@ export const StatCard = ({
     green: 'bg-green-500/10 text-green-500 border-green-500/50',
     orange: 'bg-orange-500/10 text-orange-500 border-orange-500/50',
     purple: 'bg-purple-500/10 text-purple-500 border-purple-500/50',
-    slate: 'bg-[var(--text_secondary)]/10 text-[var(--text_secondary)] border-[var(--border)]',
+    slate: 'bg-[var(--text\_secondary)]/10 text-[var(--text\_secondary)] border-[var(--border)]',
   }
 
   const textColors = {
@@ -25,13 +25,13 @@ export const StatCard = ({
     green: 'text-green-500',
     orange: 'text-orange-500',
     purple: 'text-purple-500',
-    slate: 'text-[var(--text_primary)]',
+    slate: 'text-[var(--text\_primary)]',
   }
 
   return (
-    <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 flex items-center justify-between shadow-lg transition-transform hover:-translate-y-1 hover:border-[var(--border)]">
+    <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] p-6 flex items-center justify-between shadow-lg transition-transform hover:-translate-y-1 hover:border-[var(--border)]">
       <div>
-        <h3 className="text-[var(--text_secondary)] text-sm font-semibold uppercase tracking-wider mb-2">
+        <h3 className="text-[var(--text\_secondary)] text-sm font-semibold uppercase tracking-wider mb-2">
           {title}
         </h3>
         {loading ? (
@@ -44,7 +44,7 @@ export const StatCard = ({
           </div>
         )}
         {subtitle && (
-          <p className="text-xs text-[var(--text_secondary)] mt-2 font-medium">{subtitle}</p>
+          <p className="text-xs text-[var(--text\_secondary)] mt-2 font-medium">{subtitle}</p>
         )}
       </div>
       {Icon && (

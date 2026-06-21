@@ -83,16 +83,16 @@ const ToastItem = ({ toast, onRemove }) => {
     >
       <div className="shrink-0 mt-0.5">{icons[toast.level] || icons.info}</div>
       <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-bold text-[var(--text_primary)] tracking-wide truncate">
+        <h4 className="text-sm font-bold text-[var(--text\_primary)] tracking-wide truncate">
           {toast.title}
         </h4>
         {toast.message && (
-          <p className="text-xs text-[var(--text_secondary)] mt-1 line-clamp-2">{toast.message}</p>
+          <p className="text-xs text-[var(--text\_secondary)] mt-1 line-clamp-2">{toast.message}</p>
         )}
       </div>
       <button
         onClick={() => onRemove(toast.id)}
-        className="shrink-0 p-1 rounded-md text-[var(--text_secondary)] hover:bg-white/10 hover:text-[var(--text_primary)] transition-colors"
+        className="shrink-0 p-1 rounded-md text-[var(--text\_secondary)] hover:bg-white/10 hover:text-[var(--text\_primary)] transition-colors"
       >
         <X className="h-4 w-4" />
       </button>

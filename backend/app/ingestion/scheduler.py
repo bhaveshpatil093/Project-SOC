@@ -219,6 +219,33 @@ async def broadcast_stats(es: AsyncElasticsearch):
     except Exception as e:
         logger.error("broadcast_stats_failed", error=str(e))
 
+async def run_drift_detection():
+    logger.info("run_drift_detection_started")
+    try:
+        from app.ingestion.es_client import get_es_client
+        from app.api.deps import get_model_manager
+        es = await get_es_client()
+        mm = get_model_manager()
+        res = await mm.detect_drift(es)
+        logger.info("drift_detection_completed", **res)
+    except Exception as e:
+        logger.error("drift_detection_failed", error=str(e))
+
+async def run_platform_alerting():
+    logger.info("run_platform_alerting_started")
+    try:
+        from app.ingestion.es_client import get_es_client
+        from app.api.deps import get_model_manager, get_slm_engine
+        from app.monitoring.platform_alerting import PlatformAlerter
+        es = await get_es_client()
+        mm = get_model_manager()
+        slm = get_slm_engine()
+        alerter = PlatformAlerter()
+        await alerter.run_alerting_cycle(es, mm, slm)
+        logger.info("run_platform_alerting_completed")
+    except Exception as e:
+        logger.error("run_platform_alerting_failed", error=str(e))
+
 async def start_scheduler(es: AsyncElasticsearch):
     """Starts the APScheduler background ingestion job."""
     global _scheduler
@@ -239,6 +266,13 @@ async def start_scheduler(es: AsyncElasticsearch):
         args=[es],
         id="stats_broadcast",
         replace_existing=True
+    )
+
+    _scheduler.add_job(
+        run_platform_alerting,
+        IntervalTrigger(minutes=2),
+        id="platform_alerting",
+        replace_existing=True,
     )
 
     from app.models.model_manager import get_model_manager

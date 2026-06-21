@@ -108,7 +108,7 @@ export const ThreatGauge = React.memo(
 
           <div className="absolute bottom-0 flex flex-col items-center translate-y-3">
             <span
-              className="font-bold text-[var(--text_primary)] leading-none"
+              className="font-bold text-[var(--text\_primary)] leading-none"
               style={{ fontSize: size * 0.28 }}
             >
               {normalizedScore.toFixed(0)}
@@ -121,7 +121,7 @@ export const ThreatGauge = React.memo(
             </span>
             {showLabel && (
               <span
-                className="text-[var(--text_secondary)] font-medium uppercase tracking-wider mt-1"
+                className="text-[var(--text\_secondary)] font-medium uppercase tracking-wider mt-1"
                 style={{ fontSize: size * 0.06 }}
               >
                 {label}

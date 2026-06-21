@@ -102,14 +102,14 @@ const TabSubmitFeedback = () => {
     if (l === 'TP') return 'bg-green-500/5 hover:bg-green-500/10 border-l-2 border-green-500'
     if (l === 'FP') return 'bg-red-500/5 hover:bg-red-500/10 border-l-2 border-red-500'
     if (l === 'BENIGN')
-      return 'bg-[var(--text_secondary)]/5 hover:bg-[var(--text_secondary)]/10 border-l-2 border-[var(--border)]'
-    return 'hover:bg-[var(--bg_tertiary)]'
+      return 'bg-[var(--text\_secondary)]/5 hover:bg-[var(--text\_secondary)]/10 border-l-2 border-[var(--border)]'
+    return 'hover:bg-[var(--bg\_tertiary)]'
   }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
-      <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg">
-        <h2 className="text-xl font-bold text-[var(--text_primary)] mb-6 flex items-center gap-2">
+      <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg">
+        <h2 className="text-xl font-bold text-[var(--text\_primary)] mb-6 flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-blue-500" />
           Submit Alert Feedback
         </h2>
@@ -131,7 +131,7 @@ const TabSubmitFeedback = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-[var(--text_secondary)] mb-2">
+              <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-2">
                 Alert ID
               </label>
               <input
@@ -140,14 +140,14 @@ const TabSubmitFeedback = () => {
                 value={form.alert_id}
                 onChange={(e) => setForm({ ...form, alert_id: e.target.value })}
                 placeholder="soc-alert-12345"
-                className={`w-full bg-[var(--bg_primary)] border ${fieldErrors.alert_id ? 'border-red-500' : 'border-[var(--border)]'} rounded-lg px-4 py-2.5 text-[var(--text_primary)] focus:outline-none focus:border-blue-500 transition-colors`}
+                className={`w-full bg-[var(--bg\_primary)] border ${fieldErrors.alert_id ? 'border-red-500' : 'border-[var(--border)]'} rounded-lg px-4 py-2.5 text-[var(--text\_primary)] focus:outline-none focus:border-blue-500 transition-colors`}
               />
               {fieldErrors.alert_id && (
                 <p className="text-xs text-red-400 mt-1">{fieldErrors.alert_id}</p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--text_secondary)] mb-2">
+              <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-2">
                 Analyst Name
               </label>
               <input
@@ -156,7 +156,7 @@ const TabSubmitFeedback = () => {
                 value={form.analyst_name}
                 onChange={(e) => setForm({ ...form, analyst_name: e.target.value })}
                 placeholder="John Doe"
-                className={`w-full bg-[var(--bg_primary)] border ${fieldErrors.analyst_name ? 'border-red-500' : 'border-[var(--border)]'} rounded-lg px-4 py-2.5 text-[var(--text_primary)] focus:outline-none focus:border-blue-500 transition-colors`}
+                className={`w-full bg-[var(--bg\_primary)] border ${fieldErrors.analyst_name ? 'border-red-500' : 'border-[var(--border)]'} rounded-lg px-4 py-2.5 text-[var(--text\_primary)] focus:outline-none focus:border-blue-500 transition-colors`}
               />
               {fieldErrors.analyst_name && (
                 <p className="text-xs text-red-400 mt-1">{fieldErrors.analyst_name}</p>
@@ -165,12 +165,12 @@ const TabSubmitFeedback = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[var(--text_secondary)] mb-3">
+            <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-3">
               Verdict Label
             </label>
             <div className="flex flex-wrap gap-4">
               <label
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'TP' ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-[var(--bg_primary)] border-[var(--border)] text-[var(--text_secondary)] hover:border-[var(--border)]'}`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'TP' ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-[var(--bg\_primary)] border-[var(--border)] text-[var(--text\_secondary)] hover:border-[var(--border)]'}`}
               >
                 <input
                   type="radio"
@@ -183,7 +183,7 @@ const TabSubmitFeedback = () => {
                 <CheckCircle className="h-4 w-4" /> True Positive (Real Threat)
               </label>
               <label
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'FP' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-[var(--bg_primary)] border-[var(--border)] text-[var(--text_secondary)] hover:border-[var(--border)]'}`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'FP' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-[var(--bg\_primary)] border-[var(--border)] text-[var(--text\_secondary)] hover:border-[var(--border)]'}`}
               >
                 <input
                   type="radio"
@@ -196,7 +196,7 @@ const TabSubmitFeedback = () => {
                 <ShieldOff className="h-4 w-4" /> False Positive (Safe/Noise)
               </label>
               <label
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'Benign' ? 'bg-[var(--text_secondary)]/20 border-[var(--border)] text-[var(--text_primary)]' : 'bg-[var(--bg_primary)] border-[var(--border)] text-[var(--text_secondary)] hover:border-[var(--border)]'}`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors ${form.label === 'Benign' ? 'bg-[var(--text\_secondary)]/20 border-[var(--border)] text-[var(--text\_primary)]' : 'bg-[var(--bg\_primary)] border-[var(--border)] text-[var(--text\_secondary)] hover:border-[var(--border)]'}`}
               >
                 <input
                   type="radio"
@@ -212,16 +212,16 @@ const TabSubmitFeedback = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[var(--text_secondary)] mb-2">
+            <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-2">
               MITRE Technique Override{' '}
-              <span className="text-[var(--text_secondary)] text-xs font-normal">(Optional)</span>
+              <span className="text-[var(--text\_secondary)] text-xs font-normal">(Optional)</span>
             </label>
             <input
               type="text"
               value={form.mitre_override}
               onChange={(e) => setForm({ ...form, mitre_override: e.target.value })}
               placeholder="e.g. T1078.001"
-              className={`w-full md:w-1/2 bg-[var(--bg_primary)] border ${fieldErrors.mitre_override ? 'border-red-500' : 'border-[var(--border)]'} rounded-lg px-4 py-2.5 text-[var(--text_primary)] focus:outline-none focus:border-blue-500 transition-colors font-mono text-sm`}
+              className={`w-full md:w-1/2 bg-[var(--bg\_primary)] border ${fieldErrors.mitre_override ? 'border-red-500' : 'border-[var(--border)]'} rounded-lg px-4 py-2.5 text-[var(--text\_primary)] focus:outline-none focus:border-blue-500 transition-colors font-mono text-sm`}
             />
             {fieldErrors.mitre_override && (
               <p className="text-xs text-red-400 mt-1">{fieldErrors.mitre_override}</p>
@@ -229,7 +229,7 @@ const TabSubmitFeedback = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[var(--text_secondary)] mb-2">
+            <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-2">
               Analyst Notes
             </label>
             <textarea
@@ -238,7 +238,7 @@ const TabSubmitFeedback = () => {
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               placeholder="Explain the reasoning behind this label..."
-              className={`w-full bg-[var(--bg_primary)] border ${fieldErrors.notes ? 'border-red-500' : 'border-[var(--border)]'} rounded-lg px-4 py-3 text-[var(--text_primary)] focus:outline-none focus:border-blue-500 transition-colors resize-y`}
+              className={`w-full bg-[var(--bg\_primary)] border ${fieldErrors.notes ? 'border-red-500' : 'border-[var(--border)]'} rounded-lg px-4 py-3 text-[var(--text\_primary)] focus:outline-none focus:border-blue-500 transition-colors resize-y`}
             />
             {fieldErrors.notes && <p className="text-xs text-red-400 mt-1">{fieldErrors.notes}</p>}
           </div>
@@ -246,43 +246,43 @@ const TabSubmitFeedback = () => {
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-[var(--text_primary)] font-medium px-6 py-2.5 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-[var(--text\_primary)] font-medium px-6 py-2.5 rounded-lg transition-colors flex items-center gap-2"
           >
             {mutation.isPending ? <LoadingSpinner size={4} /> : 'Submit Feedback'}
           </button>
         </form>
       </div>
 
-      <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg mt-8">
-        <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg_primary)]/50 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-[var(--text_primary)]">Recent Feedback Log</h3>
+      <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg mt-8">
+        <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg\_primary)]/50 flex justify-between items-center">
+          <h3 className="text-lg font-bold text-[var(--text\_primary)]">Recent Feedback Log</h3>
           <button
             onClick={() => exportFeedbackToCSV(feedbackList)}
-            className="flex items-center gap-2 bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 bg-[var(--bg\_secondary)] text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
           >
             <Download className="h-4 w-4" /> Export CSV
           </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left whitespace-nowrap">
-            <thead className="bg-[var(--bg_primary)]/80 border-b border-[var(--border)]">
+            <thead className="bg-[var(--bg\_primary)]/80 border-b border-[var(--border)]">
               <tr>
-                <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                   Timestamp
                 </th>
-                <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                   Alert ID
                 </th>
-                <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                   Analyst
                 </th>
-                <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                   Label
                 </th>
-                <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                   MITRE Override
                 </th>
-                <th className="px-6 py-3 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                   Notes
                 </th>
               </tr>
@@ -302,14 +302,14 @@ const TabSubmitFeedback = () => {
                 </tr>
               ) : feedbackList.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-[var(--text_secondary)]">
+                  <td colSpan="6" className="px-6 py-12 text-center text-[var(--text\_secondary)]">
                     No feedback submitted yet.
                   </td>
                 </tr>
               ) : (
                 feedbackList.map((fb, idx) => (
                   <tr key={idx} className={`${getRowColor(fb.label)} transition-colors`}>
-                    <td className="px-6 py-4 text-xs text-[var(--text_secondary)]">
+                    <td className="px-6 py-4 text-xs text-[var(--text\_secondary)]">
                       {formatDate(fb.timestamp)}
                     </td>
                     <td
@@ -318,17 +318,17 @@ const TabSubmitFeedback = () => {
                     >
                       {fb.alert_id}
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-[var(--text_primary)]">
+                    <td className="px-6 py-4 text-sm font-medium text-[var(--text\_primary)]">
                       {fb.analyst_name}
                     </td>
                     <td className="px-6 py-4">
                       <Badge variant={fb.label}>{fb.label}</Badge>
                     </td>
-                    <td className="px-6 py-4 text-xs font-mono text-[var(--text_secondary)]">
+                    <td className="px-6 py-4 text-xs font-mono text-[var(--text\_secondary)]">
                       {fb.mitre_override || '-'}
                     </td>
                     <td
-                      className="px-6 py-4 text-sm text-[var(--text_secondary)] truncate max-w-[300px]"
+                      className="px-6 py-4 text-sm text-[var(--text\_secondary)] truncate max-w-[300px]"
                       title={fb.notes}
                     >
                       {fb.notes}
@@ -388,20 +388,20 @@ const TabFeedbackStats = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-[var(--bg_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-lg">
-          <h3 className="text-[var(--text_secondary)] text-sm font-semibold uppercase tracking-wider mb-2">
+        <div className="bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-lg">
+          <h3 className="text-[var(--text\_secondary)] text-sm font-semibold uppercase tracking-wider mb-2">
             Total Labeled
           </h3>
-          <div className="text-4xl font-bold text-[var(--text_primary)]">{stats.total || 0}</div>
+          <div className="text-4xl font-bold text-[var(--text\_primary)]">{stats.total || 0}</div>
         </div>
-        <div className="bg-[var(--bg_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-lg border-b-4 border-b-red-500">
-          <h3 className="text-[var(--text_secondary)] text-sm font-semibold uppercase tracking-wider mb-2">
+        <div className="bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-lg border-b-4 border-b-red-500">
+          <h3 className="text-[var(--text\_secondary)] text-sm font-semibold uppercase tracking-wider mb-2">
             False Positive Rate
           </h3>
           <div className="text-4xl font-bold text-red-500">{stats.fp_rate?.toFixed(1) || 0}%</div>
         </div>
-        <div className="bg-[var(--bg_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-lg border-b-4 border-b-green-500">
-          <h3 className="text-[var(--text_secondary)] text-sm font-semibold uppercase tracking-wider mb-2">
+        <div className="bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-lg border-b-4 border-b-green-500">
+          <h3 className="text-[var(--text\_secondary)] text-sm font-semibold uppercase tracking-wider mb-2">
             True Positive Rate
           </h3>
           <div className="text-4xl font-bold text-green-500">{stats.tp_rate?.toFixed(1) || 0}%</div>
@@ -409,8 +409,8 @@ const TabFeedbackStats = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-[var(--bg_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-lg lg:col-span-1">
-          <h3 className="text-lg font-bold text-[var(--text_primary)] mb-6">Distribution</h3>
+        <div className="bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-lg lg:col-span-1">
+          <h3 className="text-lg font-bold text-[var(--text\_primary)] mb-6">Distribution</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -441,8 +441,8 @@ const TabFeedbackStats = () => {
           </div>
         </div>
 
-        <div className="bg-[var(--bg_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-lg lg:col-span-2">
-          <h3 className="text-lg font-bold text-[var(--text_primary)] mb-6">
+        <div className="bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)] shadow-lg lg:col-span-2">
+          <h3 className="text-lg font-bold text-[var(--text\_primary)] mb-6">
             Label Trend (Last 30 Days)
           </h3>
           <div className="h-64">
@@ -502,38 +502,38 @@ const TabSuppressionRules = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg">
-        <div className="px-6 py-5 border-b border-[var(--border)] bg-[var(--bg_primary)]/50 flex justify-between items-center">
+      <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg">
+        <div className="px-6 py-5 border-b border-[var(--border)] bg-[var(--bg\_primary)]/50 flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-bold text-[var(--text_primary)] flex items-center gap-2">
+            <h3 className="text-lg font-bold text-[var(--text\_primary)] flex items-center gap-2">
               <ShieldOff className="h-5 w-5 text-purple-500" />
               Active Suppression Rules
             </h3>
-            <p className="text-[var(--text_secondary)] text-sm mt-1">
+            <p className="text-[var(--text\_secondary)] text-sm mt-1">
               Rules generated automatically from False Positive labels to silence noise.
             </p>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left whitespace-nowrap">
-            <thead className="bg-[var(--bg_primary)]/80 border-b border-[var(--border)]">
+            <thead className="bg-[var(--bg\_primary)]/80 border-b border-[var(--border)]">
               <tr>
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                   Rule ID
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                   Entity Key
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                   Pattern Type
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                   Reason Context
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                   Created At
                 </th>
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider text-right">
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider text-right">
                   Actions
                 </th>
               </tr>
@@ -554,40 +554,40 @@ const TabSuppressionRules = () => {
               ) : rules.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-16 text-center">
-                    <Shield className="h-12 w-12 text-[var(--text_secondary)] mx-auto mb-4" />
-                    <p className="text-[var(--text_secondary)] font-medium text-lg">
+                    <Shield className="h-12 w-12 text-[var(--text\_secondary)] mx-auto mb-4" />
+                    <p className="text-[var(--text\_secondary)] font-medium text-lg">
                       No suppression rules active.
                     </p>
-                    <p className="text-[var(--text_secondary)] mt-2">
+                    <p className="text-[var(--text\_secondary)] mt-2">
                       False positive labels logged will generate rules automatically.
                     </p>
                   </td>
                 </tr>
               ) : (
                 rules.map((rule, idx) => (
-                  <tr key={idx} className="hover:bg-[var(--bg_tertiary)]/70 transition-colors">
+                  <tr key={idx} className="hover:bg-[var(--bg\_tertiary)]/70 transition-colors">
                     <td className="px-6 py-4 text-sm font-mono text-purple-400">
                       {rule.rule_id || `SUP-${idx + 1000}`}
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-[var(--text_primary)]">
+                    <td className="px-6 py-4 text-sm font-medium text-[var(--text\_primary)]">
                       {rule.entity_key}
                     </td>
                     <td className="px-6 py-4">
                       <Badge variant="default">{rule.pattern_type || 'Feature Signature'}</Badge>
                     </td>
                     <td
-                      className="px-6 py-4 text-sm text-[var(--text_secondary)] max-w-[300px] truncate"
+                      className="px-6 py-4 text-sm text-[var(--text\_secondary)] max-w-[300px] truncate"
                       title={rule.reason}
                     >
                       {rule.reason}
                     </td>
-                    <td className="px-6 py-4 text-xs text-[var(--text_secondary)]">
+                    <td className="px-6 py-4 text-xs text-[var(--text\_secondary)]">
                       {formatDate(rule.created_at)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <button
                         disabled
-                        className="text-xs bg-[var(--bg_tertiary)] text-[var(--text_secondary)] px-3 py-1.5 rounded-lg opacity-50 cursor-not-allowed border border-[var(--border)]"
+                        className="text-xs bg-[var(--bg\_tertiary)] text-[var(--text\_secondary)] px-3 py-1.5 rounded-lg opacity-50 cursor-not-allowed border border-[var(--border)]"
                       >
                         Remove
                       </button>
@@ -668,34 +668,34 @@ const TabLabelingQueue = () => {
         </div>
       )}
 
-      <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg p-6">
-        <h3 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2 mb-2">
+      <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg p-6">
+        <h3 className="text-xl font-bold text-[var(--text\_primary)] flex items-center gap-2 mb-2">
           <Target className="h-6 w-6 text-blue-500" />
           High-Value Alerts to Label (Active Learning)
         </h3>
-        <p className="text-[var(--text_secondary)] mb-6">
+        <p className="text-[var(--text\_secondary)] mb-6">
           These alerts will improve the model most — please label them first.
         </p>
 
         {queue.length === 0 ? (
           <div className="text-center py-12 border-2 border-dashed border-[var(--border)] rounded-xl">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-[var(--text_primary)]">Queue Empty!</h4>
-            <p className="text-[var(--text_secondary)] mt-2">
+            <h4 className="text-lg font-medium text-[var(--text\_primary)]">Queue Empty!</h4>
+            <p className="text-[var(--text\_secondary)] mt-2">
               All high-uncertainty alerts have been labeled. Great job.
             </p>
           </div>
         ) : (
           <div className="space-y-4 relative">
             {mutation.isPending && (
-              <div className="absolute inset-0 bg-[var(--bg_primary)]/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+              <div className="absolute inset-0 bg-[var(--bg\_primary)]/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
                 <LoadingSpinner size={8} />
               </div>
             )}
             {queue.slice(0, 5).map((item, idx) => (
               <div
                 key={idx}
-                className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl p-5 shadow flex flex-col md:flex-row gap-6 items-center"
+                className="bg-[var(--bg\_primary)] border border-[var(--border)] rounded-xl p-5 shadow flex flex-col md:flex-row gap-6 items-center"
               >
                 <div className="flex-1 space-y-3">
                   <div className="flex justify-between items-start">
@@ -704,19 +704,19 @@ const TabLabelingQueue = () => {
                         <Badge variant={item.alert.threat_level}>
                           {item.alert.threat_level.toUpperCase()}
                         </Badge>
-                        <span className="text-xs text-[var(--text_secondary)]">
+                        <span className="text-xs text-[var(--text\_secondary)]">
                           {formatDate(item.alert.timestamp)}
                         </span>
                       </div>
-                      <h4 className="text-lg font-bold text-[var(--text_primary)]">
+                      <h4 className="text-lg font-bold text-[var(--text\_primary)]">
                         {item.alert.entity_key}
                       </h4>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm font-medium text-[var(--text_primary)] mb-1">
+                      <div className="text-sm font-medium text-[var(--text\_primary)] mb-1">
                         Model Uncertainty: {(item.uncertainty_score * 100).toFixed(0)}%
                       </div>
-                      <div className="w-32 h-2 bg-[var(--bg_tertiary)] rounded-full overflow-hidden">
+                      <div className="w-32 h-2 bg-[var(--bg\_tertiary)] rounded-full overflow-hidden">
                         <div
                           className="h-full bg-blue-500 rounded-full"
                           style={{ width: `${item.uncertainty_score * 100}%` }}
@@ -725,11 +725,11 @@ const TabLabelingQueue = () => {
                     </div>
                   </div>
 
-                  <div className="bg-[var(--bg_tertiary)]/50 rounded-lg p-3 text-sm border border-[var(--border)]">
-                    <span className="font-semibold text-[var(--text_primary)]">
+                  <div className="bg-[var(--bg\_tertiary)]/50 rounded-lg p-3 text-sm border border-[var(--border)]">
+                    <span className="font-semibold text-[var(--text\_primary)]">
                       Reason for Selection:{' '}
                     </span>
-                    <span className="text-[var(--text_secondary)]">
+                    <span className="text-[var(--text\_secondary)]">
                       {item.reason_for_selection}
                     </span>
                   </div>
@@ -771,22 +771,22 @@ export const Feedback = () => {
     <div className="max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--text_primary)] tracking-tight">
+          <h1 className="text-3xl font-bold text-[var(--text\_primary)] tracking-tight">
             Feedback Loop
           </h1>
-          <p className="text-[var(--text_secondary)] mt-1">
+          <p className="text-[var(--text\_secondary)] mt-1">
             Train the ML engine by explicitly labeling alerts as TP, FP, or Benign.
           </p>
         </div>
       </div>
 
-      <div className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl p-1 inline-flex gap-1 overflow-x-auto w-full md:w-auto">
+      <div className="bg-[var(--bg\_primary)] border border-[var(--border)] rounded-xl p-1 inline-flex gap-1 overflow-x-auto w-full md:w-auto">
         <button
           onClick={() => setActiveTab('submit')}
           className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
             activeTab === 'submit'
-              ? 'bg-blue-600 text-[var(--text_primary)] shadow-lg'
-              : 'text-[var(--text_secondary)] hover:text-[var(--text_primary)] hover:bg-[var(--bg_secondary)]'
+              ? 'bg-blue-600 text-[var(--text\_primary)] shadow-lg'
+              : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] hover:bg-[var(--bg\_secondary)]'
           }`}
         >
           Submit Feedback
@@ -795,8 +795,8 @@ export const Feedback = () => {
           onClick={() => setActiveTab('stats')}
           className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
             activeTab === 'stats'
-              ? 'bg-blue-600 text-[var(--text_primary)] shadow-lg'
-              : 'text-[var(--text_secondary)] hover:text-[var(--text_primary)] hover:bg-[var(--bg_secondary)]'
+              ? 'bg-blue-600 text-[var(--text\_primary)] shadow-lg'
+              : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] hover:bg-[var(--bg\_secondary)]'
           }`}
         >
           <BarChart2 className="h-4 w-4" /> Statistics
@@ -805,8 +805,8 @@ export const Feedback = () => {
           onClick={() => setActiveTab('rules')}
           className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
             activeTab === 'rules'
-              ? 'bg-blue-600 text-[var(--text_primary)] shadow-lg'
-              : 'text-[var(--text_secondary)] hover:text-[var(--text_primary)] hover:bg-[var(--bg_secondary)]'
+              ? 'bg-blue-600 text-[var(--text\_primary)] shadow-lg'
+              : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] hover:bg-[var(--bg\_secondary)]'
           }`}
         >
           <ShieldOff className="h-4 w-4" /> Suppression Rules
@@ -815,8 +815,8 @@ export const Feedback = () => {
           onClick={() => setActiveTab('queue')}
           className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
             activeTab === 'queue'
-              ? 'bg-blue-600 text-[var(--text_primary)] shadow-lg'
-              : 'text-[var(--text_secondary)] hover:text-[var(--text_primary)] hover:bg-[var(--bg_secondary)]'
+              ? 'bg-blue-600 text-[var(--text\_primary)] shadow-lg'
+              : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] hover:bg-[var(--bg\_secondary)]'
           }`}
         >
           <Target className="h-4 w-4" /> Labeling Queue

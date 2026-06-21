@@ -59,38 +59,38 @@ const Entities = () => {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-2xl font-bold text-[var(--text_primary)] mb-2 flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-[var(--text\_primary)] mb-2 flex items-center gap-2">
                 <Users className="h-6 w-6 text-indigo-500" />
                 Entity Risk Profiles
               </h1>
-              <p className="text-[var(--text_secondary)]">
+              <p className="text-[var(--text\_secondary)]">
                 Persistent cumulative risk scoring mapped by host and user.
               </p>
             </div>
           </div>
 
-          <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] shadow-lg overflow-hidden flex flex-col">
+          <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] shadow-lg overflow-hidden flex flex-col">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-[var(--border)] bg-[var(--bg_tertiary)]">
-                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider w-10"></th>
-                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                  <tr className="border-b border-[var(--border)] bg-[var(--bg\_tertiary)]">
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider w-10"></th>
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                       Entity
                     </th>
-                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                       Risk Level
                     </th>
-                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                       Cumulative Score
                     </th>
-                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                       Trend
                     </th>
-                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                       Lifetime Alerts
                     </th>
-                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">
+                    <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                       Last Active
                     </th>
                   </tr>
@@ -100,25 +100,25 @@ const Entities = () => {
                     [...Array(5)].map((_, i) => (
                       <tr key={i} className="animate-pulse">
                         <td className="px-6 py-4">
-                          <div className="h-4 bg-[var(--bg_tertiary)] rounded w-4"></div>
+                          <div className="h-4 bg-[var(--bg\_tertiary)] rounded w-4"></div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="h-4 bg-[var(--bg_tertiary)] rounded w-32"></div>
+                          <div className="h-4 bg-[var(--bg\_tertiary)] rounded w-32"></div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="h-6 bg-[var(--bg_tertiary)] rounded w-16"></div>
+                          <div className="h-6 bg-[var(--bg\_tertiary)] rounded w-16"></div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="h-2 bg-[var(--bg_tertiary)] rounded w-full"></div>
+                          <div className="h-2 bg-[var(--bg\_tertiary)] rounded w-full"></div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="h-4 bg-[var(--bg_tertiary)] rounded w-8"></div>
+                          <div className="h-4 bg-[var(--bg\_tertiary)] rounded w-8"></div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="h-4 bg-[var(--bg_tertiary)] rounded w-12"></div>
+                          <div className="h-4 bg-[var(--bg\_tertiary)] rounded w-12"></div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="h-4 bg-[var(--bg_tertiary)] rounded w-24"></div>
+                          <div className="h-4 bg-[var(--bg\_tertiary)] rounded w-24"></div>
                         </td>
                       </tr>
                     ))
@@ -126,7 +126,7 @@ const Entities = () => {
                     <tr>
                       <td
                         colSpan="7"
-                        className="px-6 py-12 text-center text-[var(--text_secondary)]"
+                        className="px-6 py-12 text-center text-[var(--text\_secondary)]"
                       >
                         No active entities found.
                       </td>
@@ -136,7 +136,7 @@ const Entities = () => {
                       <tr
                         key={entity.entity_key}
                         onClick={() => setSelectedEntity(entity)}
-                        className={`hover:bg-[var(--bg_tertiary)] transition-colors cursor-pointer ${selectedEntity?.entity_key === entity.entity_key ? 'bg-[var(--bg_tertiary)] border-l-2 border-l-indigo-500' : 'border-l-2 border-l-transparent'}`}
+                        className={`hover:bg-[var(--bg\_tertiary)] transition-colors cursor-pointer ${selectedEntity?.entity_key === entity.entity_key ? 'bg-[var(--bg\_tertiary)] border-l-2 border-l-indigo-500' : 'border-l-2 border-l-transparent'}`}
                       >
                         <td className="px-6 py-4">
                           <button
@@ -144,12 +144,12 @@ const Entities = () => {
                             className="focus:outline-none"
                           >
                             <Star
-                              className={`h-5 w-5 ${entity.is_watchlisted ? 'text-yellow-400 fill-yellow-400' : 'text-[var(--text_secondary)] hover:text-yellow-400'}`}
+                              className={`h-5 w-5 ${entity.is_watchlisted ? 'text-yellow-400 fill-yellow-400' : 'text-[var(--text\_secondary)] hover:text-yellow-400'}`}
                             />
                           </button>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="font-mono text-sm font-semibold text-[var(--text_primary)]">
+                          <div className="font-mono text-sm font-semibold text-[var(--text\_primary)]">
                             {entity.entity_key}
                           </div>
                         </td>
@@ -161,7 +161,7 @@ const Entities = () => {
                             <span className="text-sm font-mono font-medium min-w-[30px]">
                               {entity.current_risk_score.toFixed(0)}
                             </span>
-                            <div className="h-2 flex-1 bg-[var(--bg_tertiary)] rounded-full overflow-hidden">
+                            <div className="h-2 flex-1 bg-[var(--bg\_tertiary)] rounded-full overflow-hidden">
                               <div
                                 className={`h-full ${entity.risk_level === 'critical' ? 'bg-red-500' : entity.risk_level === 'high' ? 'bg-orange-500' : entity.risk_level === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`}
                                 style={{ width: `${Math.min(100, entity.current_risk_score)}%` }}
@@ -176,14 +176,14 @@ const Entities = () => {
                             ) : entity.risk_trend === 'decreasing' ? (
                               <TrendingDown className="h-4 w-4 text-green-500" />
                             ) : (
-                              <Minus className="h-4 w-4 text-[var(--text_secondary)]" />
+                              <Minus className="h-4 w-4 text-[var(--text\_secondary)]" />
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-[var(--text_primary)]">
+                        <td className="px-6 py-4 text-sm text-[var(--text\_primary)]">
                           {entity.total_alerts}
                         </td>
-                        <td className="px-6 py-4 text-sm text-[var(--text_secondary)] whitespace-nowrap">
+                        <td className="px-6 py-4 text-sm text-[var(--text\_secondary)] whitespace-nowrap">
                           {new Date(entity.last_alert_at).toLocaleString()}
                         </td>
                       </tr>
@@ -198,39 +198,39 @@ const Entities = () => {
 
       {/* Slide-out Panel */}
       <div
-        className={`fixed inset-y-0 right-0 w-96 bg-[var(--bg_secondary)] border-l border-[var(--border)] shadow-2xl transform transition-transform duration-300 ease-in-out z-20 ${selectedEntity ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 right-0 w-96 bg-[var(--bg\_secondary)] border-l border-[var(--border)] shadow-2xl transform transition-transform duration-300 ease-in-out z-20 ${selectedEntity ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {selectedEntity && (
           <div className="h-full flex flex-col pt-16">
             {' '}
             {/* Offset for header */}
-            <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg_tertiary)]">
+            <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg\_tertiary)]">
               <h2 className="text-lg font-bold font-mono truncate">{selectedEntity.entity_key}</h2>
               <button
                 onClick={() => setSelectedEntity(null)}
-                className="p-1 text-[var(--text_secondary)] hover:text-[var(--text_primary)] rounded"
+                className="p-1 text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] rounded"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[var(--bg_primary)] p-4 rounded-lg border border-[var(--border)]">
-                  <div className="text-xs text-[var(--text_secondary)] mb-1">Peak Risk Score</div>
-                  <div className="text-2xl font-bold text-[var(--text_primary)]">
+                <div className="bg-[var(--bg\_primary)] p-4 rounded-lg border border-[var(--border)]">
+                  <div className="text-xs text-[var(--text\_secondary)] mb-1">Peak Risk Score</div>
+                  <div className="text-2xl font-bold text-[var(--text\_primary)]">
                     {selectedEntity.peak_risk_score.toFixed(1)}
                   </div>
                 </div>
-                <div className="bg-[var(--bg_primary)] p-4 rounded-lg border border-[var(--border)]">
-                  <div className="text-xs text-[var(--text_secondary)] mb-1">Total Incidents</div>
-                  <div className="text-2xl font-bold text-[var(--text_primary)]">
+                <div className="bg-[var(--bg\_primary)] p-4 rounded-lg border border-[var(--border)]">
+                  <div className="text-xs text-[var(--text\_secondary)] mb-1">Total Incidents</div>
+                  <div className="text-2xl font-bold text-[var(--text\_primary)]">
                     {selectedEntity.total_incidents}
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-[var(--text_secondary)] uppercase tracking-wider mb-3">
+                <h3 className="text-sm font-semibold text-[var(--text\_secondary)] uppercase tracking-wider mb-3">
                   Top MITRE Tactics
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -243,7 +243,7 @@ const Entities = () => {
                     </span>
                   ))}
                   {!selectedEntity.top_tactics?.length && (
-                    <span className="text-xs text-[var(--text_secondary)] italic">
+                    <span className="text-xs text-[var(--text\_secondary)] italic">
                       No specific tactics matched yet.
                     </span>
                   )}
@@ -251,15 +251,15 @@ const Entities = () => {
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-[var(--text_secondary)] uppercase tracking-wider mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-[var(--text\_secondary)] uppercase tracking-wider mb-3 flex items-center gap-2">
                   <Activity className="h-4 w-4" /> Risk Trend
                 </h3>
                 {trends ? (
-                  <div className="bg-[var(--bg_primary)] border border-[var(--border)] rounded-lg p-4">
+                  <div className="bg-[var(--bg\_primary)] border border-[var(--border)] rounded-lg p-4">
                     <div className="flex justify-between items-center mb-4">
                       <div>
-                        <div className="text-xs text-[var(--text_secondary)]">7-Day Trend</div>
-                        <div className="flex items-center gap-2 text-lg font-bold text-[var(--text_primary)]">
+                        <div className="text-xs text-[var(--text\_secondary)]">7-Day Trend</div>
+                        <div className="flex items-center gap-2 text-lg font-bold text-[var(--text\_primary)]">
                           {trends.trend_7d === 'increasing' ? (
                             <>
                               <TrendingUp className="h-5 w-5 text-red-500" /> Increasing
@@ -276,8 +276,8 @@ const Entities = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs text-[var(--text_secondary)]">Volatility</div>
-                        <div className="text-lg font-bold text-[var(--text_primary)]">
+                        <div className="text-xs text-[var(--text\_secondary)]">Volatility</div>
+                        <div className="text-lg font-bold text-[var(--text\_primary)]">
                           {trends.score_volatility.toFixed(3)}
                         </div>
                       </div>
@@ -296,14 +296,14 @@ const Entities = () => {
                           </LineChart>
                         </ResponsiveContainer>
                       ) : (
-                        <div className="h-full flex items-center justify-center text-xs text-[var(--text_secondary)]">
+                        <div className="h-full flex items-center justify-center text-xs text-[var(--text\_secondary)]">
                           No recent scores
                         </div>
                       )}
                     </div>
                   </div>
                 ) : (
-                  <div className="h-24 bg-[var(--bg_primary)] rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text_secondary)] text-sm">
+                  <div className="h-24 bg-[var(--bg\_primary)] rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text\_secondary)] text-sm">
                     Loading trends...
                   </div>
                 )}

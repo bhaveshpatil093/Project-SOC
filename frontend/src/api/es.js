@@ -1,4 +1,4 @@
-import apiClient from './client'
+import { apiClient } from './client'
 
 export const getKibanaUrl = async () => {
   const response = await apiClient.get('/api/kibana/url')

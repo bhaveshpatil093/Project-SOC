@@ -97,6 +97,25 @@ export function useWebSocket(isAuthenticated = false) {
             useWebSocketStore.getState().setLastIngestion(msg.data)
           } else if (msg.type === 'stats_update') {
             useWebSocketStore.getState().setLiveStats(msg.data)
+          } else if (msg.type === 'platform_alerts_sync') {
+            import('../store/uiStore').then(module => {
+              module.useUiStore.getState().setPlatformAlerts(msg.data)
+            })
+          } else if (msg.type === 'platform_alert') {
+            const alertData = msg.data;
+            import('../store/uiStore').then(module => {
+              const state = module.useUiStore.getState()
+              let newAlerts = [...state.platformAlerts]
+              const idx = newAlerts.findIndex(a => a.rule_id === alertData.rule_id)
+              if (idx >= 0) {
+                newAlerts[idx] = alertData
+              } else {
+                newAlerts.push(alertData)
+              }
+              // Keep only active
+              newAlerts = newAlerts.filter(a => a.is_active)
+              state.setPlatformAlerts(newAlerts)
+            })
           }
         } catch (err) {
           console.error('Failed to parse WS message', err)
