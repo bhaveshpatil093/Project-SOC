@@ -167,8 +167,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    from app.middleware import RequestLoggingMiddleware
     app.add_middleware(RequestLoggingMiddleware)
+
+    from prometheus_client import make_asgi_app
+    metrics_app = make_asgi_app()
+    app.mount("/metrics", metrics_app)
 
     from app.api.routes.admin import router as admin_router
 

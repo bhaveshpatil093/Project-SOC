@@ -70,6 +70,11 @@ async def bulk_index(es: AsyncElasticsearch, docs: list[dict], index: str, chunk
                 return success, chunk_errors
             except Exception as e:
                 logger.error("bulk_indexing_chunk_exception", error=str(e))
+                try:
+                    from app.monitoring.metrics import pipeline_errors_total
+                    pipeline_errors_total.labels(stage="ingestion").inc()
+                except:
+                    pass
                 return 0, [str(e)] * len(chunk)
 
     results = await asyncio.gather(*(process_chunk(chunk) for chunk in chunks))
@@ -80,6 +85,12 @@ async def bulk_index(es: AsyncElasticsearch, docs: list[dict], index: str, chunk
 
     elapsed = time.time() - start_time
     logger.info("bulk_index_completed", total=len(docs), indexed=total_indexed, errors=len(all_errors), time_seconds=round(elapsed, 2))
+
+    try:
+        from app.monitoring.metrics import es_query_duration
+        es_query_duration.labels(operation="index").observe(elapsed)
+    except:
+        pass
 
     return {"indexed": total_indexed, "errors": all_errors}
 

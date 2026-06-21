@@ -39,3 +39,4 @@ psutil==5.9.8
 requests
 websockets
 locust==2.24.1
+prometheus-client>=0.20.0

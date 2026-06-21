@@ -206,6 +206,8 @@ class SOCAgent:
         )
 
     async def investigate(self, user_question: str, alert_id: str = None, incident_id: str = None, conversation_history: list[dict] = None) -> dict:
+        import time
+        start_time = time.time()
         alert = {}
         incident = {}
         rag_context = ""
@@ -342,6 +344,15 @@ class SOCAgent:
                 bg_evaluate()
             except Exception as e:
                 logger.error("evaluator_mapping_failed", error=str(e))
+
+        elapsed = time.time() - start_time
+        try:
+            from app.monitoring.metrics import slm_inference_duration, slm_queries_total
+            slm_inference_duration.observe(elapsed)
+            q_type = parsed_dict.get("question_type", "unknown") if parsed_dict else "unknown"
+            slm_queries_total.labels(question_type=q_type).inc()
+        except:
+            pass
 
         return {
             "answer": answer,
