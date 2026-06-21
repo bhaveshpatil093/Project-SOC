@@ -28,7 +28,7 @@ from app.ingestion.es_client import (
     get_es_client,
 )
 from app.ingestion.scheduler import start_scheduler, stop_scheduler
-from app.logging_config import configure_logging, get_logger
+from app.logging_config import configure_logging, get_logger, enable_es_logging
 from app.middleware.rate_limiter import limiter
 from app.middleware.validation_middleware import RequestSizeMiddleware
 from app.models.model_manager import get_model_manager
@@ -48,6 +48,16 @@ async def lifespan(app: FastAPI):
 
     # Initialize ES connection
     await get_es_client()
+    enable_es_logging(get_es_client)
+    
+    # Initialize Log Viewer mappings
+    from app.monitoring.log_viewer import log_viewer_instance
+    try:
+        es = await get_es_client()
+        await log_viewer_instance.initialize(es)
+    except Exception as e:
+        logger.warning(f"Failed to initialize log viewer index: {e}")
+
 
     # Initialize ML Model orchestrator dynamically onto lifespan wrapper
     asyncio.create_task(get_model_manager().initialize())

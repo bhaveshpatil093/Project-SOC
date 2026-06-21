@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import { LogViewer } from '../components/system/LogViewer'
+
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '../api/client'
 import { useWebSocket } from '../hooks/useWebSocket'
@@ -24,6 +26,8 @@ import {
 } from 'recharts'
 
 export const SystemMonitor = () => {
+  const [activeTab, setActiveTab] = useState('metrics') // metrics, logs
+
   // Live System Metrics
   const { data: metrics } = useQuery({
     queryKey: ['systemMetrics'],
@@ -100,12 +104,19 @@ export const SystemMonitor = () => {
           <Server className="w-8 h-8 text-blue-500 p-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20" />
           System Operations Monitor
         </h1>
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-3 w-3">
-            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${connected ? 'bg-green-400' : 'bg-red-400'}`}></span>
-            <span className={`relative inline-flex rounded-full h-3 w-3 ${connected ? 'bg-green-500' : 'bg-red-500'}`}></span>
-          </span>
-          <span className="text-sm font-medium text-[var(--text\_secondary)]">Live Telemetry</span>
+        <div className="flex items-center gap-4 bg-[var(--bg\_secondary)] p-1.5 rounded-lg border border-[var(--border)]">
+          <button
+            onClick={() => setActiveTab('metrics')}
+            className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${activeTab === 'metrics' ? 'bg-[var(--bg\_primary)] text-[var(--text\_primary)] shadow-sm' : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
+          >
+            Metrics & Health
+          </button>
+          <button
+            onClick={() => setActiveTab('logs')}
+            className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${activeTab === 'logs' ? 'bg-[var(--bg\_primary)] text-[var(--text\_primary)] shadow-sm' : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
+          >
+            Centralized Logs
+          </button>
         </div>
       </div>
 

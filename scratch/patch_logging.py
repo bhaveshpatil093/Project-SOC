@@ -1,10 +1,9 @@
-import contextvars
-import logging
+import os
 
-import structlog
+with open("backend/app/logging_config.py", "r") as f:
+    content = f.read()
 
-CORRELATION_ID_CTX = contextvars.ContextVar("correlation_id", default=None)
-
+handler_code = """
 import asyncio
 from datetime import datetime
 
@@ -57,48 +56,19 @@ class ElasticsearchLogHandler(logging.Handler):
                 await async_bulk(es, actions, stats_only=True, raise_on_error=False, raise_on_exception=False)
         except Exception:
             pass # Silently drop logs if ES is down to avoid recursion loops
+"""
 
+if "class ElasticsearchLogHandler" not in content:
+    # Insert after CORRELATION_ID_CTX
+    content = content.replace('CORRELATION_ID_CTX = contextvars.ContextVar("correlation_id", default=None)', 'CORRELATION_ID_CTX = contextvars.ContextVar("correlation_id", default=None)\n' + handler_code)
 
-def configure_logging(log_level: str = "INFO", json_output: bool = True):
-    # Configure stdlib logging bridge
-    logging.basicConfig(
-        format="%(message)s",
-        level=getattr(logging, log_level.upper(), logging.INFO),
-    )
-
-    def add_correlation_id(logger, method_name, event_dict):
-        corr_id = CORRELATION_ID_CTX.get()
-        if corr_id:
-            event_dict["correlation_id"] = corr_id
-        return event_dict
-
-    processors = [
-        structlog.stdlib.add_log_level,
-        structlog.processors.TimeStamper(fmt="iso"),
-        add_correlation_id,
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.processors.StackInfoRenderer(),
-        structlog.processors.format_exc_info,
-        structlog.processors.UnicodeDecoder(),
-    ]
-
-    if json_output:
-        processors.append(structlog.processors.JSONRenderer())
-    else:
-        processors.append(structlog.dev.ConsoleRenderer())
-
-    structlog.configure(
-        processors=processors,
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        wrapper_class=structlog.stdlib.BoundLogger,
-        cache_logger_on_first_use=True,
-    )
-
-def get_logger(name: str) -> structlog.BoundLogger:
-    return structlog.get_logger(name)
-
-
+    # Need to add this handler to the root logger in configure_logging
+    # but we need es_client_getter. We can pass it or import it inside.
+    # It's better to add the handler dynamically in main.py, or pass es_client_getter to configure_logging.
+    # Wait, the prompt says Update logging_config.py to also write logs to ES.
+    
+    # We can add a function `enable_es_logging(es_client_getter)` to attach the handler.
+    enable_fn = """
 def enable_es_logging(es_client_getter):
     root_logger = logging.getLogger()
     # Check if already added
@@ -109,3 +79,8 @@ def enable_es_logging(es_client_getter):
     if root_logger.handlers:
         es_handler.setFormatter(root_logger.handlers[0].formatter)
     root_logger.addHandler(es_handler)
+"""
+    content += "\n" + enable_fn
+
+with open("backend/app/logging_config.py", "w") as f:
+    f.write(content)
