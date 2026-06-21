@@ -19,6 +19,7 @@ import {
   Download,
   AlertCircle,
   Clock,
+  Tag,
 } from 'lucide-react'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import { exportAlertsToCSV } from '../utils/exporters'

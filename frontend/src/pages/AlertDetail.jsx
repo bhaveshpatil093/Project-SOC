@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAlert, useAlertTimeline, useUpdateAlertStatus } from '../hooks/useAlerts'
 import { getEntityScoreHistory } from '../api/entities'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { LoadingSpinner } from '../components/common/LoadingSpinner'
 import { ErrorBanner } from '../components/common/ErrorBanner'
 import { Badge } from '../components/common/Badge'
@@ -22,7 +22,11 @@ import {
   ChevronUp,
   FileJson,
   FileText,
+  Tag,
+  Plus,
+  X,
 } from 'lucide-react'
+import { addTags, removeTag, getAllTags } from '../api/alerts'
 import { generateAlertReport, downloadJSON } from '../utils/exporters'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import { useUiStore } from '../store/uiStore'
@@ -52,6 +56,40 @@ export const AlertDetail = () => {
   const { theme } = usePreferencesStore()
   const colors = THEMES[theme]
   const [showTimeline, setShowTimeline] = useState(false)
+
+  // Tags state
+  const [showTagInput, setShowTagInput] = useState(false)
+  const [tagInput, setTagInput] = useState('')
+
+  const { data: allTags } = useQuery({
+    queryKey: ['allTags'],
+    queryFn: getAllTags
+  })
+
+  const { refetch: refetchAlert } = useQuery({
+    queryKey: ['alert', id],
+    enabled: false,
+  })
+
+  const addTagsMutation = useMutation({
+    mutationFn: (tags) => addTags(id, tags),
+    onSuccess: () => {
+      refetchAlert()
+      setShowTagInput(false)
+      setTagInput('')
+    }
+  })
+
+  const removeTagMutation = useMutation({
+    mutationFn: (tag) => removeTag(id, tag),
+    onSuccess: () => refetchAlert()
+  })
+
+  const handleAddTag = (e) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      addTagsMutation.mutate([tagInput.trim()])
+    }
+  }
 
   if (isLoading) return <LoadingSpinner />
   if (isError || !alert)
@@ -153,6 +191,64 @@ export const AlertDetail = () => {
                 <Clock className="h-4 w-4 text-[var(--text\_secondary)]" />
                 <span className="font-medium">{formatDate(alert.timestamp)}</span>
               </div>
+            </div>
+
+            {/* Tags Section */}
+            <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[var(--border)] mt-1">
+              <Tag className="w-3.5 h-3.5 text-[var(--text\_secondary)] flex-none" />
+              {(alert?.tags || []).map((tag) => (
+                <span
+                  key={tag}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-xs text-blue-300 group cursor-pointer hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400 transition-all"
+                  onClick={() => {
+                    if (window.confirm(`Remove tag '${tag}'?`)) {
+                      removeTagMutation.mutate(tag)
+                    }
+                  }}
+                >
+                  {tag}
+                  <X className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </span>
+              ))}
+
+              {showTagInput ? (
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={handleAddTag}
+                    onBlur={() => setTimeout(() => setShowTagInput(false), 200)}
+                    autoFocus
+                    placeholder="Tag name & Enter"
+                    className="px-2 py-1 text-xs rounded border border-blue-500 bg-[var(--bg\_primary)] text-[var(--text\_primary)] outline-none w-36"
+                  />
+                  {tagInput && allTags?.length > 0 && (
+                    <div className="absolute top-full left-0 mt-1 w-52 bg-[var(--bg\_primary)] border border-[var(--border)] rounded-lg shadow-xl z-30 max-h-40 overflow-y-auto">
+                      {allTags
+                        .filter(t => t.tag.toLowerCase().includes(tagInput.toLowerCase()) && !(alert?.tags || []).includes(t.tag))
+                        .slice(0, 6)
+                        .map(t => (
+                          <div
+                            key={t.tag}
+                            className="px-3 py-1.5 text-xs cursor-pointer hover:bg-blue-500/10 flex justify-between items-center"
+                            onMouseDown={(e) => { e.preventDefault(); addTagsMutation.mutate([t.tag]) }}
+                          >
+                            <span className="text-[var(--text\_primary)]">{t.tag}</span>
+                            <span className="text-[var(--text\_secondary)] bg-[var(--bg\_secondary)] px-1.5 rounded-full">{t.count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowTagInput(true)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-full bg-[var(--bg\_tertiary)] hover:bg-blue-500/20 text-xs text-[var(--text\_secondary)] hover:text-blue-400 border border-dashed border-[var(--border)] hover:border-blue-500/40 transition-all"
+                >
+                  <Plus className="w-3 h-3" /> Add tag
+                </button>
+              )}
             </div>
           </div>
         </div>

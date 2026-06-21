@@ -198,3 +198,117 @@ async def get_timeline(alert_id: str):
         return {"timeline": [{"id": h["_id"], **h["_source"]} for h in hits]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class TagPayload(BaseModel):
+    tags: List[str] = Field(..., max_items=10)
+
+@router.post("/{alert_id}/tags")
+async def add_alert_tags(
+    alert_id: str,
+    payload: TagPayload,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    try:
+        es = await get_es_client()
+        resp = await es.get(index="soc-alerts", id=alert_id, ignore=[404])
+        if not resp or not resp.get("found"):
+            raise HTTPException(status_code=404, detail="Alert not found")
+            
+        alert = resp["_source"]
+        existing_tags = alert.get("tags", [])
+        
+        # Validate and deduplicate
+        new_tags = []
+        for tag in payload.tags:
+            tag = tag.strip().lower()
+            if len(tag) > 30:
+                raise HTTPException(status_code=400, detail=f"Tag '{tag}' exceeds 30 characters")
+            if tag and tag not in existing_tags and tag not in new_tags:
+                new_tags.append(tag)
+                
+        if not new_tags:
+            return {"tags": existing_tags}
+            
+        merged_tags = existing_tags + new_tags
+        if len(merged_tags) > 10:
+            raise HTTPException(status_code=400, detail="Maximum 10 tags allowed per alert")
+            
+        await es.update(
+            index="soc-alerts",
+            id=alert_id,
+            body={"doc": {"tags": merged_tags}}
+        )
+        
+        # Audit log
+        await audit_logger_instance.log(AuditEvent(
+            event_id=__import__("uuid").uuid4().hex,
+            timestamp=__import__("datetime").datetime.utcnow(),
+            user=user["username"],
+            role=user["role"],
+            action="alert.add_tags",
+            resource_type="alert",
+            resource_id=alert_id,
+            details={"added_tags": new_tags, "all_tags": merged_tags},
+            ip_address=request.client.host if request.client else "",
+            user_agent=request.headers.get("user-agent", ""),
+            correlation_id=request.state.correlation_id,
+            result="success"
+        ))
+        
+        return {"tags": merged_tags}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error adding tags to {alert_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to add tags")
+
+@router.delete("/{alert_id}/tags/{tag}")
+async def remove_alert_tag(
+    alert_id: str,
+    tag: str,
+    request: Request,
+    user: dict = Depends(get_current_user)
+):
+    try:
+        es = await get_es_client()
+        resp = await es.get(index="soc-alerts", id=alert_id, ignore=[404])
+        if not resp or not resp.get("found"):
+            raise HTTPException(status_code=404, detail="Alert not found")
+            
+        alert = resp["_source"]
+        existing_tags = alert.get("tags", [])
+        
+        tag = tag.lower()
+        if tag not in existing_tags:
+            return {"tags": existing_tags}
+            
+        existing_tags.remove(tag)
+        
+        await es.update(
+            index="soc-alerts",
+            id=alert_id,
+            body={"doc": {"tags": existing_tags}}
+        )
+        
+        # Audit log
+        await audit_logger_instance.log(AuditEvent(
+            event_id=__import__("uuid").uuid4().hex,
+            timestamp=__import__("datetime").datetime.utcnow(),
+            user=user["username"],
+            role=user["role"],
+            action="alert.remove_tag",
+            resource_type="alert",
+            resource_id=alert_id,
+            details={"removed_tag": tag, "all_tags": existing_tags},
+            ip_address=request.client.host if request.client else "",
+            user_agent=request.headers.get("user-agent", ""),
+            correlation_id=request.state.correlation_id,
+            result="success"
+        ))
+        
+        return {"tags": existing_tags}
+    except Exception as e:
+        logger.error(f"Error removing tag from {alert_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to remove tag")
