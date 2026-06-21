@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useNotificationStore } from '../store/notificationStore';
+import { usePreferencesStore } from '../store/preferencesStore';
 import { useToast } from '../contexts/ToastContext';
 
 // Helper to check if the document is focused
@@ -8,7 +9,8 @@ const isDocumentFocused = () => {
 };
 
 export function useNotifications() {
-  const { settings, addNotification } = useNotificationStore();
+  const { addNotification } = useNotificationStore();
+  const { notificationsEnabled, soundEnabled, soundVolume, notifyForLevel } = usePreferencesStore();
   const { showToast } = useToast();
   const [notificationPermission, setNotificationPermission] = useState(
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default'
@@ -22,7 +24,7 @@ export function useNotifications() {
   };
 
   const sendBrowserNotification = useCallback((title, body, alertId) => {
-    if (!settings.browserEnabled || notificationPermission !== 'granted') return;
+    if (!notificationsEnabled || notificationPermission !== 'granted') return;
     if (isDocumentFocused()) return; // Don't notify if user is actively on the page
 
     const notification = new Notification(title, {
@@ -38,14 +40,14 @@ export function useNotifications() {
       }
       notification.close();
     };
-  }, [settings.browserEnabled, notificationPermission]);
+  }, [notificationsEnabled, notificationPermission]);
 
   const playAlertSound = useCallback((level) => {
-    if (!settings.soundEnabled || settings.volume === 0) return;
+    if (!soundEnabled || soundVolume === 0) return;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const masterGain = audioCtx.createGain();
-    masterGain.gain.value = settings.volume / 100;
+    masterGain.gain.value = soundVolume / 100;
     masterGain.connect(audioCtx.destination);
 
     const playTone = (freq, type, duration, startTime) => {
@@ -86,7 +88,7 @@ export function useNotifications() {
       default:
         break;
     }
-  }, [settings.soundEnabled, settings.volume]);
+  }, [soundEnabled, soundVolume]);
 
   const showToastNotification = useCallback((alert) => {
     const isCritical = alert.threat_level === 'critical';
@@ -104,7 +106,7 @@ export function useNotifications() {
     // Map string levels to numeric for threshold comparison
     const levelMap = { critical: 4, high: 3, medium: 2, low: 1, all: 0 };
     const alertScore = levelMap[alert.threat_level?.toLowerCase()] || 0;
-    const thresholdScore = levelMap[settings.threshold] || 0;
+    const thresholdScore = levelMap[notifyForLevel] || 0;
 
     // Orchestrate
     if (alertScore >= thresholdScore) {
@@ -131,7 +133,7 @@ export function useNotifications() {
       timestamp: alert.timestamp || new Date().toISOString(),
       alert_id: alert._id || alert.id
     });
-  }, [settings.threshold, sendBrowserNotification, playAlertSound, showToastNotification, addNotification]);
+  }, [notifyForLevel, sendBrowserNotification, playAlertSound, showToastNotification, addNotification]);
 
   return { notify, requestPermission, notificationPermission, playAlertSound };
 }

@@ -47,3 +47,4 @@ build/
 # Data / Models
 backend/models/saved/
 *.log
+backend/data/

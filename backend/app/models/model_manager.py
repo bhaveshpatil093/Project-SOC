@@ -1,5 +1,7 @@
 import os
 import logging
+import gc
+import torch
 from dataclasses import dataclass, field
 import pandas as pd
 import numpy as np
@@ -250,6 +252,18 @@ class ModelManager:
                     human_explanation=get_rule_explanation(rule_eval["triggered_rules"])
                 )
                 results.append(res)
+                
+            # Memory optimization: Explicitly delete large batch allocations
+            if 'raw_net_vecs' in locals(): del raw_net_vecs
+            if 'scaled_net_vecs' in locals(): del scaled_net_vecs
+            if 'raw_proc_vecs' in locals(): del raw_proc_vecs
+            if 'scaled_proc_vecs' in locals(): del scaled_proc_vecs
+            del net_scores
+            del proc_scores
+            del batch_df
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
                 
         return results
 

@@ -10,3 +10,4 @@ export const getMlflowExperiments = () => apiClient.get('/api/training/mlflow/ex
 export const getMlflowRuns = (experimentId) => apiClient.get(`/api/training/mlflow/runs/${experimentId}`);
 export const getMlflowRunDetail = (runId) => apiClient.get(`/api/training/mlflow/runs/detail/${runId}`);
 export const compareMlflowRuns = (runIds) => apiClient.get(`/api/training/mlflow/compare?run_ids=${runIds.join(',')}`);
+export const getDriftStatus = () => apiClient.get("/api/training/drift");

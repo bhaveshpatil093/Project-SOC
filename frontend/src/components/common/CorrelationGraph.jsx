@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import * as d3 from 'd3';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Filter as FilterIcon } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
@@ -13,9 +12,14 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
 
   const [minLevel, setMinLevel] = useState('all');
   const [onlyIncidents, setOnlyIncidents] = useState(false);
+  const [d3, setD3] = useState(null);
+
+  useEffect(() => {
+    import('d3').then(module => setD3(module));
+  }, []);
   const [simulation, setSimulation] = useState(null);
   const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, content: null });
-  const { theme } = useUiStore();
+  const { theme } = usePreferencesStore();
   const colors = THEMES[theme];
 
   // Data processing to graph representation
@@ -130,7 +134,7 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
   }, [incidents, alerts, minLevel, onlyIncidents, maxNodes]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!d3 || !svgRef.current || !canvasRef.current || !containerRef.current) return;
     
     const width = containerRef.current.clientWidth;
     const height = containerRef.current.clientHeight;
@@ -428,6 +432,14 @@ export const CorrelationGraph = React.memo(({ incidents = [], alerts = [], maxNo
       simulation.alpha(1).restart();
     }
   };
+
+  if (!d3) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl">
+        <span className="text-[var(--text_secondary)]">Loading Graph Engine...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full bg-[var(--bg_primary)] border border-[var(--border)] rounded-xl overflow-hidden shadow-inner flex flex-col">

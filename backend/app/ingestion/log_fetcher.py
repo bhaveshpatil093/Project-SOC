@@ -79,6 +79,7 @@ async def fetch_logs(
             index=index_pattern,
             query=query,
             size=size,
+            _source=["host", "user", "@timestamp", "message", "process", "event", "winlog", "kibana"],
             ignore_unavailable=True
         )
         for hit in resp.get("hits", {}).get("hits", []):
@@ -96,6 +97,7 @@ async def fetch_logs(
             query=query,
             scroll=scroll_time,
             size=scroll_size,
+            _source=["host", "user", "@timestamp", "message", "process", "event", "winlog", "kibana"],
             ignore_unavailable=True
         )
         

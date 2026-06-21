@@ -257,7 +257,33 @@ async def start_scheduler(es: AsyncElasticsearch):
         replace_existing=True
     )
 
+    from app.models.drift_detector import get_drift_detector
+    
+    async def check_drift_job():
+        drift_detector = get_drift_detector()
+        await drift_detector.run_drift_check(es)
+        
+    _scheduler.add_job(
+        check_drift_job,
+        trigger=IntervalTrigger(hours=6),
+        id="drift_detection",
+        replace_existing=True
+    )
+
     _scheduler.start()
+    
+    from app.cache.cache_manager import cache
+    
+    async def clear_cache_job():
+        await cache.clear_expired()
+        
+    _scheduler.add_job(
+        clear_cache_job,
+        trigger=IntervalTrigger(minutes=5),
+        id="clear_expired_cache",
+        replace_existing=True
+    )
+    
     scheduler_state["status"] = "running"
     logger.info("scheduler_started", job="ingestion_pipeline", interval="5_minutes")
 

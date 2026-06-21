@@ -8,6 +8,7 @@ from app.auth.models import User
 from app.ingestion.es_client import get_es_client, INDEX_NAMES
 from app.exceptions import AlertNotFoundError
 from app.logging_config import get_logger
+from app.cache.cache_manager import cache_result
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -97,6 +98,7 @@ async def list_incidents(
         raise HTTPException(status_code=500, detail="Failed to fetch incidents")
 
 @router.get("/stats", response_model=IncidentStatsResponse)
+@cache_result(ttl_seconds=60, key_fn=lambda *args, **kwargs: "incident_stats")
 async def get_incident_stats(current_user: User = Depends(get_current_user)):
     es = await get_es_client()
     

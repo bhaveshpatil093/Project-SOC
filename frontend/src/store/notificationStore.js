@@ -4,18 +4,6 @@ import { persist } from 'zustand/middleware';
 export const useNotificationStore = create(
   persist(
     (set) => ({
-      // Settings
-      settings: {
-        browserEnabled: false,
-        soundEnabled: true,
-        volume: 50,
-        threshold: 'medium', // 'all', 'medium', 'high', 'critical'
-      },
-      updateSettings: (newSettings) => 
-        set((state) => ({ 
-          settings: { ...state.settings, ...newSettings } 
-        })),
-
       // History
       history: [],
       unreadCount: 0,
@@ -34,7 +22,7 @@ export const useNotificationStore = create(
     }),
     {
       name: 'soc-notification-storage',
-      partialize: (state) => ({ settings: state.settings }), // Only persist settings
+      partialize: (state) => ({ history: state.history, unreadCount: state.unreadCount }), // Persist history
     }
   )
 );

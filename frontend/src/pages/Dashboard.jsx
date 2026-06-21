@@ -235,19 +235,21 @@ const LiveAlertFeed = () => {
 export const Dashboard = () => {
   const navigate = useNavigate();
   const { liveStats, scoringRunning } = useWebSocketStore();
-  const { theme } = useUiStore();
+  const { theme, dashboardRefreshInterval, showLiveStream } = usePreferencesStore();
   const colors = THEMES[theme];
+
+  const refreshMs = dashboardRefreshInterval ? dashboardRefreshInterval * 1000 : 60000;
 
   const { data: initialStats, isLoading: isLoadingStats, isError: isErrorStats } = useQuery({
     queryKey: ["alertStats"],
     queryFn: fetchAlertStats,
-    refetchInterval: 60000, // Reduced to 60s since WS handles live updates
+    refetchInterval: refreshMs,
   });
 
   const { data: feedbackStats, isLoading: isLoadingFeedback, isError: isErrorFeedback } = useQuery({
     queryKey: ["feedbackStats"],
     queryFn: fetchFeedbackStats,
-    refetchInterval: 60000,
+    refetchInterval: refreshMs,
   });
 
   if (isLoadingStats || isLoadingFeedback) return <LoadingSpinner />;
@@ -394,7 +396,7 @@ export const Dashboard = () => {
         </div>
 
         {/* Live Sidebar */}
-        <LiveAlertFeed />
+        {showLiveStream && <LiveAlertFeed />}
       </div>
     </div>
   );

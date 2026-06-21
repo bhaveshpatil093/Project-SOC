@@ -6,6 +6,7 @@ from app.ingestion.es_client import INDEX_NAMES, get_es_client
 from app.auth.jwt import require_role
 from fastapi import Depends, Request
 from app.middleware.rate_limiter import limiter
+from app.cache.cache_manager import cache_result
 
 router = APIRouter()
 
@@ -87,6 +88,7 @@ async def get_alerts_list(
 
 
 @router.get("/stats", response_model=AlertStatsResponse, dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+@cache_result(ttl_seconds=60, key_fn=lambda: "alert_stats")
 async def get_stats():
     """Generates complex ES aggregations tracking pipeline security throughput explicitly mapping to React UI dashboards."""
     es = await get_es_client()

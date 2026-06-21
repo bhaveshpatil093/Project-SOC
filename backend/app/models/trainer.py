@@ -4,10 +4,12 @@ import logging
 import pandas as pd
 from datetime import datetime
 import mlflow
+from app.cache.cache_manager import cache_result
 
 from app.config import settings
 from app.features.feature_merger import run_feature_pipeline
 from app.models.model_manager import ModelManager
+from app.models.drift_detector import get_drift_detector
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,15 @@ async def run_initial_training(es, model_manager: ModelManager, job_id: str = No
         # Forces parallel distributed executions exactly across model structures spanning natively on ModelManager
         await model_manager.train_all_models(feature_df, normalized_df)
         
+        # Set drift detector reference distribution
+        import numpy as np
+        drift_detector = get_drift_detector()
+        numeric_df = feature_df.select_dtypes(include=[np.number]).fillna(0)
+        if not numeric_df.empty:
+            feature_names = numeric_df.columns.tolist()
+            X_train = numeric_df.values
+            await drift_detector.set_reference_distribution(X_train, feature_names, es)
+            
         TRAINING_JOBS[job_id]["status"] = "completed"
         TRAINING_JOBS[job_id]["end_time"] = datetime.utcnow().isoformat() + "Z"
         
@@ -102,7 +113,8 @@ async def run_incremental_retraining(es, model_manager: ModelManager, job_id: st
         TRAINING_JOBS[job_id]["status"] = f"failed - {str(e)}"
         return {"job_id": job_id, "status": "failed", "reason": str(e)}
 
-def get_model_versions() -> list[dict]:
+@cache_result(ttl_seconds=600)
+async def get_model_versions() -> list[dict]:
     """Retrieves standard MLFlow experimental states securely natively directly exposing backend artifacts onto REST mappings."""
     try:
         mlflow.set_experiment("soc-anomaly-detection")

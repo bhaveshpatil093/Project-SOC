@@ -29,6 +29,7 @@ from app.api.routes.websocket import router as websocket_router
 from app.api.routes.slm import router as slm_router
 from app.api.routes.incidents import router as incidents_router
 from app.api.routes.health import router as health_router
+from app.api.routes.cache import router as cache_router
 from app.auth.routes import router as auth_router
 from app.slm.model_loader import _slm_engine
 from app.logging_config import configure_logging, get_logger
@@ -167,6 +168,7 @@ def create_app() -> FastAPI:
     app.include_router(training_router, prefix="/api/training", tags=["Training"])
     app.include_router(slm_router, prefix="/api/slm", tags=["SLM"])
     app.include_router(incidents_router, prefix="/api/incidents", tags=["Incidents"])
+    app.include_router(cache_router, prefix="/api/cache", tags=["Cache"])
     app.include_router(health_router, prefix="/health", tags=["Health"])
 
     app.state.limiter = limiter

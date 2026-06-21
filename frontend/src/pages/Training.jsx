@@ -7,7 +7,8 @@ import {
   getMlflowExperiments, 
   getMlflowRuns, 
   getMlflowRunDetail,
-  compareMlflowRuns
+  compareMlflowRuns,
+  getDriftStatus
 } from "../api/training";
 import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorBanner } from "../components/common/ErrorBanner";
@@ -15,7 +16,7 @@ import { Badge } from "../components/common/Badge";
 import { formatDate } from "../utils/formatters";
 import { 
   Brain, Play, RotateCw, Activity, Calendar, Server, 
-  CheckCircle, Database, Network, Clock, Loader2, GitCommit, GitCompare
+  CheckCircle, Database, Network, Clock, Loader2, GitCommit, GitCompare, AlertTriangle
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer
@@ -59,7 +60,7 @@ export const Training = () => {
   const [activeTab, setActiveTab] = useState("status"); // status, runs, compare, schedule
   const [jobId, setJobId] = useState(null);
   
-  const { theme } = useUiStore();
+  const { theme } = usePreferencesStore();
   const colors = THEMES[theme];
   
   // For MLflow
@@ -103,6 +104,13 @@ export const Training = () => {
 
   const { data: statusResp } = useJobStatus(jobId);
   const statusData = statusResp?.data || statusResp;
+
+  const { data: driftResp, isLoading: driftLoading } = useQuery({
+    queryKey: ["driftStatus"],
+    queryFn: () => getDriftStatus(),
+    refetchInterval: 60000
+  });
+  const driftData = driftResp?.data || driftResp || { status: "Unknown", overall_drift_score: 0, top_drifted_features: [] };
 
   const initialMutation = useMutation({
     mutationFn: startInitialTraining,
@@ -294,6 +302,53 @@ export const Training = () => {
             >
               Retrain Baseline
             </button>
+          </div>
+          
+          {/* Drift Status Card */}
+          <div className="md:col-span-3 bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg flex flex-col md:flex-row gap-6 justify-between items-start md:items-center mt-2">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <AlertTriangle className={`h-6 w-6 ${driftData.overall_drift_score > 0.2 ? 'text-red-500' : driftData.overall_drift_score > 0.1 ? 'text-yellow-500' : 'text-green-500'}`} />
+                <h3 className="text-xl font-bold text-[var(--text_primary)]">Feature Data Drift</h3>
+                <Badge variant={driftData.overall_drift_score > 0.2 ? 'critical' : driftData.overall_drift_score > 0.1 ? 'medium' : 'low'}>
+                  {driftData.status || "No Drift"}
+                </Badge>
+              </div>
+              <p className="text-sm text-[var(--text_secondary)]">
+                Overall Population Stability Index (PSI): <span className="font-mono font-bold text-[var(--text_primary)]">{driftData.overall_drift_score?.toFixed(4)}</span>
+              </p>
+            </div>
+            
+            <div className="flex-1 w-full md:w-auto">
+              <h4 className="text-xs font-bold text-[var(--text_secondary)] uppercase tracking-wider mb-2">Top Drifted Features</h4>
+              {driftData.top_drifted_features && driftData.top_drifted_features.length > 0 ? (
+                <div className="flex gap-4">
+                  {driftData.top_drifted_features.map((f, i) => (
+                    <div key={i} className="bg-[var(--bg_primary)] px-3 py-1.5 rounded-lg border border-[var(--border)] text-xs">
+                      <span className="text-[var(--text_secondary)]">{f.name}:</span> <span className="font-mono text-red-400">{f.psi?.toFixed(4)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-sm text-[var(--text_secondary)]">No significant drift detected.</span>
+              )}
+            </div>
+            
+            <div className="flex-none">
+              {driftData.overall_drift_score > 0.2 ? (
+                <button 
+                  onClick={handleRetrain}
+                  disabled={retrainMutation.isPending}
+                  className="bg-red-600 hover:bg-red-700 text-[var(--text_primary)] px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-red-900/20 whitespace-nowrap"
+                >
+                  Recommend Retraining
+                </button>
+              ) : (
+                <button disabled className="bg-[var(--bg_tertiary)] text-[var(--text_secondary)] px-4 py-2 rounded-lg text-sm font-medium opacity-50 cursor-not-allowed whitespace-nowrap border border-[var(--border)]">
+                  Retraining Not Required
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

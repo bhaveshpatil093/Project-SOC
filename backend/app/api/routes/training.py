@@ -43,8 +43,26 @@ async def get_job_status(job_id: str):
 @router.get("/status", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_training_status():
     """Generates complete model versioning mapping cleanly leveraging underlying MLFlow experiment log pipelines."""
-    history = get_model_versions()
+    history = await get_model_versions()
     return {"versions": history}
+
+@router.get("/drift", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+async def get_drift_status():
+    """Returns the latest model drift report."""
+    es = await get_es_client()
+    query = {
+        "query": {"match_all": {}},
+        "sort": [{"timestamp": "desc"}],
+        "size": 1
+    }
+    try:
+        res = await es.search(index="soc-drift-log", body=query, ignore_unavailable=True)
+        hits = res.get("hits", {}).get("hits", [])
+        if hits:
+            return hits[0]["_source"]
+        return {"status": "No Drift", "overall_drift_score": 0, "top_drifted_features": []}
+    except Exception as e:
+        return {"status": "Unknown", "overall_drift_score": 0, "error": str(e), "top_drifted_features": []}
 
 # --- MLflow Endpoints ---
 

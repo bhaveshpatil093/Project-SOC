@@ -8,7 +8,10 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { Server, Database, Activity, GitCommit, RefreshCw, CheckCircle, Play, XCircle, Bot, MonitorDot, Cpu, Network, LineChart, Zap } from "lucide-react";
 import { formatDate } from "../utils/formatters";
 
+import { PreferencesForm } from "../components/preferences/PreferencesForm";
+
 export const Settings = () => {
+  const [activeTab, setActiveTab] = useState("health");
   const queryClient = useQueryClient();
   const { connected: wsConnected, reconnecting: wsReconnecting } = useWebSocket();
   const [actionResult, setActionResult] = useState(null);
@@ -146,18 +149,52 @@ export const Settings = () => {
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-[var(--text_primary)] tracking-tight">System Settings & Health</h1>
-          <p className="text-[var(--text_secondary)] mt-1">Monitor ingestion schedulers, verify database connections, and run manual orchestrations.</p>
+          <h1 className="text-3xl font-bold text-[var(--text_primary)] tracking-tight">System Settings</h1>
+          <p className="text-[var(--text_secondary)] mt-1">Configure preferences, monitor health, and run manual orchestrations.</p>
         </div>
-        <button 
-          onClick={refreshStatus}
-          className="flex items-center gap-2 bg-[var(--bg_secondary)] hover:bg-[var(--bg_tertiary)] text-[var(--text_primary)] px-4 py-2 rounded-lg text-sm font-medium border border-[var(--border)] transition-colors"
+        <div className="flex items-center gap-4">
+          {activeTab === "health" && (
+            <button 
+              onClick={refreshStatus}
+              className="flex items-center gap-2 bg-[var(--bg_secondary)] hover:bg-[var(--bg_tertiary)] text-[var(--text_primary)] px-4 py-2 rounded-lg text-sm font-medium border border-[var(--border)] transition-colors"
+            >
+              <RefreshCw className="h-4 w-4" /> Refresh Status
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex space-x-1 border-b border-[var(--border)] mb-6">
+        <button
+          onClick={() => setActiveTab("health")}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "health"
+              ? "border-blue-500 text-blue-400"
+              : "border-transparent text-[var(--text_secondary)] hover:text-[var(--text_primary)] hover:border-[var(--border)]"
+          }`}
         >
-          <RefreshCw className="h-4 w-4" /> Refresh Status
+          System Health & Diagnostics
+        </button>
+        <button
+          onClick={() => setActiveTab("preferences")}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "preferences"
+              ? "border-blue-500 text-blue-400"
+              : "border-transparent text-[var(--text_secondary)] hover:text-[var(--text_primary)] hover:border-[var(--border)]"
+          }`}
+        >
+          Analyst Preferences
         </button>
       </div>
 
-      {/* SECTION 1: Deep Health Panel */}
+      {activeTab === "preferences" && (
+        <PreferencesForm />
+      )}
+
+      {activeTab === "health" && (
+        <>
+          {/* SECTION 1: Deep Health Panel */}
       <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2">
@@ -500,6 +537,7 @@ export const Settings = () => {
           />
         </div>
       </div>
+      )}
     </div>
   );
 };

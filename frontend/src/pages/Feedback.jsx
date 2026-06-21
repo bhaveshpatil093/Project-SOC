@@ -7,9 +7,10 @@ import { ErrorBanner } from "../components/common/ErrorBanner";
 import { Badge } from "../components/common/Badge";
 import { formatDate } from "../utils/formatters";
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
-import { CheckCircle, ShieldOff, AlertTriangle, MessageSquare, BarChart2, Shield } from "lucide-react";
+import { CheckCircle, ShieldOff, AlertTriangle, MessageSquare, BarChart2, Shield, Download } from "lucide-react";
 import { useUiStore } from "../store/uiStore";
 import { THEMES } from "../utils/theme";
+import { exportFeedbackToCSV } from "../utils/exporters";
 
 // Local Hooks
 const useFeedback = (limit = 50) => useQuery({ queryKey: ["feedback", limit], queryFn: () => getFeedback({ limit }) });
@@ -20,10 +21,11 @@ const TabSubmitFeedback = () => {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [toast, setToast] = useState(null);
+  const { defaultAnalystName } = usePreferencesStore();
   
   const [form, setForm] = useState({
     alert_id: searchParams.get("alert_id") || "",
-    analyst_name: "",
+    analyst_name: defaultAnalystName || "",
     label: "TP",
     mitre_override: "",
     notes: ""
@@ -36,7 +38,7 @@ const TabSubmitFeedback = () => {
     mutationFn: submitFeedback,
     onSuccess: () => {
       setToast("Feedback submitted successfully!");
-      setForm({ ...form, alert_id: "", label: "TP", mitre_override: "", notes: "" });
+      setForm({ ...form, alert_id: "", label: "TP", mitre_override: "", notes: "", analyst_name: defaultAnalystName || "" });
       queryClient.invalidateQueries({ queryKey: ["feedback"] });
       queryClient.invalidateQueries({ queryKey: ["feedbackStats"] });
       setTimeout(() => setToast(null), 3000);
@@ -163,8 +165,14 @@ const TabSubmitFeedback = () => {
       </div>
 
       <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg mt-8">
-        <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg_primary)]/50">
+        <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg_primary)]/50 flex justify-between items-center">
           <h3 className="text-lg font-bold text-[var(--text_primary)]">Recent Feedback Log</h3>
+          <button
+            onClick={() => exportFeedbackToCSV(feedbackList)}
+            className="flex items-center gap-2 bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+          >
+            <Download className="h-4 w-4" /> Export CSV
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left whitespace-nowrap">
@@ -214,7 +222,7 @@ const TabFeedbackStats = () => {
   // Safely fallback empty state mapping
   const stats = statsData || { total: 0, fp_rate: 0, tp_rate: 0, distribution: [], trend: [] };
   
-  const { theme } = useUiStore();
+  const { theme } = usePreferencesStore();
   const colors = THEMES[theme];
 
   const COLORS = {

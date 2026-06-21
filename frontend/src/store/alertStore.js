@@ -14,9 +14,8 @@ export const useAlertStore = create((set) => ({
     to_time: ""
   },
   page: 0,
-  pageSize: 50,
-  sortBy: "threat_score",
-  sortOrder: "desc",
+  sortBy: null,
+  sortOrder: null,
   lastRefresh: null,
   stats: null,
 

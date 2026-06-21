@@ -6,8 +6,10 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorBanner } from "../components/common/ErrorBanner";
 import { Badge } from "../components/common/Badge";
 import { formatDate } from "../utils/formatters";
-import { Eye, MessageSquare, FilterX, Play, ArrowUpDown, CheckCircle, RefreshCw, Filter, X } from "lucide-react";
+import { Eye, MessageSquare, FilterX, Play, ArrowUpDown, CheckCircle, RefreshCw, Filter, X, Download } from "lucide-react";
 import { useIsMobile } from "../hooks/useMediaQuery";
+import { exportAlertsToCSV } from "../utils/exporters";
+import { usePreferencesStore } from "../store/preferencesStore";
 
 const ProgressBar = ({ score }) => {
   const scoreNum = parseFloat(score || 0);
@@ -29,18 +31,18 @@ const ProgressBar = ({ score }) => {
 };
 
 // Desktop Row Component
-const AlertRow = React.memo(({ alert, index, page, pageSize, updateStatus, style }) => {
+const AlertRow = React.memo(({ alert, index, page, pageSize, updateStatus, columns, style }) => {
   return (
     <div style={style} className="absolute top-0 left-0 w-full hover:bg-[var(--bg_tertiary)]/70 transition-colors border-b border-[var(--border)]/50 flex">
       <div className="w-16 flex-none px-5 py-3 text-xs text-[var(--text_secondary)] font-medium flex items-center">{(page * pageSize) + index + 1}</div>
-      <div className="w-40 flex-none px-5 py-3 text-sm text-[var(--text_secondary)] flex items-center">{formatDate(alert.timestamp)}</div>
-      <div className="w-32 flex-none px-5 py-3 text-sm font-medium text-[var(--text_primary)] flex items-center truncate">{alert.host_id}</div>
-      <div className="w-32 flex-none px-5 py-3 text-sm text-[var(--text_secondary)] flex items-center truncate">{alert.user_name}</div>
-      <div className="w-32 flex-none px-5 py-3 text-xs text-[var(--text_secondary)] flex items-center truncate">{alert.log_type}</div>
-      <div className="w-48 flex-none px-5 py-3 flex items-center"><ProgressBar score={alert.threat_score} /></div>
-      <div className="w-32 flex-none px-5 py-3 flex items-center"><Badge variant={alert.threat_level}>{alert.threat_level}</Badge></div>
-      <div className="flex-1 px-5 py-3 text-xs text-[var(--text_secondary)] truncate flex items-center" title={alert.mitre_tactic}>{alert.mitre_tactic || "-"}</div>
-      <div className="w-36 flex-none px-5 py-3 flex items-center">
+      {columns.timestamp && <div className="w-40 flex-none px-5 py-3 text-sm text-[var(--text_secondary)] flex items-center">{formatDate(alert.timestamp)}</div>}
+      {columns.host && <div className="w-32 flex-none px-5 py-3 text-sm font-medium text-[var(--text_primary)] flex items-center truncate">{alert.host_id}</div>}
+      {columns.user && <div className="w-32 flex-none px-5 py-3 text-sm text-[var(--text_secondary)] flex items-center truncate">{alert.user_name}</div>}
+      {columns.logType && <div className="w-32 flex-none px-5 py-3 text-xs text-[var(--text_secondary)] flex items-center truncate">{alert.log_type}</div>}
+      {columns.score && <div className="w-48 flex-none px-5 py-3 flex items-center"><ProgressBar score={alert.threat_score} /></div>}
+      {columns.level && <div className="w-32 flex-none px-5 py-3 flex items-center"><Badge variant={alert.threat_level}>{alert.threat_level}</Badge></div>}
+      {columns.tactic && <div className="flex-1 px-5 py-3 text-xs text-[var(--text_secondary)] truncate flex items-center" title={alert.mitre_tactic}>{alert.mitre_tactic || "-"}</div>}
+      {columns.status && <div className="w-36 flex-none px-5 py-3 flex items-center">
         <select 
           value={alert.alert_status || "open"} 
           onChange={(e) => updateStatus({ id: alert._id || alert.id, status: e.target.value })}
@@ -52,8 +54,8 @@ const AlertRow = React.memo(({ alert, index, page, pageSize, updateStatus, style
           <option value="in_progress">In Progress</option>
           <option value="closed">Closed</option>
         </select>
-      </div>
-      <div className="w-24 flex-none px-5 py-3 flex items-center justify-center">
+      </div>}
+      {columns.actions && <div className="w-24 flex-none px-5 py-3 flex items-center justify-center">
         <div className="flex items-center gap-4">
           <Link to={`/alerts/${alert._id || alert.id}`} title="View Details" className="text-[var(--text_secondary)] hover:text-blue-400 transition-colors">
             <Eye className="h-5 w-5" />
@@ -62,7 +64,7 @@ const AlertRow = React.memo(({ alert, index, page, pageSize, updateStatus, style
             <MessageSquare className="h-5 w-5" />
           </Link>
         </div>
-      </div>
+      </div>}
     </div>
   );
 });
@@ -164,6 +166,7 @@ export const Alerts = () => {
   const isMobile = useIsMobile();
   
   const parentRef = useRef(null);
+  const { alertColumns } = usePreferencesStore();
 
   useEffect(() => {
     if (toast) {
@@ -263,6 +266,12 @@ export const Alerts = () => {
             </button>
           )}
           <button
+            onClick={() => exportAlertsToCSV(memoizedAlerts)}
+            className="flex items-center gap-2 bg-[var(--bg_secondary)] text-[var(--text_secondary)] hover:text-[var(--text_primary)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shrink-0"
+          >
+            <Download className="h-4 w-4" /> Export CSV
+          </button>
+          <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors shrink-0 ${autoRefresh ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' : 'bg-[var(--bg_secondary)] text-[var(--text_secondary)] border-[var(--border)] hover:text-[var(--text_primary)]'}`}
           >
@@ -318,19 +327,19 @@ export const Alerts = () => {
             {!isMobile && (
               <div className="bg-[var(--bg_primary)]/80 border-b border-[var(--border)] flex flex-none text-left">
                 <div className="w-16 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">#</div>
-                <div className="w-40 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider cursor-pointer hover:text-[var(--text_primary)] select-none flex items-center gap-1" onClick={() => handleSort("timestamp")}>
+                {alertColumns.timestamp && <div className="w-40 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider cursor-pointer hover:text-[var(--text_primary)] select-none flex items-center gap-1" onClick={() => handleSort("timestamp")}>
                   Timestamp <ArrowUpDown className="h-3 w-3"/>
-                </div>
-                <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">Host</div>
-                <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">User</div>
-                <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">Log Type</div>
-                <div className="w-48 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider cursor-pointer hover:text-[var(--text_primary)] select-none flex items-center gap-1" onClick={() => handleSort("threat_score")}>
+                </div>}
+                {alertColumns.host && <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">Host</div>}
+                {alertColumns.user && <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">User</div>}
+                {alertColumns.logType && <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">Log Type</div>}
+                {alertColumns.score && <div className="w-48 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider cursor-pointer hover:text-[var(--text_primary)] select-none flex items-center gap-1" onClick={() => handleSort("threat_score")}>
                   Threat Score <ArrowUpDown className="h-3 w-3"/>
-                </div>
-                <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">Threat Level</div>
-                <div className="flex-1 px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">MITRE Tactic</div>
-                <div className="w-36 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">Status</div>
-                <div className="w-24 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider text-center">Actions</div>
+                </div>}
+                {alertColumns.level && <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">Threat Level</div>}
+                {alertColumns.tactic && <div className="flex-1 px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">MITRE Tactic</div>}
+                {alertColumns.status && <div className="w-36 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider">Status</div>}
+                {alertColumns.actions && <div className="w-24 flex-none px-5 py-4 text-xs font-semibold text-[var(--text_secondary)] uppercase tracking-wider text-center">Actions</div>}
               </div>
             )}
 
@@ -360,6 +369,7 @@ export const Alerts = () => {
                         key={alert._id || alert.id || virtualRow.index}
                         alert={alert}
                         updateStatus={updateStatus}
+                        columns={alertColumns}
                         style={{
                           height: `${virtualRow.size}px`,
                           transform: `translateY(${virtualRow.start}px)`,

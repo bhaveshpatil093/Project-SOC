@@ -8,7 +8,8 @@ import { ErrorBanner } from '../components/common/ErrorBanner';
 import { AttackChain } from '../components/common/AttackChain';
 import { CorrelationGraph } from '../components/common/CorrelationGraph';
 import { formatDate } from '../utils/formatters';
-import { ShieldAlert, Clock, Activity, Target, Network, Zap, ChevronRight, Filter } from 'lucide-react';
+import { ShieldAlert, Clock, Activity, Target, Network, Zap, ChevronRight, Filter, FileText } from 'lucide-react';
+import { generateIncidentReport } from '../utils/exporters';
 
 const IncidentListCard = ({ incident, isSelected, onClick }) => {
   const getBorderColor = (score) => {
@@ -187,13 +188,21 @@ const IncidentDetailPanel = ({ incidentId }) => {
                   Escalate
                 </button>
               )}
+            <div className="flex gap-2">
+              <button 
+                onClick={handleInvestigate}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-[var(--text_primary)] text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2"
+              >
+                <Network className="h-4 w-4" /> Investigate with AI
+              </button>
+              <button 
+                onClick={() => generateIncidentReport(detail, detail.alerts)}
+                className="bg-[var(--bg_secondary)] hover:bg-[var(--bg_tertiary)] border border-[var(--border)] text-[var(--text_primary)] text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2"
+                title="Export Incident Report"
+              >
+                <FileText className="h-4 w-4" /> Export
+              </button>
             </div>
-            <button 
-              onClick={handleInvestigate}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-[var(--text_primary)] text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-lg flex items-center justify-center gap-2"
-            >
-              <Network className="h-4 w-4" /> Investigate with AI
-            </button>
           </div>
         </div>
         

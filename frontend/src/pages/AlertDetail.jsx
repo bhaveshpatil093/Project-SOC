@@ -6,7 +6,8 @@ import { ErrorBanner } from "../components/common/ErrorBanner";
 import { Badge } from "../components/common/Badge";
 import { ThreatGauge } from "../components/common/ThreatGauge";
 import { formatDate } from "../utils/formatters";
-import { ArrowLeft, Bot, Shield, Clock, Terminal, User, Server, ExternalLink, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Bot, Shield, Clock, Terminal, User, Server, ExternalLink, AlertTriangle, ChevronDown, ChevronUp, FileJson, FileText } from "lucide-react";
+import { generateAlertReport, downloadJSON } from "../utils/exporters";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { useUiStore } from "../store/uiStore";
 import { THEMES } from "../utils/theme";
@@ -28,7 +29,7 @@ export const AlertDetail = () => {
   const { data: timelineData } = useAlertTimeline(id);
   const updateStatusMutation = useUpdateAlertStatus();
   const isMobile = useIsMobile();
-  const { theme } = useUiStore();
+  const { theme } = usePreferencesStore();
   const colors = THEMES[theme];
   const [showTimeline, setShowTimeline] = useState(false);
 
@@ -52,9 +53,19 @@ export const AlertDetail = () => {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
-      <Link to="/alerts" className="inline-flex items-center text-sm text-blue-500 hover:text-blue-400 font-medium">
-        <ArrowLeft className="h-4 w-4 mr-1" /> Back to Alerts
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link to="/alerts" className="inline-flex items-center text-sm text-blue-500 hover:text-blue-400 font-medium">
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Alerts
+        </Link>
+        <div className="flex gap-2">
+          <button onClick={() => downloadJSON(alert, `alert_${alert._id || alert.id}.json`)} className="flex items-center gap-2 text-sm bg-[var(--bg_secondary)] hover:bg-[var(--bg_tertiary)] border border-[var(--border)] text-[var(--text_primary)] px-3 py-1.5 rounded-lg transition-colors">
+            <FileJson className="h-4 w-4" /> Export JSON
+          </button>
+          <button onClick={() => generateAlertReport(alert)} className="flex items-center gap-2 text-sm bg-[var(--bg_secondary)] hover:bg-[var(--bg_tertiary)] border border-[var(--border)] text-[var(--text_primary)] px-3 py-1.5 rounded-lg transition-colors">
+            <FileText className="h-4 w-4" /> Export PDF
+          </button>
+        </div>
+      </div>
       
       {/* SECTION 1: Alert Header */}
       <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg flex flex-col md:flex-row gap-8 items-start md:items-center justify-between">

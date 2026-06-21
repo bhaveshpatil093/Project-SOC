@@ -3,6 +3,7 @@ from typing import Any
 from app.ingestion.es_client import get_es_client, INDEX_NAMES
 from app.features.feature_merger import run_feature_pipeline, store_feature_vectors
 from app.auth.jwt import require_role
+from app.cache.cache_manager import cache_result
 
 router = APIRouter(dependencies=[Depends(require_role("admin", "analyst"))])
 
@@ -50,6 +51,7 @@ async def get_latest_features():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/api/features/{entity_key}")
+@cache_result(ttl_seconds=120, key_fn=lambda entity_key: f"features:{entity_key}")
 async def get_entity_features(entity_key: str):
     """Returns feature vector history for entity (last 24h)."""
     try:

@@ -197,20 +197,53 @@ def normalize_security_alert(raw: dict) -> NormalizedLog:
     )
 
 def normalize_batch(raw_docs: list[dict], log_type: str) -> list[NormalizedLog]:
-    normalized = []
-    for doc in raw_docs:
-        try:
-            if log_type == "network":
-                normalized.append(normalize_syslog(doc))
-            elif log_type == "process":
-                normalized.append(normalize_process(doc))
-            elif log_type == "security_alert":
-                normalized.append(normalize_security_alert(doc))
-        except Exception as e:
-            # Ignore failing documents to avoid crashing the batch
-            pass
+    if not raw_docs:
+        return []
+        
+    if log_type == "network":
+        # Vectorized parsing for network logs (syslog regex)
+        # Using list comprehension for simple dict lookups (faster than json_normalize on highly nested dicts)
+        base_dicts = [_extract_base_fields(doc) for doc in raw_docs]
+        base_df = pd.DataFrame(base_dicts)
+        base_df["log_type"] = "network"
+        
+        # Extract messages
+        messages = pd.Series([str(doc.get("message", "")) for doc in raw_docs])
+        
+        # Pure pandas vectorized regex extraction (No python loops)
+        extracted = pd.DataFrame({
+            "src_ip": messages.str.extract(r"SRC=([^\s]+)", expand=False),
+            "dst_ip": messages.str.extract(r"DST=([^\s]+)", expand=False),
+            "protocol": messages.str.extract(r"PROTO=([^\s]+)", expand=False),
+            "src_port": pd.to_numeric(messages.str.extract(r"SPT=([^\s]+)", expand=False), errors="coerce").astype("Int64"),
+            "dst_port": pd.to_numeric(messages.str.extract(r"DPT=([^\s]+)", expand=False), errors="coerce").astype("Int64"),
+            "network_interface": messages.str.extract(r"IN=([^\s]+)", expand=False)
+        })
+        
+        # Combine base fields and extracted regex fields
+        combined = pd.concat([base_df, extracted], axis=1)
+        
+        # Convert back to dataclass objects (cleaning pd.NaT / pd.NA)
+        records = combined.to_dict('records')
+        
+        normalized = []
+        for rec in records:
+            cleaned = {k: (None if pd.isna(v) else v) for k, v in rec.items()}
+            normalized.append(NormalizedLog(**cleaned))
             
-    return normalized
+        return normalized
+    else:
+        # Process and Security Alerts: list comprehension is extremely fast for direct dict mapping
+        normalized = []
+        for doc in raw_docs:
+            try:
+                if log_type == "process":
+                    normalized.append(normalize_process(doc))
+                elif log_type == "security_alert":
+                    normalized.append(normalize_security_alert(doc))
+            except Exception:
+                pass
+        return normalized
 
 def to_dataframe(logs: list[NormalizedLog]) -> pd.DataFrame:
     data = [asdict(log) for log in logs]

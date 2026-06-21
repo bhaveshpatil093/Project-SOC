@@ -157,6 +157,11 @@ class ThreatEngine:
                         "timestamp": datetime.datetime.utcnow().isoformat()
                     })
                     
+            from app.cache.cache_manager import cache
+            await cache.delete("alert_stats")
+            if incidents:
+                await cache.delete("incident_stats")
+                    
         # 5. Evolve baselines incrementally over latest mapped boundaries
         await self.baseline_learner.update_all_baselines(self.es, feature_df)
         

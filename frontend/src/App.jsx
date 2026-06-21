@@ -10,10 +10,10 @@ import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { applyTheme } from './utils/theme';
-import { useUiStore } from './store/uiStore';
+import { usePreferencesStore } from './store/preferencesStore';
 
 // Apply initial theme on app startup
-applyTheme(useUiStore.getState().theme);
+applyTheme(usePreferencesStore.getState().theme);
 
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
 const Alerts = lazy(() => import('./pages/Alerts').then(m => ({ default: m.Alerts })));

@@ -5,6 +5,7 @@ from typing import Optional, Dict, List
 import pandas as pd
 from app.logging_config import get_logger
 from app.ingestion.es_client import INDEX_NAMES
+from app.cache.cache_manager import cache, cache_result
 
 logger = get_logger(__name__)
 
@@ -35,6 +36,7 @@ class BaselineLearner:
         self.min_observations = min_observations
         self.decay_factor = decay_factor
 
+    @cache_result(ttl_seconds=300, key_fn=lambda self, es, entity_key: f"baseline:{entity_key}")
     async def get_baseline(self, es, entity_key: str) -> Optional[EntityBaseline]:
         try:
             resp = await es.get(index=INDEX_NAMES["baselines"], id=entity_key)
@@ -173,3 +175,4 @@ class BaselineLearner:
         for entity_key, group in grouped:
             latest_row = group.iloc[-1].to_dict()
             await self.update_baseline(es, entity_key, latest_row)
+            await cache.delete(f"baseline:{entity_key}")

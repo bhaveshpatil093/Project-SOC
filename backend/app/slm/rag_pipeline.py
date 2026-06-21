@@ -156,6 +156,19 @@ class RAGPipeline:
             
         embeddings = await asyncio.get_event_loop().run_in_executor(None, lambda: self.model.encode(texts).tolist())
         self.collection.upsert(ids=ids, embeddings=embeddings, documents=texts, metadatas=metas)
+        
+        # Memory optimization: Prune collection to 10,000 documents
+        try:
+            count = self.collection.count()
+            if count > 10000:
+                diff = count - 10000
+                res = self.collection.get(include=["metadatas"])
+                if res and "ids" in res and "metadatas" in res:
+                    sorted_docs = sorted(zip(res["ids"], res["metadatas"]), key=lambda x: x[1].get("timestamp", ""))
+                    ids_to_delete = [doc[0] for doc in sorted_docs[:diff]]
+                    self.collection.delete(ids=ids_to_delete)
+        except Exception as e:
+            logger.error(f"Failed to prune ChromaDB collection: {e}")
 
     async def reindex_from_elasticsearch(self, es, since_days: int = 30) -> dict:
         from app.ingestion.es_client import INDEX_NAMES

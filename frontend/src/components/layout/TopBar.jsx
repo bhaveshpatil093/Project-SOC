@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Clock, CheckCircle, Menu, Sun, Moon } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
+import { usePreferencesStore } from '../../store/preferencesStore';
 import { NotificationDropdown } from './NotificationDropdown';
 
 export const TopBar = () => {
   const location = useLocation();
-  const { toggleSidebar, theme, toggleTheme } = useUiStore();
+  const { toggleSidebar } = useUiStore();
+  const { theme, setPreference } = usePreferencesStore();
   const [time, setTime] = useState(new Date());
   
   useEffect(() => {
