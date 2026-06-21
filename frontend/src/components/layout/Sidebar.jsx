@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Network,
   Wrench,
+  Crosshair,
 } from 'lucide-react'
 import { useIsTablet, useIsMobile } from '../../hooks/useMediaQuery'
 import { useAuth } from '../../contexts/AuthContext'
@@ -28,6 +29,7 @@ export const Sidebar = () => {
     { path: '/alerts', label: 'Alerts', icon: ShieldAlert },
     { path: '/incidents', label: 'Incidents', icon: Network },
     { path: '/investigation', label: 'Investigation', icon: Search },
+    { path: '/hunting', label: 'Threat Hunting', icon: Crosshair },
     { path: '/feedback', label: 'Feedback Loop', icon: MessageSquare },
     { path: '/training', label: 'ML Training', icon: Activity },
     { path: '/settings', label: 'Settings', icon: Settings },

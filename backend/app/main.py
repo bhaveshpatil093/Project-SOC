@@ -18,6 +18,7 @@ from app.api.routes.incidents import router as incidents_router
 from app.api.routes.ingestion import router as ingestion_router
 from app.api.routes.slm import router as slm_router
 from app.api.routes.training import router as training_router
+from app.api.routes.hunting import router as hunting_router
 from app.api.routes.websocket import router as websocket_router
 from app.auth.routes import router as auth_router
 from app.config import settings
@@ -203,6 +204,7 @@ from app.api.routes.admin_audit_log import router as admin_audit_log_router
     app.include_router(alerts_router, prefix="/api/alerts", tags=["Alerts"])
     app.include_router(feedback_router, prefix="/api/feedback", tags=["Feedback"])
     app.include_router(training_router, prefix="/api/training", tags=["Training"])
+    app.include_router(hunting_router, prefix="/api/hunting", tags=["Hunting"])
     app.include_router(slm_router, prefix="/api/slm", tags=["SLM"])
     app.include_router(incidents_router, prefix="/api/incidents", tags=["Incidents"])
     app.include_router(cache_router, prefix="/api/cache", tags=["Cache"])

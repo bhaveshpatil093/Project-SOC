@@ -26,6 +26,7 @@ const Investigation = lazy(() =>
 )
 const Feedback = lazy(() => import('./pages/Feedback').then((m) => ({ default: m.Feedback })))
 const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })))
+const Hunting = lazy(() => import('./pages/Hunting').then(m => ({ default: m.Hunting })))
 const Training = lazy(() => import('./pages/Training').then((m) => ({ default: m.Training })))
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
 const SystemMonitor = lazy(() => import('./pages/SystemMonitor').then((m) => ({ default: m.SystemMonitor })))
