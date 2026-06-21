@@ -260,6 +260,15 @@ async def start_scheduler(es: AsyncElasticsearch):
         replace_existing=True
     )
 
+    from app.reports.report_scheduler import report_scheduler
+    _scheduler.add_job(
+        report_scheduler.run_scheduled_reports,
+        trigger=CronTrigger(minute=0),  # Top of every hour
+        args=[es],
+        id="scheduled_reports",
+        replace_existing=True
+    )
+
     _scheduler.add_job(
         broadcast_stats,
         trigger=IntervalTrigger(seconds=60),

@@ -20,6 +20,7 @@ from app.api.routes.slm import router as slm_router
 from app.api.routes.training import router as training_router
 from app.api.routes.hunting import router as hunting_router
 from app.api.routes.webhooks import router as webhooks_router
+from app.api.routes.reports import router as reports_router
 from app.api.routes.websocket import router as websocket_router
 from app.auth.routes import router as auth_router
 from app.config import settings
@@ -59,6 +60,14 @@ async def lifespan(app: FastAPI):
         await webhook_manager.initialize(es)
     except Exception as e:
         logger.warning(f"Failed to initialize webhook manager: {e}")
+
+    # Initialize Report Scheduler
+    from app.reports.report_scheduler import report_scheduler
+    try:
+        es = await get_es_client()
+        await report_scheduler.initialize(es)
+    except Exception as e:
+        logger.warning(f"Failed to initialize report scheduler: {e}")
 
     # Initialize Team Manager mappings
     from app.auth.team_manager import team_manager_instance
@@ -215,6 +224,7 @@ from app.api.routes.admin_audit_log import router as admin_audit_log_router
     app.include_router(training_router, prefix="/api/training", tags=["Training"])
     app.include_router(hunting_router, prefix="/api/hunting", tags=["Hunting"])
     app.include_router(webhooks_router, prefix="/api/webhooks", tags=["Webhooks"])
+    app.include_router(reports_router, prefix="/api/reports", tags=["Reports"])
     app.include_router(slm_router, prefix="/api/slm", tags=["SLM"])
     app.include_router(incidents_router, prefix="/api/incidents", tags=["Incidents"])
     app.include_router(cache_router, prefix="/api/cache", tags=["Cache"])
