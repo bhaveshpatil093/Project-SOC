@@ -7,6 +7,8 @@ from app.features.feature_merger import run_feature_pipeline, store_feature_vect
 from app.ingestion.es_client import INDEX_NAMES, get_es_client
 from app.ingestion.scheduler import bulk_index
 from app.logging_config import get_logger
+from app.auth.team_manager import team_manager_instance
+
 from app.models.baseline_learner import BaselineLearner
 from app.models.model_manager import ModelManager, get_model_manager
 from app.models.pattern_detector import PatternDetector
@@ -26,6 +28,23 @@ from typing import Any
 
 
 class ThreatEngine:
+
+    async def assign_alert_to_team(self, es, alert: dict) -> str | None:
+        try:
+            teams = await team_manager_instance.list_teams(es)
+            if not teams:
+                return None
+            
+            # Simple assignment: pick first team or base it on workload
+            # For now, just assign to the first team available
+            assigned_team = teams[0].team_id
+            alert["assigned_team"] = assigned_team
+            alert["assigned_at"] = __import__("datetime").datetime.utcnow().isoformat() + "Z"
+            return assigned_team
+        except Exception as e:
+            logger.error(f"Error assigning alert to team: {e}")
+            return None
+
     """The central orchestrator driving feature extraction, mathematical evaluations, and linguistic generation safely down pipeline arrays."""
 
     def __init__(self, es: "AsyncElasticsearch", model_manager: ModelManager, explainability_engine: ExplainabilityEngine) -> None:

@@ -1,4 +1,5 @@
 import bcrypt
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -14,6 +15,9 @@ class User(BaseModel):
     username: str
     role: str
     email: str
+    team_id: Optional[str] = None
+    shift: str = "morning"  # "morning" | "afternoon" | "night"
+
 
 class UserInDB(User):
     hashed_password: str

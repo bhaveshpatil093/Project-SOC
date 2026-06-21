@@ -307,6 +307,8 @@ export const Settings = () => {
       {activeTab === "backups" && <BackupsPanel />}
       {activeTab === "audit" && <AuditLogPanel />}
       {activeTab === "slm_analytics" && <SLMAnalyticsPanel />}
+      {activeTab === "teams" && <TeamsPanel />}
+
 
 
       {activeTab === 'health' && (

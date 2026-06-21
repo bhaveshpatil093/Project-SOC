@@ -50,6 +50,14 @@ async def lifespan(app: FastAPI):
     await get_es_client()
     enable_es_logging(get_es_client)
     
+    # Initialize Team Manager mappings
+    from app.auth.team_manager import team_manager_instance
+    try:
+        es = await get_es_client()
+        await team_manager_instance.initialize(es)
+    except Exception as e:
+        logger.warning(f"Failed to initialize team manager: {e}")
+
     # Initialize Log Viewer mappings
     from app.monitoring.log_viewer import log_viewer_instance
     try:
