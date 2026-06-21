@@ -357,6 +357,28 @@ async def start_scheduler(es: AsyncElasticsearch):
         replace_existing=True
     )
 
+    
+    from app.monitoring.sla_tracker import sla_tracker_instance
+    from app.api.routes.admin import ws_manager
+
+    async def check_sla_breaches_job():
+        try:
+            approaching = await sla_tracker_instance.get_alerts_approaching_sla(es, warning_minutes=10)
+            if approaching:
+                await ws_manager.broadcast({
+                    "type": "sla_warning",
+                    "data": approaching
+                })
+        except Exception as e:
+            logger.error(f"Error in check_sla_breaches_job: {e}")
+
+    _scheduler.add_job(
+        check_sla_breaches_job,
+        trigger=IntervalTrigger(minutes=5),
+        id="check_sla_breaches",
+        replace_existing=True
+    )
+
     scheduler_state["status"] = "running"
     logger.info("scheduler_started", job="ingestion_pipeline", interval="5_minutes")
 

@@ -15,8 +15,14 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { SLADashboard } from '../components/reports/SLADashboard'
+
+
+
 const Reports = () => {
+  const [mainTab, setMainTab] = useState('shift') // shift, sla
   const [activeTab, setActiveTab] = useState(8) // 8 = Shift, 24 = Daily, 168 = Weekly
+ // 8 = Shift, 24 = Daily, 168 = Weekly
 
   const {
     data: reportData,
@@ -98,6 +104,34 @@ ${report.recommendations.map((r) => `* ${r}`).join('\\n')}
           </div>
         </div>
       </div>
+
+
+      {mainTab === 'sla' && <SLADashboard />}
+
+      {mainTab === 'shift' && (
+        <>
+          <div className="flex justify-end mb-4">
+            <div className="flex bg-[var(--bg\_secondary)] rounded-lg p-1 border border-[var(--border)]">
+              <button
+                onClick={() => setActiveTab(8)}
+                className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${activeTab === 8 ? 'bg-blue-600 text-white' : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
+              >
+                Shift (8h)
+              </button>
+              <button
+                onClick={() => setActiveTab(24)}
+                className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${activeTab === 24 ? 'bg-blue-600 text-white' : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
+              >
+                Daily (24h)
+              </button>
+              <button
+                onClick={() => setActiveTab(168)}
+                className={`px-4 py-1.5 text-sm font-bold rounded-md transition-colors ${activeTab === 168 ? 'bg-blue-600 text-white' : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
+              >
+                Weekly (7d)
+              </button>
+            </div>
+          </div>
 
       {/* Document Body */}
       <div className="bg-[var(--bg\_primary)] border border-[var(--border)] rounded-xl shadow-lg print:border-none print:shadow-none bg-white print:bg-white text-black font-sans max-w-5xl mx-auto overflow-hidden">
@@ -253,6 +287,12 @@ ${report.recommendations.map((r) => `* ${r}`).join('\\n')}
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+        </>
+      )}
     </div>
   )
 }

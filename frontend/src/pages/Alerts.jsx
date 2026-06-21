@@ -17,10 +17,83 @@ import {
   Filter,
   X,
   Download,
+  AlertCircle,
+  Clock,
 } from 'lucide-react'
 import { useIsMobile } from '../hooks/useMediaQuery'
 import { exportAlertsToCSV } from '../utils/exporters'
 import { usePreferencesStore } from '../store/preferencesStore'
+
+
+const SLACountdown = ({ alert }) => {
+  const [timeLeft, setTimeLeft] = useState('')
+  const [status, setStatus] = useState('met') // met, approaching, breached
+  
+  useEffect(() => {
+    // Determine deadline based on SLA rules
+    // This could also come directly from backend if alert object includes it
+    // For now, we'll implement a simple client-side logic for the visual countdown
+    // Critical: 15m ack, 30m triage
+    if (alert.threat_level !== 'critical' && alert.threat_level !== 'high') {
+      return
+    }
+    
+    // Simplistic fallback if backend doesn't provide SLA in the stream yet
+    const created = new Date(alert.timestamp || new Date()).getTime()
+    const isAcked = alert.alert_status && alert.alert_status !== 'open'
+    const deadlineMins = alert.threat_level === 'critical' ? (isAcked ? 30 : 15) : (isAcked ? 60 : 30)
+    const deadline = created + (deadlineMins * 60000)
+    
+    const update = () => {
+      const now = new Date().getTime()
+      const diff = deadline - now
+      
+      if (diff <= 0) {
+        setStatus('breached')
+        setTimeLeft('00:00')
+        return
+      }
+      
+      if (diff < 10 * 60000) {
+        setStatus('approaching')
+      } else {
+        setStatus('met')
+      }
+      
+      const m = Math.floor(diff / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setTimeLeft(`${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`)
+    }
+    
+    update()
+    const interval = setInterval(update, 1000)
+    return () => clearInterval(interval)
+  }, [alert])
+
+  if (alert.threat_level !== 'critical' && alert.threat_level !== 'high') {
+    return <div className="text-[var(--text\_secondary)]">-</div>
+  }
+  
+  if (alert.alert_status === 'closed') {
+    return <div className="text-green-500 font-bold"><CheckCircle className="w-4 h-4 inline" /></div>
+  }
+
+  let colorClass = 'text-green-500'
+  let Icon = Clock
+  if (status === 'breached') {
+    colorClass = 'text-red-500 animate-pulse'
+    Icon = AlertCircle
+  } else if (status === 'approaching') {
+    colorClass = 'text-amber-500'
+  }
+
+  return (
+    <div className={`flex items-center gap-1.5 font-mono text-xs font-bold ${colorClass}`}>
+      <Icon className="w-3.5 h-3.5" />
+      {timeLeft}
+    </div>
+  )
+}
 
 const ProgressBar = ({ score }) => {
   const scoreNum = parseFloat(score || 0)
@@ -89,6 +162,12 @@ const AlertRow = React.memo(({ alert, index, page, pageSize, updateStatus, colum
           title={alert.mitre_tactic}
         >
           {alert.mitre_tactic || '-'}
+        </div>
+      )}
+      
+      {columns.sla && (
+        <div className="w-32 flex-none px-5 py-3 flex items-center">
+          <SLACountdown alert={alert} />
         </div>
       )}
       {columns.status && (
@@ -530,6 +609,12 @@ export const Alerts = () => {
                 {alertColumns.tactic && (
                   <div className="flex-1 px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
                     MITRE Tactic
+                  </div>
+                )}
+                
+                {alertColumns.sla && (
+                  <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
+                    SLA
                   </div>
                 )}
                 {alertColumns.status && (

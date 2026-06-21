@@ -34,7 +34,7 @@ const initialState = {
     score: true,
     level: true,
     tactic: true,
-    status: true,
+    status: true, sla: true,
     actions: true,
   },
 }
