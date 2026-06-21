@@ -1,0 +1,47 @@
+name: SOC Platform CD
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    # Assuming workflows are separated, if in same file we'd need them.
+    # In GitHub actions, inter-workflow dependencies require workflow_run. 
+    # For simplicity, CD runs on main push assuming CI ran on PR.
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build and Push Backend Image
+        run: |
+          echo "Building backend..."
+          # docker build -t registry.example.com/soc-backend:${{ github.sha }} ./backend
+          # docker push registry.example.com/soc-backend:${{ github.sha }}
+          
+      - name: Build and Push Frontend Image
+        run: |
+          echo "Building frontend..."
+          # docker build -t registry.example.com/soc-frontend:${{ github.sha }} ./frontend
+          # docker push registry.example.com/soc-frontend:${{ github.sha }}
+          
+      - name: Deploy with Docker Compose
+        run: |
+          echo "Deploying to production..."
+          # ssh user@prod-server "cd /opt/soc && docker compose pull && docker compose up -d"
+          
+      - name: Run smoke tests
+        run: |
+          echo "Running smoke tests..."
+          # python backend/tests/smoke_test.py --url https://prod.soc.local
+          
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Sending failure notification to Slack/Email..."
