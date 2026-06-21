@@ -96,6 +96,16 @@ async def lifespan(app: FastAPI):
     if is_connected:
         es = await get_es_client()
         await create_soc_indices(es)
+        
+        # Apply pending Elasticsearch migrations
+        from app.migrations.migration_runner import MigrationRunner
+        runner = MigrationRunner()
+        migration_results = await runner.apply_pending(es)
+        if migration_results.get("applied"):
+            logger.info("migrations_applied", versions=migration_results["applied"])
+        if migration_results.get("errors"):
+            logger.error("migration_errors", errors=migration_results["errors"])
+
         await start_scheduler(es)
 
     # API Documentation generation
@@ -160,6 +170,8 @@ def create_app() -> FastAPI:
     from app.middleware import RequestLoggingMiddleware
     app.add_middleware(RequestLoggingMiddleware)
 
+    from app.api.routes.admin import router as admin_router
+
     app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
     app.include_router(ingestion_router, prefix="/api/ingestion", tags=["Ingestion"])
     app.include_router(features_router, prefix="/api/features", tags=["Features"])
@@ -170,6 +182,7 @@ def create_app() -> FastAPI:
     app.include_router(incidents_router, prefix="/api/incidents", tags=["Incidents"])
     app.include_router(cache_router, prefix="/api/cache", tags=["Cache"])
     app.include_router(health_router, prefix="/health", tags=["Health"])
+    app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
 
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
