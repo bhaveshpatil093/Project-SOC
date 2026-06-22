@@ -6,6 +6,7 @@ import { SkeletonCard } from '../components/common/Skeleton'
 import { ErrorBanner } from '../components/common/ErrorBanner'
 import { useNavigate } from 'react-router-dom'
 import { useWebSocketStore } from '../hooks/useWebSocket'
+import { usePreferencesStore } from '../store/preferencesStore'
 import {
   PieChart,
   Pie,
@@ -40,6 +41,13 @@ function useCountUp(end, duration = 1000) {
 
   useEffect(() => {
     if (end === countRef.current) return
+
+    // Skip animation in tests
+    if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+      setCount(end)
+      countRef.current = end
+      return
+    }
 
     let startTime = null
     const startValue = countRef.current

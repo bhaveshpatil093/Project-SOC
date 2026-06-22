@@ -6,7 +6,7 @@ export const handlers = [
     return HttpResponse.json(mockAlertStats)
   }),
   http.get('http://localhost:8000/api/alerts', () => {
-    return HttpResponse.json({ data: mockAlerts, total: mockAlerts.length, page: 0, page_size: 50 })
+    return HttpResponse.json({ alerts: mockAlerts, total: mockAlerts.length, page: 0, page_size: 50 })
   }),
   http.get('http://localhost:8000/api/alerts/:id', ({ params }) => {
     const alert = mockAlerts.find((a) => a.id === params.id) || mockAlerts[0]

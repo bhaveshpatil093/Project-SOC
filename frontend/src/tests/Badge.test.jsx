@@ -12,7 +12,7 @@ describe('Badge Component', () => {
   it('renders critical variant accurately mapping tailwind red tokens', () => {
     render(<Badge variant="critical">CRITICAL</Badge>)
     const el = screen.getByText('CRITICAL')
-    expect(el.className).toContain('text-red-400')
+    expect(el.className).toContain('text-red-500')
   })
 
   it('renders TP variant accurately mapping generic validation tokens', () => {

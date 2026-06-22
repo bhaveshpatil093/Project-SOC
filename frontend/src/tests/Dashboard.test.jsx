@@ -16,19 +16,17 @@ const createWrapper = () => {
 
 describe('Dashboard Integration Tests', () => {
   it('renders loading states securely prior to MSW resolution', () => {
-    render(<Dashboard />, { wrapper: createWrapper() })
-    expect(screen.getByText(/Loading/i)).toBeInTheDocument()
+    const { container } = render(<Dashboard />, { wrapper: createWrapper() })
+    expect(container.querySelector('.animate-pulse')).not.toBeNull()
   })
 
   it('renders MSW fetched data directly onto stat cards', async () => {
     render(<Dashboard />, { wrapper: createWrapper() })
 
     // mockAlertStats contains total_open: 4, critical_count: 2
-    await waitFor(() => {
-      // Check total open count maps to DOM
-      expect(screen.getByText('4')).toBeInTheDocument()
-      // Check critical count
-      expect(screen.getByText('2')).toBeInTheDocument()
-    })
+    // Check total open count maps to DOM
+    expect(await screen.findByText('4')).toBeInTheDocument()
+    // Check critical count
+    expect(await screen.findByText('2')).toBeInTheDocument()
   })
 })

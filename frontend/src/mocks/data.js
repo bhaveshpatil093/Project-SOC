@@ -68,9 +68,9 @@ export const mockAlerts = [
 
 export const mockAlertStats = {
   total_open: 4,
-  critical_count: 2,
-  high_count: 1,
-  last_24h: 5,
+  critical: 2,
+  high: 1,
+  alerts_last_24h: 5,
   distribution: { critical: 2, high: 1, medium: 1, low: 1 },
   top_tactics: [
     { name: 'Credential Access', value: 1 },

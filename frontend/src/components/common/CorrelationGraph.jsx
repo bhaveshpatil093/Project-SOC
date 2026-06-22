@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { RefreshCw, Filter as FilterIcon } from 'lucide-react'
 import { useUiStore } from '../../store/uiStore'
 import { THEMES } from '../../utils/theme'
+import { usePreferencesStore } from '../../store/preferencesStore'
 
 export const CorrelationGraph = React.memo(
   ({ incidents = [], alerts = [], maxNodes = 500, onNodeClick }) => {

@@ -54,7 +54,7 @@ export const useAlertStore = create((set) => ({
     set((state) => ({
       alerts: state.alerts.map((a) => {
         const id = a._id || a.id
-        return id === alert_id ? { ...a, alert_status: status } : a
+        return id === alert_id ? { ...a, status, alert_status: status } : a
       }),
     })),
 }))

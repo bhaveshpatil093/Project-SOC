@@ -679,6 +679,7 @@ export const Alerts = () => {
                         page={page}
                         pageSize={pageSize}
                         updateStatus={updateStatus}
+                        columns={alertColumns}
                         style={{
                           height: `${virtualRow.size}px`,
                           transform: `translateY(${virtualRow.start}px)`,
