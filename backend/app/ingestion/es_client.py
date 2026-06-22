@@ -75,6 +75,8 @@ async def create_soc_indices(es: AsyncElasticsearch):
                         "mitre_tactic": {"type": "keyword"},
                         "mitre_technique": {"type": "keyword"},
                         "threat_intel": {"type": "object"},
+                        "threat_level": {"type": "keyword"},
+                        "entity_key": {"type": "keyword"},
                         "alert_status": {"type": "keyword", "null_value": "open"},
                         "created_at": {"type": "date"}
                     }
