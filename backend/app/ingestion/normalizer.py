@@ -123,11 +123,15 @@ def normalize_process(raw: dict) -> NormalizedLog:
     if not isinstance(event_category, list):
         event_category = [str(event_category)] if event_category else []
 
+    cmd_line = process_data.get("command_line")
+    if cmd_line and len(cmd_line) > 32766:
+        cmd_line = cmd_line[:32766]
+        
     return NormalizedLog(
         **base,
         process_name=process_data.get("name"),
         process_executable=process_data.get("executable"),
-        process_command_line=process_data.get("command_line"),
+        process_command_line=cmd_line,
         process_pid=process_data.get("pid"),
         process_args=[str(x) for x in process_args],
         process_args_count=process_data.get("args_count", len(process_args)),

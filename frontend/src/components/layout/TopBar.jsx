@@ -15,6 +15,7 @@ export const TopBar = () => {
   const location = useLocation()
   const { toggleSidebar } = useUiStore()
   const { theme, setPreference } = usePreferencesStore()
+  const toggleTheme = () => setPreference('theme', theme === 'dark' ? 'light' : 'dark')
   const [time, setTime] = useState(new Date())
 
   useEffect(() => {

@@ -1,10 +1,11 @@
 import uuid
 import logging
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 from typing import Dict, List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.api.auth_deps import get_current_user, require_role
+from app.auth.jwt import get_current_user, require_role
 from app.ingestion.es_client import get_es_client
 from app.reports.report_scheduler import (
     report_scheduler,

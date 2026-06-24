@@ -3,9 +3,8 @@ from fastapi import APIRouter, Depends, Query
 
 from app.auth.team_manager import team_manager_instance, Team
 from app.monitoring.log_viewer import log_viewer_instance
-from typing import Optional
-, HTTPException
-from typing import Any
+from typing import Optional, Any
+from fastapi import HTTPException
 
 from app.auth.jwt import require_role
 from app.ingestion.es_client import get_es_client

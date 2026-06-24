@@ -5,6 +5,7 @@ from app.monitoring.audit_logger import audit_action
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from app.auth.jwt import get_current_user, require_role
 from app.auth.models import User
 from app.auth.routes import get_current_user
 from app.cache.cache_manager import cache_result

@@ -21,3 +21,13 @@ export const getInterpretabilityReport = async () => {
   const response = await apiClient.get('/api/training/interpretability')
   return response.data
 }
+
+export const getAccuracyReport = async () => {
+  const response = await apiClient.get('/api/training/accuracy')
+  return response.data
+}
+
+export const updateThreatThreshold = async (threshold) => {
+  const response = await apiClient.post('/api/training/threshold', { threshold })
+  return response.data
+}

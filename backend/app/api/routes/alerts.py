@@ -1,9 +1,9 @@
 
 from app.monitoring.audit_logger import audit_action
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from app.auth.jwt import require_role
+from app.auth.jwt import require_role, get_current_user
 from app.cache.cache_manager import cache_result
 from app.ingestion.es_client import INDEX_NAMES, get_es_client
 from app.middleware.rate_limiter import limiter
@@ -201,7 +201,7 @@ async def get_timeline(alert_id: str):
 
 
 class TagPayload(BaseModel):
-    tags: List[str] = Field(..., max_items=10)
+    tags: list[str] = Field(..., max_length=10)
 
 @router.post("/{alert_id}/tags")
 async def add_alert_tags(

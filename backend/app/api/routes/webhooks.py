@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, HttpUrl
 from typing import Dict, List, Optional, Any
 
-from app.api.auth_deps import get_current_user, require_role
+from app.auth.jwt import get_current_user, require_role
 from app.ingestion.es_client import get_es_client
 from app.integrations.webhook_manager import webhook_manager, WebhookConfig
 

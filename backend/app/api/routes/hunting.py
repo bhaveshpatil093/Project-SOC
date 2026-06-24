@@ -5,7 +5,7 @@ import logging
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from pydantic import BaseModel
-from app.api.auth_deps import get_current_user, require_role
+from app.auth.jwt import get_current_user, require_role
 from app.ingestion.es_client import get_es_client
 
 logger = logging.getLogger(__name__)

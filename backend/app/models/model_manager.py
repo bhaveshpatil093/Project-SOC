@@ -50,6 +50,8 @@ class ModelManager:
             cls._instance.lstm_detector = None
             cls._instance.net_scaler = None
             cls._instance.proc_scaler = None
+            from app.models.voting_ensemble import VotingEnsemble
+            cls._instance.ensemble = VotingEnsemble()
             cls._instance._initialized = False
         return cls._instance
 

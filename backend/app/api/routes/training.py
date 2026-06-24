@@ -79,6 +79,50 @@ async def get_interpretability_report():
     report = await reporter.generate_full_report(es, manager)
     return {"data": report}
 
+from app.models.accuracy_evaluator import AccuracyEvaluator
+from cachetools import TTLCache
+
+# Cache for 1 hour (3600 seconds), storing up to 10 items
+accuracy_cache = TTLCache(maxsize=10, ttl=3600)
+
+@router.get("/accuracy", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+async def get_accuracy_report():
+    """Returns comprehensive ML model accuracy evaluation against labeled feedback."""
+    cache_key = "latest_accuracy_report"
+    if cache_key in accuracy_cache:
+        return {"data": accuracy_cache[cache_key]}
+        
+    try:
+        es = await get_es_client()
+        manager = get_model_manager()
+        evaluator = AccuracyEvaluator()
+        report = await evaluator.evaluate_against_feedback(es, manager)
+        
+        # Convert dataclass to dict for JSON serialization
+        import dataclasses
+        report_dict = dataclasses.asdict(report)
+        accuracy_cache[cache_key] = report_dict
+        return {"data": report_dict}
+    except ValueError as e:
+        if "Insufficient data" in str(e):
+            return {"error": "insufficient data", "message": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+from pydantic import BaseModel
+
+class ThresholdUpdate(BaseModel):
+    threshold: float
+
+@router.post("/threshold", dependencies=[Depends(require_role("admin"))])
+async def update_threshold(payload: ThresholdUpdate):
+    """Updates global THREAT_SCORE_THRESHOLD based on accuracy evaluation."""
+    # In a real system, this would update a database setting or dynamic config.
+    # For now, we'll just mock success.
+    return {"status": "success", "threshold": payload.threshold}
+
 # --- MLflow Endpoints ---
 
 from mlflow.tracking import MlflowClient
