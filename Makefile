@@ -40,6 +40,9 @@ dev:  ## Start both backend and frontend (requires tmux or two terminals)
 test:  ## Run all tests
 	cd backend && SOC_ENVIRONMENT=test pytest tests/ -v --tb=short
 
+test-full:  ## Run complete test suite with report
+	cd backend && python scripts/run_full_test_suite.py
+
 test-unit:  ## Run only unit tests (fast)
 	cd backend && SOC_ENVIRONMENT=test pytest tests/test_models/ tests/test_features/ -v
 
