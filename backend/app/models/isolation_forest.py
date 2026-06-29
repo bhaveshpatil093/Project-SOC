@@ -1,4 +1,3 @@
-import logging
 import os
 
 import joblib
@@ -6,7 +5,8 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 NETWORK_FEATURE_COLS = [
     "conn_per_minute",

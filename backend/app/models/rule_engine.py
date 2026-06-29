@@ -1,8 +1,8 @@
-import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 @dataclass
 class Rule:

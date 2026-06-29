@@ -1,10 +1,10 @@
-import logging
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import Dict, List, Optional
 from app.auth.models import UserInDB, USERS_DB
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 @dataclass
 class Team:

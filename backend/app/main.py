@@ -25,14 +25,9 @@ from app.api.routes.reports import router as reports_router
 from app.api.routes.websocket import router as websocket_router
 from app.auth.routes import router as auth_router
 from app.config import settings
-from app.ingestion.es_client import (
-    check_connection,
-    close_es_client,
-    create_soc_indices,
-    get_es_client,
-)
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.ingestion.scheduler import start_scheduler, stop_scheduler
-from app.logging_config import configure_logging, get_logger, enable_es_logging
+from app.logging_config import configure_logging, get_logger
 from app.middleware.rate_limiter import limiter
 from app.middleware.validation_middleware import RequestSizeMiddleware
 from app.models.model_manager import get_model_manager
@@ -50,14 +45,19 @@ async def lifespan(app: FastAPI):
     from app.startup_validator import run_startup_validation
     await run_startup_validation(settings)
 
-    # Initialize ES connection
-    await get_es_client()
-    enable_es_logging(get_es_client)
+    # Initialize SQLite database
+    from app.storage.local_db import init_db
+    import os
+    os.makedirs(os.path.dirname(settings.DB_PATH), exist_ok=True)
+    await init_db(settings.DB_PATH)
+
+    # Initialize Kibana Proxy connection
+    KibanaProxyClient()
     
     # Initialize Webhook Manager
     from app.integrations.webhook_manager import webhook_manager
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         await webhook_manager.initialize(es)
     except Exception as e:
         logger.warning(f"Failed to initialize webhook manager: {e}")
@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI):
     # Initialize Report Scheduler
     from app.reports.report_scheduler import report_scheduler
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         await report_scheduler.initialize(es)
     except Exception as e:
         logger.warning(f"Failed to initialize report scheduler: {e}")
@@ -73,7 +73,7 @@ async def lifespan(app: FastAPI):
     # Initialize Team Manager mappings
     from app.auth.team_manager import team_manager_instance
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         await team_manager_instance.initialize(es)
     except Exception as e:
         logger.warning(f"Failed to initialize team manager: {e}")
@@ -81,7 +81,7 @@ async def lifespan(app: FastAPI):
     # Initialize Log Viewer mappings
     from app.monitoring.log_viewer import log_viewer_instance
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         await log_viewer_instance.initialize(es)
     except Exception as e:
         logger.warning(f"Failed to initialize log viewer index: {e}")
@@ -103,17 +103,6 @@ async def lifespan(app: FastAPI):
     try:
         from app.slm.rag_pipeline import _rag_pipeline
         asyncio.create_task(_rag_pipeline.initialize())
-
-        try:
-            es = await get_es_client()
-            stats = await _rag_pipeline.get_index_stats()
-            n_docs = stats.get("total_indexed", 0)
-
-            if n_docs < 10:
-                logger.info("rag_auto_reindex_triggered", docs_found=n_docs)
-                asyncio.create_task(_rag_pipeline.reindex_from_elasticsearch(es))
-        except Exception as es_e:
-            logger.warning("es_connection_for_rag_failed", error=str(es_e))
     except Exception as e:
         logger.warning("rag_initialization_failed", error=str(e))
 
@@ -124,17 +113,17 @@ async def lifespan(app: FastAPI):
     if not os.path.exists(if_path) or not os.path.exists(ae_path):
         try:
             from app.models.trainer import run_initial_training
-            es = await get_es_client()
+            kibana_client = KibanaProxyClient()
             mm = get_model_manager()
-            asyncio.create_task(run_initial_training(es, mm))
+            asyncio.create_task(run_initial_training(kibana_client, mm, settings.DB_PATH))
         except Exception as es_e:
-            logger.warning("es_connection_for_trainer_failed", error=str(es_e))
+            logger.warning("kibana_connection_for_trainer_failed", error=str(es_e))
 
     # Startup: Initialize ES connection and verify indices
-    is_connected = await check_connection()
+    client = KibanaProxyClient()
+    is_connected = await client.check_connection()
     if is_connected:
-        es = await get_es_client()
-        await create_soc_indices(es)
+        es = client
         
         # Apply pending Elasticsearch migrations
         from app.migrations.migration_runner import MigrationRunner
@@ -160,7 +149,7 @@ async def lifespan(app: FastAPI):
     yield
     # Shutdown: Clean up client
     await stop_scheduler()
-    await close_es_client()
+    await KibanaProxyClient().close()
     scheduler.shutdown()
 
 from fastapi.exceptions import RequestValidationError
@@ -213,6 +202,8 @@ def create_app() -> FastAPI:
     metrics_app = make_asgi_app()
     app.mount("/metrics", metrics_app)
 
+    from app.api.routes.health import router as health_router
+    from app.api.routes.diagnostics import router as diagnostics_router
     from app.api.routes.admin import router as admin_router
     from app.api.routes.admin_audit_log import router as admin_audit_log_router
 
@@ -228,6 +219,7 @@ def create_app() -> FastAPI:
     app.include_router(slm_router, prefix="/api/slm", tags=["SLM"])
     app.include_router(incidents_router, prefix="/api/incidents", tags=["Incidents"])
     app.include_router(cache_router, prefix="/api/cache", tags=["Cache"])
+    app.include_router(diagnostics_router, prefix="/api/diagnostics", tags=["Diagnostics"])
     app.include_router(health_router, prefix="/health", tags=["Health"])
     app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
 

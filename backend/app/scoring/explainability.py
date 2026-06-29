@@ -1,4 +1,3 @@
-import logging
 from datetime import datetime
 
 import numpy as np
@@ -6,7 +5,8 @@ import shap
 
 from app.models.model_manager import ScoringResult
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 class ExplainabilityEngine:
     """Orchestrates SHAP analytical mapping identifying key baseline deviations driving Anomaly flags."""

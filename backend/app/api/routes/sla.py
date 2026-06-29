@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.auth.jwt import require_role
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.monitoring.sla_tracker import sla_tracker_instance
 from typing import Dict, List, Any
-import logging
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 router = APIRouter()
 
 @router.get("/dashboard", dependencies=[Depends(require_role("admin", "analyst"))])
 async def get_sla_dashboard():
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         dashboard = await sla_tracker_instance.get_sla_dashboard(es)
         return dashboard
     except Exception as e:
@@ -22,7 +22,7 @@ async def get_sla_dashboard():
 @router.get("/alerts/{alert_id}", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_sla_for_alert(alert_id: str):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         resp = await es.get(index="soc-alerts", id=alert_id, ignore=[404])
         if not resp or not resp.get("found"):
             raise HTTPException(status_code=404, detail="Alert not found")
@@ -39,7 +39,7 @@ async def get_sla_for_alert(alert_id: str):
 @router.get("/approaching-breach", dependencies=[Depends(require_role("admin", "analyst"))])
 async def get_approaching_breach(warning_minutes: int = 10):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         alerts = await sla_tracker_instance.get_alerts_approaching_sla(es, warning_minutes=warning_minutes)
         return alerts
     except Exception as e:

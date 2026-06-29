@@ -1,10 +1,10 @@
 import datetime
 import uuid
-import logging
 from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 @dataclass
 class ResponseMetrics:

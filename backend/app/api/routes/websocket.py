@@ -1,14 +1,14 @@
 import asyncio
 import json
-import logging
 from datetime import datetime
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 class ConnectionManager:
     def __init__(self):
@@ -79,7 +79,7 @@ manager = ConnectionManager()
 async def websocket_alerts(websocket: WebSocket):
     await manager.connect(websocket)
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         query = {
             "query": {"term": {"status": "open"}},
             "sort": [{"timestamp": {"order": "desc"}}],

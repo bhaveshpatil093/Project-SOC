@@ -1,8 +1,7 @@
-import logging
-
 from app.models.model_manager import ScoringResult
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 class FalsePositiveSuppressor:
     """Manages active ML suppression states averting cyclic alert storm behaviors."""
@@ -11,12 +10,11 @@ class FalsePositiveSuppressor:
         self.suppressed_entities = {}
         self.stats = {"suppressed_count": 0, "last_refresh": None}
 
-    async def refresh_suppression_list(self, es):
+    async def refresh_suppression_list(self, db_path: str):
         from datetime import datetime
-
         from app.feedback.label_store import get_fp_suppression_patterns
 
-        patterns = await get_fp_suppression_patterns(es)
+        patterns = await get_fp_suppression_patterns(db_path)
         new_map = {}
         for p in patterns:
             entity = p["entity_key"]

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAlertStats } from '../api/alerts'
 import { fetchFeedbackStats } from '../api/feedback'
+import { getKibanaHealth, getDataFreshness } from '../api/diagnostics'
 import { SkeletonCard } from '../components/common/Skeleton'
 import { ErrorBanner } from '../components/common/ErrorBanner'
 import { useNavigate } from 'react-router-dom'
@@ -28,6 +29,8 @@ import {
   Pause,
   Play,
   ShieldAlert,
+  Server,
+  Database,
 } from 'lucide-react'
 import { formatDate } from '../utils/formatters'
 import { useUiStore } from '../store/uiStore'
@@ -314,6 +317,21 @@ export const Dashboard = () => {
     refetchInterval: refreshMs,
   })
 
+  const { data: kibanaHealth } = useQuery({
+    queryKey: ['kibanaHealthDashboard'],
+    queryFn: getKibanaHealth,
+    refetchInterval: refreshMs,
+  })
+
+  const { data: dataFreshness } = useQuery({
+    queryKey: ['dataFreshnessDashboard'],
+    queryFn: getDataFreshness,
+    refetchInterval: refreshMs,
+  })
+
+  const lastPull = dataFreshness ? (dataFreshness.network || dataFreshness.process || dataFreshness.security_alert) : null
+  const lastPullFormatted = lastPull ? new Date(lastPull).toLocaleTimeString() : 'N/A'
+
   if (isLoadingStats || isLoadingFeedback) {
     return (
       <div className="flex flex-col min-h-screen bg-[var(--bg\_primary)] -m-4 md:-m-8">
@@ -366,7 +384,7 @@ export const Dashboard = () => {
           </div>
 
           {/* Stat Cards - Top Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-6">
             <StatCard
               title="Total Open Alerts"
               value={stats?.total || stats?.total_open || 0}
@@ -401,6 +419,18 @@ export const Dashboard = () => {
               value={`${(fpr * 100).toFixed(1)}%`}
               icon={Percent}
               colorClass="text-[var(--text\_primary)]"
+            />
+            <StatCard
+              title="Kibana Status"
+              value={kibanaHealth?.connected ? 'OK' : 'ERR'}
+              icon={Server}
+              colorClass={kibanaHealth?.connected ? 'text-green-500' : 'text-red-500'}
+            />
+            <StatCard
+              title="Last Data Pull"
+              value={lastPullFormatted}
+              icon={Database}
+              colorClass="text-blue-400"
             />
           </div>
 

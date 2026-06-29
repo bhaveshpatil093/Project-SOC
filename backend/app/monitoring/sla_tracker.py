@@ -1,10 +1,10 @@
 import datetime
-import logging
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional
 from dateutil import parser
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 SLA_DEFINITIONS = {
     "critical": {

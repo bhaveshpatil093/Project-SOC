@@ -7,7 +7,7 @@ from typing import Optional, Any
 from fastapi import HTTPException
 
 from app.auth.jwt import require_role
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.migrations.migration_runner import MigrationRunner
 
 router = APIRouter()
@@ -15,7 +15,7 @@ router = APIRouter()
 @router.get("/migrations", dependencies=[Depends(require_role("admin"))])
 async def get_migrations_status() -> dict[str, Any]:
     """Returns the current status of all Elasticsearch index migrations."""
-    es = await get_es_client()
+    es = KibanaProxyClient()
     runner = MigrationRunner()
     
     try:
@@ -32,13 +32,13 @@ class RestoreRequest(BaseModel):
 
 @router.get("/backups", dependencies=[Depends(require_role("admin"))])
 async def list_backups() -> list[dict[str, Any]]:
-    es = await get_es_client()
+    es = KibanaProxyClient()
     bm = BackupManager(es)
     return await bm.list_snapshots()
 
 @router.post("/backups", dependencies=[Depends(require_role("admin"))])
 async def create_backup() -> dict[str, Any]:
-    es = await get_es_client()
+    es = KibanaProxyClient()
     bm = BackupManager(es)
     try:
         return await bm.create_snapshot()
@@ -47,7 +47,7 @@ async def create_backup() -> dict[str, Any]:
 
 @router.get("/backups/{name}", dependencies=[Depends(require_role("admin"))])
 async def get_backup_details(name: str) -> dict[str, Any]:
-    es = await get_es_client()
+    es = KibanaProxyClient()
     bm = BackupManager(es)
     snaps = await bm.list_snapshots()
     for s in snaps:
@@ -59,7 +59,7 @@ async def get_backup_details(name: str) -> dict[str, Any]:
 
 @router.post("/backups/{name}/restore", dependencies=[Depends(require_role("admin"))])
 async def restore_backup(name: str, req: RestoreRequest) -> dict[str, Any]:
-    es = await get_es_client()
+    es = KibanaProxyClient()
     bm = BackupManager(es)
     try:
         return await bm.restore_snapshot(name, target_indices=req.target_indices)
@@ -68,7 +68,7 @@ async def restore_backup(name: str, req: RestoreRequest) -> dict[str, Any]:
 
 @router.delete("/backups/{name}", dependencies=[Depends(require_role("admin"))])
 async def delete_backup(name: str) -> dict[str, Any]:
-    es = await get_es_client()
+    es = KibanaProxyClient()
     bm = BackupManager(es)
     try:
         await bm.es.snapshot.delete(repository=bm.repo_name, snapshot=name)
@@ -85,7 +85,7 @@ async def get_logs(
     limit: int = Query(100, le=1000)
 ):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         logs = await log_viewer_instance.get_recent_logs(es, level, component, since_minutes, limit)
         return {"logs": logs}
     except Exception as e:
@@ -95,7 +95,7 @@ async def get_logs(
 @router.get("/logs/errors", dependencies=[Depends(require_role("admin"))])
 async def get_log_errors(since_hours: int = Query(24, ge=1)):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         summary = await log_viewer_instance.get_error_summary(es, since_hours)
         return {"error_summary": summary}
     except Exception as e:
@@ -105,7 +105,7 @@ async def get_log_errors(since_hours: int = Query(24, ge=1)):
 @router.get("/logs/search", dependencies=[Depends(require_role("admin"))])
 async def search_logs(q: str, since_hours: int = Query(24, ge=1), limit: int = Query(100, le=1000)):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         logs = await log_viewer_instance.search_logs(es, q, since_hours, limit)
         return {"logs": logs}
     except Exception as e:
@@ -115,7 +115,7 @@ async def search_logs(q: str, since_hours: int = Query(24, ge=1), limit: int = Q
 @router.get("/logs/trace/{correlation_id}", dependencies=[Depends(require_role("admin"))])
 async def get_log_trace(correlation_id: str):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         trace = await log_viewer_instance.get_correlation_trace(es, correlation_id)
         return {"trace": trace}
     except Exception as e:
@@ -126,7 +126,7 @@ async def get_log_trace(correlation_id: str):
 @router.get("/teams", dependencies=[Depends(require_role("admin"))])
 async def list_teams():
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         teams = await team_manager_instance.list_teams(es)
         return {"teams": teams}
     except Exception as e:
@@ -136,7 +136,7 @@ async def list_teams():
 @router.post("/teams", dependencies=[Depends(require_role("admin"))])
 async def create_team(team: Team):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         created = await team_manager_instance.create_team(es, team)
         return {"team": created}
     except Exception as e:
@@ -146,7 +146,7 @@ async def create_team(team: Team):
 @router.put("/teams/{team_id}", dependencies=[Depends(require_role("admin"))])
 async def update_team(team_id: str, updates: dict):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         updated = await team_manager_instance.update_team(es, team_id, updates)
         return {"team": updated}
     except Exception as e:
@@ -156,7 +156,7 @@ async def update_team(team_id: str, updates: dict):
 @router.post("/teams/{team_id}/members", dependencies=[Depends(require_role("admin"))])
 async def add_team_member(team_id: str, payload: dict):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         username = payload.get("username")
         if not username:
             raise HTTPException(status_code=400, detail="Username required")
@@ -169,7 +169,7 @@ async def add_team_member(team_id: str, payload: dict):
 @router.get("/teams/{team_id}/stats", dependencies=[Depends(require_role("admin"))])
 async def get_team_stats(team_id: str, since_days: int = Query(7, ge=1)):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         stats = await team_manager_instance.get_team_stats(es, team_id, since_days)
         return {"stats": stats}
     except Exception as e:

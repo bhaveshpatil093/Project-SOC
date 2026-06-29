@@ -21,7 +21,7 @@ async def get_kibana_url():
 
 @router.get("/es/indices", dependencies=[Depends(require_role("admin", "analyst"))])
 async def list_es_indices():
-    es = await get_es_client()
+    es = KibanaProxyClient()
     try:
         # Fetch stats for all soc- prefixed indices
         stats = await es.cat.indices(index="soc-*", format="json")
@@ -62,7 +62,7 @@ async def run_es_query(req: ESQueryRequest):
         raise HTTPException(status_code=400, detail=str(ve))
 
     # 3. Execute
-    es = await get_es_client()
+    es = KibanaProxyClient()
     body = {
         "query": req.query,
         "size": req.size

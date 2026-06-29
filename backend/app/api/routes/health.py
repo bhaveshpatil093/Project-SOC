@@ -4,7 +4,7 @@ import psutil
 from fastapi import APIRouter, HTTPException
 
 from app.health.checker import HealthChecker
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.models.model_manager import get_model_manager
 
 router = APIRouter()
@@ -14,14 +14,22 @@ checker = HealthChecker()
 last_deep_health_time = 0
 cached_deep_health = None
 
-@router.get("", response_model=dict, summary="Liveness Probe", description="Returns 200 OK instantly.")
+@router.get("", response_model=dict, summary="Liveness Probe", description="Returns health check status.")
 async def liveness():
-    return {"status": "ok", "message": "API is operating normally."}
+    import os
+    from app.config import settings
+    kibana_client = KibanaProxyClient()
+    return {
+        "status": "ok", 
+        "version": "1.0.0",
+        "kibana_connected": await kibana_client.check_connection(),
+        "sqlite_ready": os.path.exists(settings.DB_PATH)
+    }
 
 @router.get("/ready", summary="Readiness Probe")
 async def readiness():
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         await es.info()
     except Exception:
         raise HTTPException(status_code=503, detail="Elasticsearch not connected.")

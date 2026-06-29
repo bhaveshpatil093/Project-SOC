@@ -1,6 +1,5 @@
 import asyncio
 import json
-import logging
 import threading
 import time
 import uuid
@@ -15,7 +14,7 @@ from transformers import TextIteratorStreamer
 
 from app.monitoring.slm_analytics import slm_analytics_instance, ResponseMetrics
 from app.auth.jwt import require_role
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.middleware.rate_limiter import limiter
 from app.middleware.validation_middleware import InputSanitizer
 from app.slm.agent import SOCAgent
@@ -23,7 +22,8 @@ from app.slm.conversation_manager import get_conversation_manager
 from app.slm.model_loader import SOC_SYSTEM_PROMPT, get_slm_engine
 from app.slm.rag_pipeline import get_rag_pipeline
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -54,7 +54,7 @@ async def get_soc_agent() -> SOCAgent:
     if not slm.is_loaded():
         raise HTTPException(status_code=503, detail="SLM Engine is currently offline or loading.")
     rag = get_rag_pipeline()
-    es = await get_es_client()
+    es = KibanaProxyClient()
     return SOCAgent(slm_engine=slm, rag_pipeline=rag, es=es)
 
 @router.post("/chat", response_model=ChatResponse, dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
@@ -97,7 +97,7 @@ async def chat_endpoint(request: Request, req: ChatRequest, agent: SOCAgent = De
 
     asst_msg = ChatMessage(role="assistant", content=res.get("answer", ""), timestamp=asst_turn.timestamp)
 
-    es = await get_es_client()
+    es = KibanaProxyClient()
     metrics = ResponseMetrics(
         generation_time_ms=int(resp_time),
         prompt_tokens=res.get("prompt_tokens", 0),
@@ -131,7 +131,7 @@ async def explain_alert(alert_id: str, agent: SOCAgent = Depends(get_soc_agent))
     res = await agent.investigate(user_question=prompt, alert_id=alert_id, conversation_history=[])
     await audit_action('slm.explain_alert', 'alert', alert_id, {})
     await audit_action('slm.explain_alert', 'alert', alert_id, {})
-    es = await get_es_client()
+    es = KibanaProxyClient()
     metrics = ResponseMetrics(
         generation_time_ms=int(resp_time),
         prompt_tokens=res.get("prompt_tokens", 0),
@@ -173,14 +173,13 @@ async def model_info():
 
 @router.post("/rag/reindex", dependencies=[Depends(require_role("admin", "analyst"))])
 async def rag_reindex(background_tasks: BackgroundTasks):
-    from app.ingestion.es_client import get_es_client
 
     rag = get_rag_pipeline()
     job_id = str(uuid.uuid4())
 
     async def run_reindex():
         try:
-            es = await get_es_client()
+            es = KibanaProxyClient()
             res = await rag.reindex_from_elasticsearch(es)
             logger.info(f"RAG Reindex Background Task [{job_id}] Completed: {res}")
         except Exception as e:
@@ -205,10 +204,9 @@ async def rag_clear(confirm: str = None):
 
 @router.get("/metrics", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_slm_metrics(since_hours: int = 24):
-    from app.ingestion.es_client import get_es_client
     from app.slm.evaluator import get_slm_evaluator
 
-    es = await get_es_client()
+    es = KibanaProxyClient()
     evaluator = get_slm_evaluator()
 
     return await evaluator.get_aggregate_stats(es, since_hours=since_hours)
@@ -282,7 +280,7 @@ async def chat_stream(request: Request):
 
 @router.get("/playbook/{alert_id}", dependencies=[Depends(require_role("admin", "analyst"))])
 async def fetch_playbook(alert_id: str):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     try:
         res = await es.get(index="soc-processed-alerts", id=alert_id)
         alert = res["_source"]
@@ -296,7 +294,7 @@ async def fetch_playbook(alert_id: str):
 
 @router.get("/analytics", dependencies=[Depends(require_role("admin", "analyst"))])
 async def get_slm_analytics(since_days: int = 30):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     trends = await slm_analytics_instance.get_usage_trends(es, since_days)
     top_questions = await slm_analytics_instance.get_top_questions(es, since_days)
     knowledge_gaps = await slm_analytics_instance.get_knowledge_gaps(es)

@@ -10,7 +10,7 @@ from app.auth.models import User
 from app.auth.routes import get_current_user
 from app.cache.cache_manager import cache_result
 from app.exceptions import AlertNotFoundError
-from app.ingestion.es_client import INDEX_NAMES, get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -68,7 +68,7 @@ async def list_incidents(
     offset: int = Query(0, ge=0),
     current_user: User = Depends(get_current_user)
 ):
-    es = await get_es_client()
+    es = KibanaProxyClient()
 
     must_clauses = []
     if status:
@@ -103,7 +103,7 @@ async def list_incidents(
 @router.get("/stats", response_model=IncidentStatsResponse)
 @cache_result(ttl_seconds=60, key_fn=lambda *args, **kwargs: "incident_stats")
 async def get_incident_stats(current_user: User = Depends(get_current_user)):
-    es = await get_es_client()
+    es = KibanaProxyClient()
 
     body = {
         "size": 0,
@@ -144,7 +144,7 @@ async def get_incident_stats(current_user: User = Depends(get_current_user)):
 
 @router.get("/{incident_id}", response_model=IncidentDetailResponse)
 async def get_incident_detail(incident_id: str, current_user: User = Depends(get_current_user)):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     try:
         resp = await es.get(index=INDEX_NAMES["incidents"], id=incident_id)
         incident = resp.get("_source")
@@ -217,7 +217,7 @@ async def update_incident_status(
     if update.status not in ["active", "resolved", "escalated"]:
         raise HTTPException(status_code=400, detail="Invalid status")
 
-    es = await get_es_client()
+    es = KibanaProxyClient()
     body = {"doc": {"status": update.status}}
     try:
         await es.update(index=INDEX_NAMES["incidents"], id=incident_id, body=body)
@@ -232,7 +232,7 @@ async def escalate_incident(
     escalation: IncidentEscalation,
     current_user: User = Depends(get_current_user)
 ):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     body = {
         "doc": {
             "status": "escalated",
@@ -258,7 +258,7 @@ async def investigate_incident(incident_id: str, current_user: User = Depends(ge
     if _slm_engine.model is None:
         raise HTTPException(status_code=503, detail="SLM engine not loaded")
 
-    es = await get_es_client()
+    es = KibanaProxyClient()
     try:
         resp = await es.get(index=INDEX_NAMES["incidents"], id=incident_id)
         incident = resp.get("_source")
@@ -286,7 +286,7 @@ async def investigate_incident(incident_id: str, current_user: User = Depends(ge
 
 
 async def run_report_generation(incident_id: str):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     try:
         # Fetch incident
         res = await es.get(index="soc-incidents", id=incident_id)
@@ -314,7 +314,7 @@ async def trigger_report_generation(incident_id: str, background_tasks: Backgrou
 
 @router.get("/{incident_id}/report", dependencies=[Depends(require_role("admin", "analyst"))])
 async def fetch_incident_report(incident_id: str):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     report = await get_incident_report(es, incident_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found or still generating")

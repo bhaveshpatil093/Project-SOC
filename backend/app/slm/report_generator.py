@@ -1,11 +1,11 @@
-import logging
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Any
 
 from app.slm.engine import SLMEngine
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 INDEX_NAME = "soc-reports"
 

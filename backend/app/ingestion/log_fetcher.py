@@ -1,14 +1,12 @@
 import asyncio
-import logging
-from typing import Any
-
-from elasticsearch import AsyncElasticsearch
-from tenacity import retry, stop_after_attempt, wait_exponential
-
-logger = logging.getLogger(__name__)
-
 import hashlib
 import time
+from typing import Any
+
+from app.ingestion.kibana_client import KibanaProxyClient
+
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 # Constants mapping log types to index patterns
 SOURCE_PATTERNS = {
@@ -24,13 +22,8 @@ def get_query_hash(index_pattern: str, since_minutes: int, additional_filters: l
     key = f"{index_pattern}_{since_minutes}_{str(additional_filters)}"
     return hashlib.md5(key.encode()).hexdigest()
 
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    reraise=True
-)
 async def fetch_logs(
-    es: AsyncElasticsearch,
+    client: KibanaProxyClient,
     index_pattern: str,
     since_minutes: int = 5,
     size: int = 1000,
@@ -38,7 +31,7 @@ async def fetch_logs(
 ) -> list[dict]:
     """
     Query using range filter on @timestamp for last since_minutes minutes.
-    Uses the scroll API if size > 1000.
+    Uses search_after for pagination if size > 1000 since Kibana Proxy does not support scroll.
     Returns list of _source dicts with _id and _index added.
     """
     if additional_filters is None:
@@ -55,81 +48,66 @@ async def fetch_logs(
             logger.debug(f"Skipping empty query fetch for {index_pattern}")
             return []
 
-    query = {
-        "bool": {
-            "filter": [
-                {
-                    "range": {
-                        "@timestamp": {
-                            "gte": f"now-{since_minutes}m",
-                            "lte": "now"
-                        }
-                    }
+    filters = [
+        {
+            "range": {
+                "@timestamp": {
+                    "gte": f"now-{since_minutes}m",
+                    "lte": "now"
                 }
-            ] + additional_filters
+            }
         }
+    ] + additional_filters
+
+    query = {
+        "query": {
+            "bool": {
+                "filter": filters
+            }
+        },
+        "sort": [{"@timestamp": {"order": "desc"}}],
+        "_source": ["host", "user", "@timestamp", "message", "process", "event", "winlog", "kibana"]
     }
 
     results = []
+    page_size = 1000 if size > 1000 else size
+    search_after = None
 
-    if size <= 1000:
-        # Standard search is sufficient
-        resp = await es.search(
-            index=index_pattern,
-            query=query,
-            size=size,
-            _source=["host", "user", "@timestamp", "message", "process", "event", "winlog", "kibana"],
-            ignore_unavailable=True
-        )
-        for hit in resp.get("hits", {}).get("hits", []):
-            doc = hit["_source"]
-            doc["_id"] = hit["_id"]
-            doc["_index"] = hit["_index"]
-            results.append(doc)
-    else:
-        # Use scroll API for larger sizes
-        scroll_time = "2m"
-        scroll_size = 1000
-
-        resp = await es.search(
-            index=index_pattern,
-            query=query,
-            scroll=scroll_time,
-            size=scroll_size,
-            _source=["host", "user", "@timestamp", "message", "process", "event", "winlog", "kibana"],
-            ignore_unavailable=True
-        )
-
-        scroll_id = resp.get("_scroll_id")
+    while len(results) < size:
+        current_query = dict(query)
+        if search_after:
+            current_query["search_after"] = search_after
+            
+        try:
+            resp = await client.search(index=index_pattern, body=current_query, size=page_size)
+        except Exception as e:
+            logger.error(f"Search failed for pattern {index_pattern}: {e}")
+            break
+            
         hits = resp.get("hits", {}).get("hits", [])
-
-        while hits and len(results) < size:
-            for hit in hits:
-                if len(results) >= size:
-                    break
-                doc = hit["_source"]
-                doc["_id"] = hit["_id"]
-                doc["_index"] = hit["_index"]
-                results.append(doc)
-
+        
+        if not hits:
+            break
+            
+        for hit in hits:
             if len(results) >= size:
                 break
-
-            resp = await es.scroll(scroll_id=scroll_id, scroll=scroll_time)
-            scroll_id = resp.get("_scroll_id")
-            hits = resp.get("hits", {}).get("hits", [])
-
-        # Clean up the scroll context
-        if scroll_id:
-            try:
-                await es.clear_scroll(scroll_id=scroll_id)
-            except Exception as e:
-                logger.warning(f"Failed to clear scroll context: {e}")
+            doc = hit.get("_source", {})
+            doc["_id"] = hit.get("_id")
+            doc["_index"] = hit.get("_index")
+            results.append(doc)
+            
+        if len(results) >= size or len(hits) < page_size:
+            break
+            
+        search_after = hits[-1].get("sort")
+        if not search_after:
+            break
 
     # Update cache
     _empty_query_cache[query_hash] = (time.time(), len(results))
 
-    # Cleanup old cache entries (older than 1 hour) to prevent memory leaks
+    # Cleanup old cache entries (older than 1 hour)
     if len(_empty_query_cache) > 1000:
         cutoff = time.time() - 3600
         for k in list(_empty_query_cache.keys()):
@@ -138,18 +116,17 @@ async def fetch_logs(
 
     return results
 
-async def fetch_all_sources(es: AsyncElasticsearch, since_minutes: int = 5) -> dict[str, list[dict]]:
+async def fetch_all_sources(client: KibanaProxyClient, since_minutes: int = 5) -> dict[str, list[dict]]:
     """
-    Calls fetch_logs for all three patterns concurrently using asyncio.gather.
-    Adds log_type field to each doc based on index pattern.
-    Returns dict mapping log_type to list of records.
+    Calls fetch_logs for all three patterns concurrently.
+    Tags each doc with its log_type before returning.
     """
     tasks = []
     log_types = list(SOURCE_PATTERNS.keys())
 
     for log_type in log_types:
         pattern = SOURCE_PATTERNS[log_type]
-        tasks.append(fetch_logs(es, pattern, since_minutes=since_minutes, size=1000))
+        tasks.append(fetch_logs(client, pattern, since_minutes=since_minutes, size=1000))
 
     results_list = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -161,17 +138,15 @@ async def fetch_all_sources(es: AsyncElasticsearch, since_minutes: int = 5) -> d
             continue
 
         for doc in result:
-            # Tag each document with its logical source type
             doc["log_type"] = log_type
             final_results[log_type].append(doc)
 
     return final_results
 
-async def fetch_by_entity(es: AsyncElasticsearch, host_id: str, user_name: str, since_minutes: int = 30) -> dict[str, list[dict]]:
+async def fetch_by_entity(client: KibanaProxyClient, host_id: str, user_name: str, since_minutes: int = 30) -> dict[str, list[dict]]:
     """
-    Fetch logs filtered by host.id == host_id AND user.name == user_name.
-    Used by the SLM investigation flow.
-    Returns same structure as fetch_all_sources.
+    Fetch logs filtered by host.id and user.name.
+    Same return structure as fetch_all_sources.
     """
     additional_filters = [
         {"term": {"host.id": host_id}},
@@ -185,7 +160,7 @@ async def fetch_by_entity(es: AsyncElasticsearch, host_id: str, user_name: str, 
         pattern = SOURCE_PATTERNS[log_type]
         tasks.append(
             fetch_logs(
-                es,
+                client,
                 pattern,
                 since_minutes=since_minutes,
                 size=1000,
@@ -207,3 +182,14 @@ async def fetch_by_entity(es: AsyncElasticsearch, host_id: str, user_name: str, 
             final_results[log_type].append(doc)
 
     return final_results
+
+async def fetch_raw_query(client: KibanaProxyClient, index: str, dsl_body: dict) -> dict:
+    """
+    Generic passthrough for ad-hoc queries (used by SLM RAG).
+    Returns full raw response dict (not just hits).
+    """
+    try:
+        return await client.search(index=index, body=dsl_body)
+    except Exception as e:
+        logger.error(f"Failed raw query on {index}: {e}")
+        raise

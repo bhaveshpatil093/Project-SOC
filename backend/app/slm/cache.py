@@ -1,12 +1,12 @@
 import hashlib
-import logging
 import time
 from collections import OrderedDict
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 class ExactMatchCache:
     def __init__(self, maxsize: int = 200, ttl_seconds: int = 3600):

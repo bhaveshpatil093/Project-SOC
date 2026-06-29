@@ -24,8 +24,15 @@
 - 🛡️ **Production-ready** — Strict JWT auth, API rate limiting, robust audit logging, Role-Based Access Control (RBAC), and deep health monitoring.
 
 ## Architecture
-The platform is designed as an asynchronous, stateless microservice topology orchestrating heavy Machine Learning workloads against a high-velocity Elasticsearch telemetry backend.
+The platform is designed as an asynchronous, stateless microservice topology orchestrating heavy Machine Learning workloads against a high-velocity telemetry backend.
 *(For a complete breakdown including Mermaid data flows, read [ARCHITECTURE.md](docs/ARCHITECTURE.md))*
+
+### Architecture Change: Kibana Proxy Mode
+This deployment uses read-only Kibana Console Proxy access instead of direct
+Elasticsearch. Log data is pulled via the Kibana API. Alerts, feedback, features,
+and training job state are persisted locally in SQLite (backend/data/soc.db).
+The RAG vector store uses FAISS (backend/data/faiss_index/).
+No write access to Elasticsearch is required or used.
 
 ## Quick Start
 

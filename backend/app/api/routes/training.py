@@ -1,19 +1,22 @@
 import uuid
+import json
+import aiosqlite
 
 from app.monitoring.audit_logger import audit_action
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
 from app.auth.jwt import require_role
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.middleware.rate_limiter import limiter
 from app.models.interpretability import InterpretabilityReporter
 from app.models.model_manager import get_model_manager
 from app.models.trainer import (
-    TRAINING_JOBS,
     get_model_versions,
     run_incremental_retraining,
     run_initial_training,
 )
+from app.storage import local_db
+from app.config import settings
 
 router = APIRouter()
 reporter = InterpretabilityReporter()
@@ -21,49 +24,68 @@ reporter = InterpretabilityReporter()
 @router.post("/initial", dependencies=[Depends(require_role("admin"))])
 @limiter.limit("5/minute")
 async def trigger_initial_training(request: Request, background_tasks: BackgroundTasks):
-    """Triggers complete baseline ML training pipeline executing arrays synchronously asynchronously in background routines."""
     job_id = str(uuid.uuid4())
-    es = await get_es_client()
+    kibana_client = KibanaProxyClient()
     mm = get_model_manager()
 
-    background_tasks.add_task(run_initial_training, es, mm, job_id)
+    background_tasks.add_task(run_initial_training, kibana_client, mm, settings.DB_PATH, job_id)
     return {"job_id": job_id, "status": "started"}
 
 @router.post("/incremental", dependencies=[Depends(require_role("admin", "analyst"))])
 @limiter.limit("5/minute")
 async def trigger_incremental_retraining(request: Request, background_tasks: BackgroundTasks):
-    """Executes incremental bounds retraining overlapping existing artifacts mapping new specific explicit feature vectors."""
     job_id = str(uuid.uuid4())
-    es = await get_es_client()
+    kibana_client = KibanaProxyClient()
     mm = get_model_manager()
 
-    background_tasks.add_task(run_incremental_retraining, es, mm, job_id)
+    background_tasks.add_task(run_incremental_retraining, kibana_client, mm, settings.DB_PATH, job_id)
     return {"job_id": job_id, "status": "started"}
 
 @router.get("/status/{job_id}")
 async def get_job_status(job_id: str):
-    """Retrieves ephemeral background ML training job contexts safely tracking local execution metrics."""
-    if job_id not in TRAINING_JOBS:
-        raise HTTPException(status_code=404, detail="Training job explicit artifact not found natively.")
-    return {"job_id": job_id, **TRAINING_JOBS[job_id]}
+    job = await local_db.get_training_job(settings.DB_PATH, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Training job not found in SQLite.")
+    return {"job_id": job_id, **job}
 
 @router.get("/status", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_training_status():
-    """Generates complete model versioning mapping cleanly leveraging underlying MLFlow experiment log pipelines."""
     history = await get_model_versions()
     return {"versions": history}
 
+@router.get("/history", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+async def get_training_history():
+    mlflow_runs = await get_model_versions()
+    
+    sqlite_jobs = []
+    try:
+        async with aiosqlite.connect(settings.DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute("SELECT * FROM soc_training_jobs ORDER BY started_at DESC LIMIT 50")
+            rows = await cursor.fetchall()
+            for r in rows:
+                d = dict(r)
+                if d.get("summary"):
+                    try:
+                        d["summary"] = json.loads(d["summary"])
+                    except:
+                        pass
+                sqlite_jobs.append(d)
+    except Exception:
+        pass
+        
+    return {"mlflow": mlflow_runs, "sqlite_jobs": sqlite_jobs}
+
 @router.get("/drift", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_drift_status():
-    """Returns the latest model drift report."""
-    es = await get_es_client()
+    kibana_client = KibanaProxyClient()
     query = {
         "query": {"match_all": {}},
         "sort": [{"timestamp": "desc"}],
         "size": 1
     }
     try:
-        res = await es.search(index="soc-drift-log", body=query, ignore_unavailable=True)
+        res = await kibana_client.search(index="soc-drift-log", body=query)
         hits = res.get("hits", {}).get("hits", [])
         if hits:
             return hits[0]["_source"]
@@ -74,31 +96,28 @@ async def get_drift_status():
 
 @router.get("/interpretability", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_interpretability_report():
-    es = await get_es_client()
+    kibana_client = KibanaProxyClient()
     manager = get_model_manager()
-    report = await reporter.generate_full_report(es, manager)
+    report = await reporter.generate_full_report(kibana_client, manager)
     return {"data": report}
 
 from app.models.accuracy_evaluator import AccuracyEvaluator
 from cachetools import TTLCache
 
-# Cache for 1 hour (3600 seconds), storing up to 10 items
 accuracy_cache = TTLCache(maxsize=10, ttl=3600)
 
 @router.get("/accuracy", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def get_accuracy_report():
-    """Returns comprehensive ML model accuracy evaluation against labeled feedback."""
     cache_key = "latest_accuracy_report"
     if cache_key in accuracy_cache:
         return {"data": accuracy_cache[cache_key]}
         
     try:
-        es = await get_es_client()
+        kibana_client = KibanaProxyClient()
         manager = get_model_manager()
         evaluator = AccuracyEvaluator()
-        report = await evaluator.evaluate_against_feedback(es, manager)
+        report = await evaluator.evaluate_against_feedback(kibana_client, manager)
         
-        # Convert dataclass to dict for JSON serialization
         import dataclasses
         report_dict = dataclasses.asdict(report)
         accuracy_cache[cache_key] = report_dict
@@ -110,7 +129,6 @@ async def get_accuracy_report():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 from pydantic import BaseModel
 
 class ThresholdUpdate(BaseModel):
@@ -118,15 +136,11 @@ class ThresholdUpdate(BaseModel):
 
 @router.post("/threshold", dependencies=[Depends(require_role("admin"))])
 async def update_threshold(payload: ThresholdUpdate):
-    """Updates global THREAT_SCORE_THRESHOLD based on accuracy evaluation."""
-    # In a real system, this would update a database setting or dynamic config.
-    # For now, we'll just mock success.
     return {"status": "success", "threshold": payload.threshold}
 
 # --- MLflow Endpoints ---
 
 from mlflow.tracking import MlflowClient
-
 
 @router.get("/mlflow/experiments", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def list_experiments():
@@ -164,7 +178,6 @@ async def get_run_details(run_id: str):
     client = MlflowClient()
     run = client.get_run(run_id)
 
-    # Try to fetch metric history if possible
     metric_history = {}
     for key in run.data.metrics.keys():
         try:
@@ -196,7 +209,6 @@ async def compare_runs(run_ids: str):
         try:
             run = client.get_run(rid)
 
-            # Fetch history for loss if available
             loss_history = []
             try:
                 hist = client.get_metric_history(rid, "loss")
@@ -219,7 +231,6 @@ async def compare_runs(run_ids: str):
 
 @router.get("/calibration", dependencies=[Depends(require_role("admin", "analyst"))])
 async def get_calibration_stats():
-    """Returns calibration stats, AUC-ROC, Brier score, n_samples"""
     manager = get_model_manager()
     if manager.calibrator:
         stats = manager.calibrator.get_calibration_stats()
@@ -228,9 +239,8 @@ async def get_calibration_stats():
 
 @router.post("/calibration", dependencies=[Depends(require_role("admin", "analyst"))])
 async def trigger_calibration_training():
-    """Manually trigger calibration training"""
-    es = await get_es_client()
+    kibana_client = KibanaProxyClient()
     manager = get_model_manager()
     from app.models.trainer import train_calibrator
-    res = await train_calibrator(es, manager)
+    res = await train_calibrator(kibana_client, manager, settings.DB_PATH)
     return res

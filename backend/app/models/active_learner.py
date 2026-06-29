@@ -1,10 +1,10 @@
-import logging
 
 import numpy as np
 
 from app.models.model_manager import ScoringResult
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 class ActiveLearner:
     def __init__(self, uncertainty_threshold_range: tuple = (0.35, 0.65)):

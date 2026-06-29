@@ -240,7 +240,6 @@
           "Alerts"
         ],
         "summary": "Get Alerts List",
-        "description": "Fetches ML processed alerts querying across elastic fields scaling with deep pagination arrays.",
         "operationId": "get_alerts_list_api_alerts_get",
         "security": [
           {
@@ -410,7 +409,6 @@
           "Alerts"
         ],
         "summary": "Get Stats",
-        "description": "Generates complex ES aggregations tracking pipeline security throughput explicitly mapping to React UI dashboards.",
         "operationId": "get_stats_api_alerts_stats_get",
         "responses": {
           "200": {
@@ -437,7 +435,6 @@
           "Alerts"
         ],
         "summary": "Trigger Scoring",
-        "description": "Manually forces Threat Engine execution spanning the whole extraction pipeline synchronously.",
         "operationId": "trigger_scoring_api_alerts_trigger_scoring_post",
         "responses": {
           "200": {
@@ -462,7 +459,6 @@
           "Alerts"
         ],
         "summary": "Get Alert",
-        "description": "Resolves singular specific alerts returning precise SHAP features and translation mappings.",
         "operationId": "get_alert_api_alerts__alert_id__get",
         "security": [
           {
@@ -510,7 +506,6 @@
           "Alerts"
         ],
         "summary": "Update Status",
-        "description": "Allows UI triage handlers mapping interactive state flows directly natively over ES document fields.",
         "operationId": "update_status_api_alerts__alert_id__status_patch",
         "security": [
           {
@@ -566,7 +561,6 @@
           "Alerts"
         ],
         "summary": "Get Timeline",
-        "description": "Constructs localized chronological execution limits tracking identically mapped anomalies spanning exact same entities.",
         "operationId": "get_timeline_api_alerts__alert_id__timeline_get",
         "security": [
           {
@@ -606,13 +600,122 @@
         }
       }
     },
+    "/api/alerts/{alert_id}/tags": {
+      "post": {
+        "tags": [
+          "Alerts"
+        ],
+        "summary": "Add Alert Tags",
+        "operationId": "add_alert_tags_api_alerts__alert_id__tags_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "alert_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Alert Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/alerts/{alert_id}/tags/{tag}": {
+      "delete": {
+        "tags": [
+          "Alerts"
+        ],
+        "summary": "Remove Alert Tag",
+        "operationId": "remove_alert_tag_api_alerts__alert_id__tags__tag__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "alert_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Alert Id"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/feedback": {
       "post": {
         "tags": [
           "Feedback"
         ],
         "summary": "Post Feedback",
-        "description": "Submits manual triage labels dropping mapped boundaries sequentially matching ES indices.",
+        "description": "Submits manual triage labels dropping mapped boundaries sequentially matching SQLite tables.",
         "operationId": "post_feedback_api_feedback_post",
         "security": [
           {
@@ -828,7 +931,6 @@
           "Training"
         ],
         "summary": "Trigger Initial Training",
-        "description": "Triggers complete baseline ML training pipeline executing arrays synchronously asynchronously in background routines.",
         "operationId": "trigger_initial_training_api_training_initial_post",
         "responses": {
           "200": {
@@ -853,7 +955,6 @@
           "Training"
         ],
         "summary": "Trigger Incremental Retraining",
-        "description": "Executes incremental bounds retraining overlapping existing artifacts mapping new specific explicit feature vectors.",
         "operationId": "trigger_incremental_retraining_api_training_incremental_post",
         "responses": {
           "200": {
@@ -878,7 +979,6 @@
           "Training"
         ],
         "summary": "Get Job Status",
-        "description": "Retrieves ephemeral background ML training job contexts safely tracking local execution metrics.",
         "operationId": "get_job_status_api_training_status__job_id__get",
         "parameters": [
           {
@@ -919,8 +1019,31 @@
           "Training"
         ],
         "summary": "Get Training Status",
-        "description": "Generates complete model versioning mapping cleanly leveraging underlying MLFlow experiment log pipelines.",
         "operationId": "get_training_status_api_training_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/training/history": {
+      "get": {
+        "tags": [
+          "Training"
+        ],
+        "summary": "Get Training History",
+        "operationId": "get_training_history_api_training_history_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -944,7 +1067,6 @@
           "Training"
         ],
         "summary": "Get Drift Status",
-        "description": "Returns the latest model drift report.",
         "operationId": "get_drift_status_api_training_drift_get",
         "responses": {
           "200": {
@@ -976,6 +1098,74 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/training/accuracy": {
+      "get": {
+        "tags": [
+          "Training"
+        ],
+        "summary": "Get Accuracy Report",
+        "operationId": "get_accuracy_report_api_training_accuracy_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/training/threshold": {
+      "post": {
+        "tags": [
+          "Training"
+        ],
+        "summary": "Update Threshold",
+        "operationId": "update_threshold_api_training_threshold_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThresholdUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -1152,7 +1342,6 @@
           "Training"
         ],
         "summary": "Get Calibration Stats",
-        "description": "Returns calibration stats, AUC-ROC, Brier score, n_samples",
         "operationId": "get_calibration_stats_api_training_calibration_get",
         "responses": {
           "200": {
@@ -1175,7 +1364,6 @@
           "Training"
         ],
         "summary": "Trigger Calibration Training",
-        "description": "Manually trigger calibration training",
         "operationId": "trigger_calibration_training_api_training_calibration_post",
         "responses": {
           "200": {
@@ -1192,6 +1380,619 @@
             "OAuth2PasswordBearer": []
           }
         ]
+      }
+    },
+    "/api/hunting/search": {
+      "post": {
+        "tags": [
+          "Hunting"
+        ],
+        "summary": "Run Hunt",
+        "operationId": "run_hunt_api_hunting_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HuntRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/hunting/{hunt_id}/results": {
+      "get": {
+        "tags": [
+          "Hunting"
+        ],
+        "summary": "Get Hunt Results",
+        "operationId": "get_hunt_results_api_hunting__hunt_id__results_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hunt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Hunt Id"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/hunting/saved": {
+      "get": {
+        "tags": [
+          "Hunting"
+        ],
+        "summary": "Get Saved Hunts",
+        "operationId": "get_saved_hunts_api_hunting_saved_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/hunting/save": {
+      "post": {
+        "tags": [
+          "Hunting"
+        ],
+        "summary": "Save Hunt",
+        "operationId": "save_hunt_api_hunting_save_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveHuntRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/hunting/saved/{hunt_id}": {
+      "delete": {
+        "tags": [
+          "Hunting"
+        ],
+        "summary": "Delete Saved Hunt",
+        "operationId": "delete_saved_hunt_api_hunting_saved__hunt_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hunt_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Hunt Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/webhooks": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "List Webhooks",
+        "operationId": "list_webhooks_api_webhooks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Create Webhook",
+        "operationId": "create_webhook_api_webhooks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/webhooks/{webhook_id}": {
+      "put": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Update Webhook",
+        "operationId": "update_webhook_api_webhooks__webhook_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "webhook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Webhook Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWebhookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Delete Webhook",
+        "operationId": "delete_webhook_api_webhooks__webhook_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "webhook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Webhook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/webhooks/{webhook_id}/test": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Test Webhook",
+        "operationId": "test_webhook_api_webhooks__webhook_id__test_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "webhook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Webhook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/schedules": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "List Schedules",
+        "operationId": "list_schedules_api_reports_schedules_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Create Schedule",
+        "operationId": "create_schedule_api_reports_schedules_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateScheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/reports/schedules/{schedule_id}/run-now": {
+      "post": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Run Schedule Now",
+        "operationId": "run_schedule_now_api_reports_schedules__schedule_id__run_now_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/generated": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "List Generated Reports",
+        "operationId": "list_generated_reports_api_reports_generated_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/reports/generated/{report_id}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get Generated Report",
+        "operationId": "get_generated_report_api_reports_generated__report_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "report_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Report Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/slm/chat": {
@@ -1658,6 +2459,97 @@
         ]
       }
     },
+    "/api/slm/playbook/{alert_id}": {
+      "get": {
+        "tags": [
+          "SLM"
+        ],
+        "summary": "Fetch Playbook",
+        "operationId": "fetch_playbook_api_slm_playbook__alert_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "alert_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Alert Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/slm/analytics": {
+      "get": {
+        "tags": [
+          "SLM"
+        ],
+        "summary": "Get Slm Analytics",
+        "operationId": "get_slm_analytics_api_slm_analytics_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "since_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "title": "Since Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/incidents": {
       "get": {
         "tags": [
@@ -2013,6 +2905,96 @@
         }
       }
     },
+    "/api/incidents/{incident_id}/generate-report": {
+      "post": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Trigger Report Generation",
+        "operationId": "trigger_report_generation_api_incidents__incident_id__generate_report_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/incidents/{incident_id}/report": {
+      "get": {
+        "tags": [
+          "Incidents"
+        ],
+        "summary": "Fetch Incident Report",
+        "operationId": "fetch_incident_report_api_incidents__incident_id__report_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Incident Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cache/stats": {
       "get": {
         "tags": [
@@ -2038,13 +3020,128 @@
         ]
       }
     },
+    "/api/diagnostics/kibana-health": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Kibana Health",
+        "operationId": "kibana_health_api_diagnostics_kibana_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/index-stats": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Index Stats",
+        "operationId": "index_stats_api_diagnostics_index_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/data-freshness": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Data Freshness",
+        "operationId": "data_freshness_api_diagnostics_data_freshness_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/local-db-stats": {
+      "get": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Local Db Stats",
+        "operationId": "local_db_stats_api_diagnostics_local_db_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics/test-fetch": {
+      "post": {
+        "tags": [
+          "Diagnostics"
+        ],
+        "summary": "Test Fetch",
+        "operationId": "test_fetch_api_diagnostics_test_fetch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FetchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
           "Health"
         ],
         "summary": "Liveness Probe",
-        "description": "Returns 200 OK instantly.",
+        "description": "Returns health check status.",
         "operationId": "liveness_health_get",
         "responses": {
           "200": {
@@ -2118,6 +3215,732 @@
           }
         }
       }
+    },
+    "/api/admin/migrations": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Migrations Status",
+        "description": "Returns the current status of all Elasticsearch index migrations.",
+        "operationId": "get_migrations_status_api_admin_migrations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Migrations Status Api Admin Migrations Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/backups": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List Backups",
+        "operationId": "list_backups_api_admin_backups_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response List Backups Api Admin Backups Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create Backup",
+        "operationId": "create_backup_api_admin_backups_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Backup Api Admin Backups Post"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/backups/{name}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Backup Details",
+        "operationId": "get_backup_details_api_admin_backups__name__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Backup Details Api Admin Backups  Name  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Delete Backup",
+        "operationId": "delete_backup_api_admin_backups__name__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Delete Backup Api Admin Backups  Name  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/backups/{name}/restore": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Restore Backup",
+        "operationId": "restore_backup_api_admin_backups__name__restore_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Restore Backup Api Admin Backups  Name  Restore Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/logs": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Logs",
+        "operationId": "get_logs_api_admin_logs_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Level"
+            }
+          },
+          {
+            "name": "component",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Component"
+            }
+          },
+          {
+            "name": "since_minutes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 60,
+              "title": "Since Minutes"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/logs/errors": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Log Errors",
+        "operationId": "get_log_errors_api_admin_logs_errors_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "since_hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 24,
+              "title": "Since Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/logs/search": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Search Logs",
+        "operationId": "search_logs_api_admin_logs_search_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "since_hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 24,
+              "title": "Since Hours"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/logs/trace/{correlation_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Log Trace",
+        "operationId": "get_log_trace_api_admin_logs_trace__correlation_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "correlation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Correlation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/teams": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List Teams",
+        "operationId": "list_teams_api_admin_teams_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create Team",
+        "operationId": "create_team_api_admin_teams_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Team"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/teams/{team_id}": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Update Team",
+        "operationId": "update_team_api_admin_teams__team_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Team Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Updates"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/teams/{team_id}/members": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Add Team Member",
+        "operationId": "add_team_member_api_admin_teams__team_id__members_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Team Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/teams/{team_id}/stats": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Team Stats",
+        "operationId": "get_team_stats_api_admin_teams__team_id__stats_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Team Id"
+            }
+          },
+          {
+            "name": "since_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 7,
+              "title": "Since Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2130,7 +3953,8 @@
           },
           "alerts": {
             "items": {
-              "$ref": "#/components/schemas/AlertResponse"
+              "additionalProperties": true,
+              "type": "object"
             },
             "type": "array",
             "title": "Alerts"
@@ -2198,6 +4022,14 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "default": []
           }
         },
         "type": "object",
@@ -2500,6 +4332,115 @@
         ],
         "title": "ChatResponse"
       },
+      "CreateScheduleRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "report_type": {
+            "type": "string",
+            "title": "Report Type"
+          },
+          "frequency": {
+            "type": "string",
+            "title": "Frequency"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format",
+            "default": "markdown"
+          },
+          "recipients": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Recipients",
+            "default": []
+          },
+          "filters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Filters",
+            "default": {}
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "report_type",
+          "frequency"
+        ],
+        "title": "CreateScheduleRequest"
+      },
+      "CreateWebhookRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "secret": {
+            "type": "string",
+            "title": "Secret",
+            "default": ""
+          },
+          "events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Events",
+            "default": [
+              "new_alert"
+            ]
+          },
+          "filters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Filters",
+            "default": {}
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "url"
+        ],
+        "title": "CreateWebhookRequest"
+      },
+      "FetchRequest": {
+        "properties": {
+          "index": {
+            "type": "string",
+            "title": "Index"
+          },
+          "since_minutes": {
+            "type": "integer",
+            "title": "Since Minutes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "since_minutes"
+        ],
+        "title": "FetchRequest"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2512,6 +4453,30 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HuntRequest": {
+        "properties": {
+          "hunt_type": {
+            "type": "string",
+            "title": "Hunt Type"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Parameters"
+          },
+          "time_range_days": {
+            "type": "integer",
+            "title": "Time Range Days",
+            "default": 30
+          }
+        },
+        "type": "object",
+        "required": [
+          "hunt_type",
+          "parameters"
+        ],
+        "title": "HuntRequest"
       },
       "IncidentDetailResponse": {
         "properties": {
@@ -2774,6 +4739,50 @@
         ],
         "title": "ReloadRequest"
       },
+      "RestoreRequest": {
+        "properties": {
+          "target_indices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Indices"
+          }
+        },
+        "type": "object",
+        "title": "RestoreRequest"
+      },
+      "SaveHuntRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "hunt_request": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Hunt Request"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description",
+          "hunt_request"
+        ],
+        "title": "SaveHuntRequest"
+      },
       "StatusUpdate": {
         "properties": {
           "status": {
@@ -2786,6 +4795,160 @@
           "status"
         ],
         "title": "StatusUpdate"
+      },
+      "TagPayload": {
+        "properties": {
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tags"
+        ],
+        "title": "TagPayload"
+      },
+      "Team": {
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "title": "Team Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "members": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Members"
+          },
+          "alert_filters": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Alert Filters"
+          },
+          "shift_schedule": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Shift Schedule"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_id",
+          "name",
+          "description",
+          "members",
+          "alert_filters",
+          "shift_schedule",
+          "created_at"
+        ],
+        "title": "Team"
+      },
+      "ThresholdUpdate": {
+        "properties": {
+          "threshold": {
+            "type": "number",
+            "title": "Threshold"
+          }
+        },
+        "type": "object",
+        "required": [
+          "threshold"
+        ],
+        "title": "ThresholdUpdate"
+      },
+      "UpdateWebhookRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Secret"
+          },
+          "events": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events"
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filters"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "UpdateWebhookRequest"
       },
       "ValidationError": {
         "properties": {

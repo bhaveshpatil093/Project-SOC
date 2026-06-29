@@ -3,7 +3,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Any
 
-from app.ingestion.es_client import INDEX_NAMES
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)

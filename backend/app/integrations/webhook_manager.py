@@ -2,7 +2,6 @@ import asyncio
 import hashlib
 import hmac
 import json
-import logging
 import time
 import uuid
 from dataclasses import dataclass, asdict, field
@@ -11,7 +10,8 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 WEBHOOK_INDEX = "soc-webhooks"
 

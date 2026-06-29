@@ -1,11 +1,11 @@
 import uuid
 import datetime
-import logging
 from dataclasses import dataclass, asdict
 from typing import Optional, List, Dict, Any
 from contextvars import ContextVar
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 @dataclass
 class AuditEvent:
@@ -152,9 +152,9 @@ async def audit_action(action: str, resource_type: str, resource_id: str = None,
     """
     Helper to be called from any route to log an action automatically using context variables.
     """
-    from app.ingestion.es_client import get_es_client
+    from app.ingestion.kibana_client import KibanaProxyClient
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         event = AuditEvent(
             event_id=str(uuid.uuid4()),
             timestamp=datetime.datetime.utcnow().isoformat() + "Z",

@@ -1,4 +1,3 @@
-import logging
 import os
 import time
 
@@ -10,7 +9,8 @@ import torch.optim as optim
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 PROCESS_FEATURE_COLS = [
     "process_spawn_count",

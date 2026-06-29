@@ -1,5 +1,4 @@
 import gc
-import logging
 import os
 from dataclasses import dataclass, field
 
@@ -14,7 +13,8 @@ from app.models.isolation_forest import NETWORK_FEATURE_COLS, IsolationForestDet
 from app.models.lstm_detector import LSTMDetector, build_event_sequences
 from app.models.rule_engine import evaluate_rules, get_rule_explanation
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 @dataclass
 class ScoringResult:

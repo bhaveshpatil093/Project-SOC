@@ -1,15 +1,15 @@
 import uuid
-import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, HttpUrl
 from typing import Dict, List, Optional, Any
 
 from app.auth.jwt import get_current_user, require_role
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.integrations.webhook_manager import webhook_manager, WebhookConfig
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 router = APIRouter()
 
 
@@ -34,7 +34,7 @@ class UpdateWebhookRequest(BaseModel):
 @router.get("", dependencies=[Depends(require_role("admin"))])
 async def list_webhooks():
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         webhooks = await webhook_manager.list_webhooks(es)
         return {"webhooks": [vars(w) for w in webhooks]}
     except Exception as e:
@@ -45,7 +45,7 @@ async def list_webhooks():
 @router.post("", dependencies=[Depends(require_role("admin"))])
 async def create_webhook(payload: CreateWebhookRequest):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         config = WebhookConfig(
             webhook_id=uuid.uuid4().hex,
             name=payload.name,
@@ -66,7 +66,7 @@ async def create_webhook(payload: CreateWebhookRequest):
 @router.put("/{webhook_id}", dependencies=[Depends(require_role("admin"))])
 async def update_webhook(webhook_id: str, payload: UpdateWebhookRequest):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         updates = {k: v for k, v in payload.model_dump().items() if v is not None}
         if not updates:
             raise HTTPException(status_code=400, detail="No updates provided")
@@ -82,7 +82,7 @@ async def update_webhook(webhook_id: str, payload: UpdateWebhookRequest):
 @router.delete("/{webhook_id}", dependencies=[Depends(require_role("admin"))])
 async def delete_webhook(webhook_id: str):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         await webhook_manager.delete_webhook(es, webhook_id)
         return {"status": "deleted"}
     except Exception as e:
@@ -93,7 +93,7 @@ async def delete_webhook(webhook_id: str):
 @router.post("/{webhook_id}/test", dependencies=[Depends(require_role("admin"))])
 async def test_webhook(webhook_id: str):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         result = await webhook_manager.test_webhook(es, webhook_id)
         return result
     except Exception as e:

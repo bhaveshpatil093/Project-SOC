@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from app.api.dependencies import require_role
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.scoring.entity_risk import EntityRiskScorer
 from app.scoring.score_history import get_score_history, get_score_trends, get_system_score_trends
 
@@ -15,25 +15,25 @@ class WatchlistRequest(BaseModel):
 
 @router.get("", dependencies=[Depends(require_role("admin", "analyst"))])
 async def get_entities(limit: int = Query(50, ge=1, le=200)):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     entities = await scorer.get_top_risk_entities(es, n=limit)
     return {"data": entities}
 
 @router.get("/watchlist", dependencies=[Depends(require_role("admin", "analyst"))])
 async def get_watchlist():
-    es = await get_es_client()
+    es = KibanaProxyClient()
     entities = await scorer.get_watchlist(es)
     return {"data": entities}
 
 @router.get("/{entity_key}", dependencies=[Depends(require_role("admin", "analyst"))])
 async def get_entity_profile(entity_key: str):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     profile = await scorer.get_or_create_profile(es, entity_key)
     return {"data": profile}
 
 @router.get("/{entity_key}/alerts", dependencies=[Depends(require_role("admin", "analyst"))])
 async def get_entity_alerts(entity_key: str, limit: int = Query(50, ge=1, le=100)):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     try:
         query = {
             "size": limit,
@@ -48,30 +48,30 @@ async def get_entity_alerts(entity_key: str, limit: int = Query(50, ge=1, le=100
 
 @router.post("/{entity_key}/watchlist", dependencies=[Depends(require_role("admin", "analyst"))])
 async def add_entity_watchlist(entity_key: str, req: WatchlistRequest):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     await scorer.add_to_watchlist(es, entity_key, req.reason)
     return {"status": "success", "message": f"Added {entity_key} to watchlist"}
 
 @router.delete("/{entity_key}/watchlist", dependencies=[Depends(require_role("admin", "analyst"))])
 async def remove_entity_watchlist(entity_key: str):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     await scorer.remove_from_watchlist(es, entity_key)
     return {"status": "success", "message": f"Removed {entity_key} from watchlist"}
 
 @router.get("/system/trends", dependencies=[Depends(require_role("admin", "analyst"))])
 async def get_system_trends():
-    es = await get_es_client()
+    es = KibanaProxyClient()
     trends = await get_system_score_trends(es)
     return {"data": trends}
 
 @router.get("/{entity_key}/score-history", dependencies=[Depends(require_role("admin", "analyst"))])
 async def entity_score_history(entity_key: str, since_hours: int = 168):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     history = await get_score_history(es, entity_key, since_hours)
     return {"data": history}
 
 @router.get("/{entity_key}/score-trends", dependencies=[Depends(require_role("admin", "analyst"))])
 async def entity_score_trends(entity_key: str):
-    es = await get_es_client()
+    es = KibanaProxyClient()
     trends = await get_score_trends(es, entity_key)
     return {"data": trends}

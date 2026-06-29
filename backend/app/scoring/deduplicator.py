@@ -1,9 +1,9 @@
 import hashlib
 import json
-import logging
 from datetime import datetime, timedelta
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 class AlertDeduplicator:
     def __init__(self, dedup_window_minutes: int = 30, similarity_threshold: float = 0.85):

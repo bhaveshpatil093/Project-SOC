@@ -1,16 +1,12 @@
-from dataclasses import asdict
+import asyncio
 from datetime import datetime
 from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
-from elasticsearch import AsyncElasticsearch
-from elasticsearch.helpers import async_bulk
 
-from app.ingestion.es_client import INDEX_NAMES
-from app.ingestion.log_fetcher import fetch_all_sources
-from app.ingestion.normalizer import normalize_batch
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -24,83 +20,13 @@ scheduler_state = {
 
 _scheduler: AsyncIOScheduler | None = None
 
-import asyncio
-import time
-
-
-async def bulk_index(es: AsyncElasticsearch, docs: list[dict], index: str, chunk_size: int = 500) -> dict[str, Any]:
-    """Bulk index documents into Elasticsearch with batching and concurrent optimization."""
-    if not docs:
-        return {"indexed": 0, "errors": []}
-
-    start_time = time.time()
-    total_indexed = 0
-    all_errors = []
-
-    # Split docs into chunks
-    chunks = [docs[i:i + chunk_size] for i in range(0, len(docs), chunk_size)]
-
-    # Process chunks concurrently with max 3 concurrent
-    semaphore = asyncio.Semaphore(3)
-
-    async def process_chunk(chunk):
-        async with semaphore:
-            actions = [
-                {
-                    "_index": index,
-                    "_source": doc
-                }
-                for doc in chunk
-            ]
-
-            try:
-                success, failed = await async_bulk(
-                    es, actions, stats_only=False, raise_on_error=False, raise_on_exception=False
-                )
-
-                chunk_errors = []
-                if failed:
-                    for item in failed:
-                        chunk_errors.append(item)
-
-                # Log warning if errors > 5%
-                if len(chunk_errors) > len(chunk) * 0.05:
-                    logger.warning("bulk_index_high_error_rate", chunk_size=len(chunk), errors=len(chunk_errors))
-
-                return success, chunk_errors
-            except Exception as e:
-                logger.error("bulk_indexing_chunk_exception", error=str(e))
-                try:
-                    from app.monitoring.metrics import pipeline_errors_total
-                    pipeline_errors_total.labels(stage="ingestion").inc()
-                except:
-                    pass
-                return 0, [str(e)] * len(chunk)
-
-    results = await asyncio.gather(*(process_chunk(chunk) for chunk in chunks))
-
-    for success, errors in results:
-        total_indexed += success
-        all_errors.extend(errors)
-
-    elapsed = time.time() - start_time
-    logger.info("bulk_index_completed", total=len(docs), indexed=total_indexed, errors=len(all_errors), time_seconds=round(elapsed, 2))
-
-    try:
-        from app.monitoring.metrics import es_query_duration
-        es_query_duration.labels(operation="index").observe(elapsed)
-    except:
-        pass
-
-    return {"indexed": total_indexed, "errors": all_errors}
-
 def get_window_bucket(ts: datetime, window_minutes: int = 5) -> datetime:
     """Floors a timestamp to the nearest window_minutes."""
     minute = (ts.minute // window_minutes) * window_minutes
     return ts.replace(minute=minute, second=0, microsecond=0)
 
-async def run_ingestion_cycle(es: AsyncElasticsearch):
-    """Core ingestion cycle: fetch -> normalize -> enrich -> index."""
+async def run_ingestion_cycle(kibana_client: KibanaProxyClient):
+    """Core cycle: fetches logs via proxy, normalizes, extracts features, runs threat models, and stores to SQLite."""
     try:
         logger.info("ingestion_cycle_started")
 
@@ -110,42 +36,7 @@ async def run_ingestion_cycle(es: AsyncElasticsearch):
             "type": "ingestion_started",
             "data": {"timestamp": now_iso}
         })
-
-        # a. Fetch logs
-        raw_results = await fetch_all_sources(es, since_minutes=5)
-
-        all_enriched_docs = []
-        total_fetched = 0
-        total_normalized = 0
-
-        # b. Normalize
-        for log_type, raw_docs in raw_results.items():
-            total_fetched += len(raw_docs)
-            normalized_logs = normalize_batch(raw_docs, log_type)
-            total_normalized += len(normalized_logs)
-
-            now_utc = datetime.utcnow()
-
-            # c. Add derived fields
-            for log in normalized_logs:
-                doc = asdict(log)
-                doc["ingested_at"] = now_utc.isoformat() + "Z"
-                doc["window_bucket"] = get_window_bucket(log.timestamp).isoformat() + "Z"
-
-                user = log.user_name or "system"
-                doc["entity_key"] = f"{log.host_id}|{user}"
-
-                if isinstance(log.timestamp, datetime):
-                    doc["timestamp"] = log.timestamp.isoformat() + "Z"
-
-                all_enriched_docs.append(doc)
-
-        # d. Bulk Index
-        target_index = INDEX_NAMES["alerts_processed"]
-        index_result = await bulk_index(es, all_enriched_docs, target_index)
-
-        # e. Run Full Threat Scoring Engine (encapsulates feature pipeline inherently)
-        now_iso = datetime.utcnow().isoformat() + "Z"
+        
         await manager.broadcast({
             "type": "scoring_started",
             "data": {"timestamp": now_iso}
@@ -157,10 +48,9 @@ async def run_ingestion_cycle(es: AsyncElasticsearch):
 
         # Update in-memory state
         scheduler_state["last_run"] = datetime.utcnow().isoformat() + "Z"
-        scheduler_state["docs_last_cycle"] = index_result["indexed"]
+        scheduler_state["docs_last_cycle"] = scoring_stats["scored"]
 
-        # Broadcast ingestion and scoring completions
-        from app.api.routes.websocket import manager
+        # Broadcast completions
         now_iso = datetime.utcnow().isoformat() + "Z"
         await manager.broadcast({
             "type": "scoring_complete",
@@ -173,45 +63,37 @@ async def run_ingestion_cycle(es: AsyncElasticsearch):
         })
         await manager.broadcast({
             "type": "ingestion_complete",
-            "data": {"docs_fetched": total_fetched, "docs_indexed": index_result["indexed"], "timestamp": now_iso}
+            "data": {"docs_fetched": scoring_stats["scored"], "docs_indexed": scoring_stats["alerts_above_threshold"], "timestamp": now_iso}
         })
 
-        # e. Log results
         logger.info("ingestion_cycle_completed",
-                    docs_fetched=total_fetched,
-                    docs_normalized=total_normalized,
-                    docs_indexed=index_result['indexed'],
-                    error_count=len(index_result['errors']))
-        if index_result['errors']:
-            logger.warning("indexing_errors_sample", errors=index_result['errors'][:3])
+                    docs_scored=scoring_stats["scored"],
+                    alerts_generated=scoring_stats["alerts_above_threshold"],
+                    critical=scoring_stats["critical"])
 
     except Exception as e:
         logger.error("ingestion_cycle_failed", error=str(e))
 
-async def broadcast_stats(es: AsyncElasticsearch):
+async def broadcast_stats(kibana_client: KibanaProxyClient):
     try:
         from app.api.routes.websocket import manager
-        from app.ingestion.es_client import INDEX_NAMES
+        from app.storage import local_db
+        from app.config import settings
 
-        query = {
-            "size": 0,
-            "aggs": {
-                "critical": {"filter": {"term": {"threat_level": "critical"}}},
-                "high": {"filter": {"term": {"threat_level": "high"}}},
-                "medium": {"filter": {"term": {"threat_level": "medium"}}},
-                "low": {"filter": {"term": {"threat_level": "low"}}}
-            }
-        }
-        res = await es.search(index=INDEX_NAMES["alerts_processed"], body=query, ignore_unavailable=True)
-        aggs = res.get("aggregations", {})
+        import aiosqlite
+        async with aiosqlite.connect(settings.DB_PATH) as db:
+            async with db.execute("SELECT threat_level, COUNT(*) FROM soc_alerts WHERE alert_status = 'open' GROUP BY threat_level") as cursor:
+                rows = await cursor.fetchall()
+                counts = {r[0]: r[1] for r in rows}
+                
+                stats = {
+                    "critical": counts.get("critical", 0),
+                    "high": counts.get("high", 0),
+                    "medium": counts.get("medium", 0),
+                    "low": counts.get("low", 0),
+                    "total": sum(counts.values())
+                }
 
-        stats = {
-            "critical": aggs.get("critical", {}).get("doc_count", 0),
-            "high": aggs.get("high", {}).get("doc_count", 0),
-            "medium": aggs.get("medium", {}).get("doc_count", 0),
-            "low": aggs.get("low", {}).get("doc_count", 0),
-            "total": res.get("hits", {}).get("total", {}).get("value", 0)
-        }
         await manager.broadcast({
             "type": "stats_update",
             "data": stats
@@ -222,11 +104,10 @@ async def broadcast_stats(es: AsyncElasticsearch):
 async def run_drift_detection():
     logger.info("run_drift_detection_started")
     try:
-        from app.ingestion.es_client import get_es_client
         from app.api.deps import get_model_manager
-        es = await get_es_client()
+        kibana_client = KibanaProxyClient()
         mm = get_model_manager()
-        res = await mm.detect_drift(es)
+        res = await mm.detect_drift(kibana_client)
         logger.info("drift_detection_completed", **res)
     except Exception as e:
         logger.error("drift_detection_failed", error=str(e))
@@ -234,19 +115,18 @@ async def run_drift_detection():
 async def run_platform_alerting():
     logger.info("run_platform_alerting_started")
     try:
-        from app.ingestion.es_client import get_es_client
         from app.api.deps import get_model_manager, get_slm_engine
         from app.monitoring.platform_alerting import PlatformAlerter
-        es = await get_es_client()
+        kibana_client = KibanaProxyClient()
         mm = get_model_manager()
         slm = get_slm_engine()
         alerter = PlatformAlerter()
-        await alerter.run_alerting_cycle(es, mm, slm)
+        await alerter.run_alerting_cycle(kibana_client, mm, slm)
         logger.info("run_platform_alerting_completed")
     except Exception as e:
         logger.error("run_platform_alerting_failed", error=str(e))
 
-async def start_scheduler(es: AsyncElasticsearch):
+async def start_scheduler(kibana_client: KibanaProxyClient):
     """Starts the APScheduler background ingestion job."""
     global _scheduler
     if _scheduler is None:
@@ -255,7 +135,7 @@ async def start_scheduler(es: AsyncElasticsearch):
     _scheduler.add_job(
         run_ingestion_cycle,
         trigger=IntervalTrigger(minutes=5),
-        args=[es],
+        args=[kibana_client],
         id="ingestion_pipeline",
         replace_existing=True
     )
@@ -263,8 +143,8 @@ async def start_scheduler(es: AsyncElasticsearch):
     from app.reports.report_scheduler import report_scheduler
     _scheduler.add_job(
         report_scheduler.run_scheduled_reports,
-        trigger=CronTrigger(minute=0),  # Top of every hour
-        args=[es],
+        trigger=CronTrigger(minute=0),
+        args=[kibana_client],
         id="scheduled_reports",
         replace_existing=True
     )
@@ -272,7 +152,7 @@ async def start_scheduler(es: AsyncElasticsearch):
     _scheduler.add_job(
         broadcast_stats,
         trigger=IntervalTrigger(seconds=60),
-        args=[es],
+        args=[kibana_client],
         id="stats_broadcast",
         replace_existing=True
     )
@@ -289,7 +169,8 @@ async def start_scheduler(es: AsyncElasticsearch):
 
     async def retrain_job():
         mm = get_model_manager()
-        await run_incremental_retraining(es, mm)
+        from app.config import settings
+        await run_incremental_retraining(kibana_client, mm, settings.DB_PATH)
 
     _scheduler.add_job(
         retrain_job,
@@ -315,7 +196,7 @@ async def start_scheduler(es: AsyncElasticsearch):
 
     async def check_drift_job():
         drift_detector = get_drift_detector()
-        await drift_detector.run_drift_check(es)
+        await drift_detector.run_drift_check(kibana_client)
 
     _scheduler.add_job(
         check_drift_job,
@@ -341,35 +222,19 @@ async def start_scheduler(es: AsyncElasticsearch):
     from app.backup.backup_manager import BackupManager
 
     async def daily_backup_job():
-        bm = BackupManager(es)
-        await bm.create_snapshot()
-        await bm.delete_old_snapshots(keep_last_n=7)
+        bm = BackupManager()
+        await bm.create_local_backup()
 
     _scheduler.add_job(
         daily_backup_job,
-        trigger=CronTrigger(hour=21, minute=0), # 02:30 IST is UTC 21:00
+        trigger=CronTrigger(hour=21, minute=0),
         id="daily_backup",
-        replace_existing=True
-    )
-
-    async def weekly_full_backup_job():
-        bm = BackupManager(es)
-        from datetime import datetime
-        name = f"soc_full_backup_{datetime.now():%Y%m%d_%H%M%S}"
-        await bm.create_snapshot(snapshot_name=name)
-        await bm.delete_old_snapshots(keep_last_n=14)
-
-    _scheduler.add_job(
-        weekly_full_backup_job,
-        trigger=CronTrigger(day_of_week='sun', hour=21, minute=30), # 03:00 IST is UTC 21:30
-        id="weekly_full_backup",
         replace_existing=True
     )
 
     from scripts.cleanup import CleanupManager
     async def weekly_cleanup_job():
         manager = CleanupManager()
-        # Run safe cleanups only
         safe_ops = ["audit_logs", "score_history", "chromadb_entries", "conversations", "cache"]
         await manager.run_full_cleanup(dry_run=False, execute_only=safe_ops)
         
@@ -385,7 +250,7 @@ async def start_scheduler(es: AsyncElasticsearch):
 
     async def check_sla_breaches_job():
         try:
-            approaching = await sla_tracker_instance.get_alerts_approaching_sla(es, warning_minutes=10)
+            approaching = await sla_tracker_instance.get_alerts_approaching_sla(kibana_client, warning_minutes=10)
             if approaching:
                 await ws_manager.broadcast({
                     "type": "sla_warning",

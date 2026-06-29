@@ -1,10 +1,11 @@
 import asyncio
 import json
 import time
+from dataclasses import asdict
 
 from langchain_core.tools import tool
 
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.ingestion.log_fetcher import fetch_by_entity
 from app.logging_config import get_logger
 from app.scoring.threat_engine import get_threat_engine
@@ -21,57 +22,69 @@ from app.slm.prompt_templates import (
 )
 from app.slm.rag_pipeline import get_rag_pipeline
 from app.slm.response_parser import parse_slm_response
+from app.storage import local_db
+from app.config import settings
 
 logger = get_logger(__name__)
 
 # --- LangChain Tools ---
 
 @tool
-async def get_alert_details(alert_id: str) -> str:
-    """Fetches full alert payload natively from Elasticsearch and returns structured JSON strings."""
+async def get_recent_logs_for_entity(host_id: str, user_name: str, minutes: int = 60) -> str:
+    """Fetches recent raw logs for a specific entity from Kibana."""
     try:
-        te = get_threat_engine()
-        alert = await te.get_alert(alert_id)
+        kibana_client = KibanaProxyClient()
+        logs = await fetch_by_entity(kibana_client, host_id, user_name, since_minutes=minutes)
+        
+        out = [f"Last {minutes}min logs for host={host_id} user={user_name}:"]
+        for log_type, entries in logs.items():
+            for e in entries[:20]:
+                ts = e.get('@timestamp', e.get('timestamp', ''))
+                out.append(f"[{log_type}] {ts} {json.dumps(e)}")
+        
+        if len(out) == 1:
+            return "No recent logs found."
+        return "\n".join(out)
+    except Exception as e:
+        return f"Error fetching logs: {e}"
+
+@tool
+async def get_alert_context(alert_id: str) -> str:
+    """Fetches full context for a specific alert from local database."""
+    try:
+        alert = await local_db.get_alert(settings.DB_PATH, alert_id)
         if not alert:
             return f"Error: Alert {alert_id} not found."
         return json.dumps(alert, indent=2)
     except Exception as e:
-        return f"Error fetching alert bounds: {e}"
+        return f"Error fetching alert context: {e}"
 
 @tool
-async def get_entity_history(entity_key: str, hours: int = 24) -> str:
-    """Fetches all chronological alerts mapped to an entity_key over the past N hours. Returns counts and severities."""
+async def get_entity_alert_history(entity_key: str, limit: int = 10) -> str:
+    """Fetches historical alerts for an entity from local database."""
     try:
-        es = await get_es_client()
-        from app.ingestion.es_client import INDEX_NAMES
-        query = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {"term": {"entity_key.keyword": entity_key}},
-                        {"range": {"timestamp": {"gte": f"now-{hours}h"}}}
-                    ]
-                }
-            },
-            "sort": [{"timestamp": {"order": "desc"}}],
-            "size": 100
-        }
-        resp = await es.search(index=INDEX_NAMES["alerts_processed"], body=query, ignore_unavailable=True)
-        hits = resp.get("hits", {}).get("hits", [])
-
-        if not hits:
-            return f"No alerts found tracking entity {entity_key} inside {hours}h."
-
-        max_score = max([h["_source"].get("threat_score", 0) for h in hits])
-        incidents = [f"[{h['_source'].get('timestamp')}] {h['_source'].get('top_rule')} (Score: {h['_source'].get('threat_score')})" for h in hits]
-
-        return f"Count: {len(hits)}\nMax Threat Score: {max_score}\nIncidents:\n" + "\n".join(incidents)
+        alerts = await local_db.list_alerts(settings.DB_PATH, limit=100)
+        
+        entity_alerts = [a for a in alerts if a.get("entity_key") == entity_key]
+        entity_alerts = entity_alerts[:limit]
+        
+        if not entity_alerts:
+            return f"No historical alerts found for entity {entity_key}."
+            
+        out = []
+        for a in entity_alerts:
+            tactic = a.get("mitre_tactic", "")
+            level = a.get("threat_level", "")
+            date = a.get("created_at", "")
+            out.append(f"- Date: {date}, Level: {level}, Tactic: {tactic}, ID: {a.get('alert_id')}")
+            
+        return f"Past alerts for {entity_key}:\n" + "\n".join(out)
     except Exception as e:
-        return f"Error fetching temporal history: {e}"
+        return f"Error fetching alert history: {e}"
 
 @tool
 async def search_similar_alerts(description: str) -> str:
-    """Invokes ChromaDB RAG Engine mapping top 3 similar historical alerts visually matching anomalous descriptions."""
+    """Invokes FAISS RAG Engine mapping top similar historical alerts visually matching anomalous descriptions."""
     try:
         rag = get_rag_pipeline()
         results = await rag.retrieve_similar(description, n_results=3)
@@ -80,7 +93,7 @@ async def search_similar_alerts(description: str) -> str:
 
         out = []
         for r in results:
-            out.append(f"Alert ID: {r['metadata']['alert_id']} - {r['document']}")
+            out.append(f"Alert Context: {r['document']}")
         return "\n".join(out)
     except Exception as e:
         return f"Error invoking vector boundaries: {e}"
@@ -105,30 +118,6 @@ def get_mitre_info(technique_id: str) -> str:
         return f"No documentation mapped natively for technique {technique_id}."
 
     return f"Technique {technique_id}: {tech['name']}. Tactic: {tech['tactic']}. Description: {tech['desc']}. Mitigation: {tech['mit']}."
-
-@tool
-async def get_raw_logs(entity_key: str, minutes: int = 30) -> str:
-    """Executes log_fetcher extracting raw document logs explicitly across hosts bounding time vectors."""
-    try:
-        parts = entity_key.split("|")
-        host_id = parts[0]
-        user_name = parts[1] if len(parts) > 1 else ""
-
-        es = await get_es_client()
-        logs = await fetch_by_entity(es, host_id, user_name, since_minutes=minutes)
-
-        out = []
-        for log_type, entries in logs.items():
-            if entries:
-                out.append(f"Type: {log_type} (Count: {len(entries)})")
-                for e in entries[:5]:
-                    out.append(f"  - {json.dumps(e)}")
-
-        if not out:
-            return "No raw raw log streams matched entity bounds."
-        return "\n".join(out)
-    except Exception as e:
-        return f"Error executing log extraction: {e}"
 
 # --- Manual ReAct Loop ---
 
@@ -173,7 +162,6 @@ async def run_react_loop(engine, tools, prompt_template: str, input_text: str, m
 
             current_prompt += f"\nObservation: {observation}\nThought:"
         else:
-            # If no action is formatted correctly, force a stop
             return res.strip()
 
     return "Agent stopped after reaching max iterations."
@@ -181,13 +169,13 @@ async def run_react_loop(engine, tools, prompt_template: str, input_text: str, m
 # --- Primary Orchestrator ---
 
 class SOCAgent:
-    def __init__(self, slm_engine=None, rag_pipeline=None, es=None):
+    def __init__(self, slm_engine=None, rag_pipeline=None, kibana_client=None):
         self.slm_engine = slm_engine
         self.rag_pipeline = rag_pipeline
-        self.es = es
+        self.kibana_client = kibana_client
         self.evaluator = get_slm_evaluator()
         self.cache = get_slm_cache()
-        self.tools = [get_alert_details, get_entity_history, search_similar_alerts, get_mitre_info, get_raw_logs]
+        self.tools = [get_recent_logs_for_entity, get_alert_context, get_entity_alert_history, search_similar_alerts, get_mitre_info]
         self.prompt_template = (
             "Answer the following questions as best you can. You have access to the following tools:\n\n"
             "{tools}\n\n"
@@ -206,7 +194,6 @@ class SOCAgent:
         )
 
     async def investigate(self, user_question: str, alert_id: str = None, incident_id: str = None, conversation_history: list[dict] = None) -> dict:
-        import time
         start_time = time.time()
         alert = {}
         incident = {}
@@ -216,26 +203,9 @@ class SOCAgent:
         te = get_threat_engine()
 
         if incident_id:
-            # We fetch the incident from ES directly
             try:
-                # get_incident_detail is not async directly, wait it is in routes but it uses async ES
-                # we'll fetch from ES locally here
-                es = await get_es_client()
-                from app.ingestion.es_client import INDEX_NAMES
-                resp = await es.get(index=INDEX_NAMES["incidents"], id=incident_id)
-                incident = resp.get("_source", {})
-
-                # Fetch alerts
-                alert_ids = incident.get("alert_ids", [])
-                alerts_query = {"query": {"terms": {"_id": alert_ids}}, "size": 100}
-                al_resp = await es.search(index=INDEX_NAMES["alerts_processed"], body=alerts_query, ignore_unavailable=True)
-                inc_alerts = [h["_source"] for h in al_resp.get("hits", {}).get("hits", [])]
-
-                # RAG
-                desc = " ".join(incident.get("mitre_tactics", [])) + " " + " ".join(incident.get("log_types_involved", []))
-                rag_results = await self.rag_pipeline.retrieve_similar(desc, n_results=3)
-                rag_context = self.rag_pipeline.build_rag_context(rag_results, incident)
-
+                # Currently we don't have local_db.get_incident, so this is skipped or we mock it.
+                pass
             except Exception as e:
                 logger.error("failed_to_fetch_incident_context", incident_id=incident_id, error=str(e))
 
@@ -246,19 +216,9 @@ class SOCAgent:
                 rag_results = await self.rag_pipeline.retrieve_similar(desc, n_results=3)
                 rag_context = self.rag_pipeline.build_rag_context(rag_results, alert)
 
-        # Intent Matching explicitly bound against template router
         q_lower = user_question.lower()
         q_type = "general"
-        if incident:
-            input_text = incident_investigation_prompt(
-                incident=incident,
-                alerts=inc_alerts,
-                rag_context=rag_context,
-                pattern_matches=incident.get("matched_patterns", []),
-                tokenizer=tokenizer
-            )
-            q_type = "investigation"
-        elif alert:
+        if alert:
             if any(k in q_lower for k in ["explain", "what is"]):
                 input_text = alert_explanation_prompt(alert, rag_context, tokenizer)
                 q_type = "explanation"
@@ -286,9 +246,6 @@ class SOCAgent:
             except: pass
 
         t0 = time.time()
-
-        # Cache Interception
-        # Disable cache on multi-turn history strictly if conversation length > 0
         cached_val = None
         cache_level = "miss"
         if not conversation_history:
@@ -300,8 +257,6 @@ class SOCAgent:
         else:
             try:
                 answer = await run_react_loop(self.slm_engine, self.tools, self.prompt_template, input_text)
-
-                # Update Cache
                 if not conversation_history:
                     self.cache.set(user_question, answer, alert_id)
             except Exception as e:
@@ -324,33 +279,12 @@ class SOCAgent:
         except Exception as e:
             logger.error("slm_response_parse_error", error=str(e))
 
-        # Fire Evaluator safely off thread bounds implicitly
-        if self.es:
-            def bg_evaluate():
-                metrics = self.evaluator.evaluate_response(
-                    question=user_question,
-                    response=answer,
-                    alert=alert or {},
-                    parsed=parsed_dict or {},
-                    response_time_ms=resp_ms,
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
-                    question_type=q_type
-                )
-                q_score = self.evaluator.compute_quality_score(metrics)
-                asyncio.create_task(self.evaluator.store_metrics(self.es, metrics, q_score))
-
-            try:
-                bg_evaluate()
-            except Exception as e:
-                logger.error("evaluator_mapping_failed", error=str(e))
-
         elapsed = time.time() - start_time
         try:
             from app.monitoring.metrics import slm_inference_duration, slm_queries_total
             slm_inference_duration.observe(elapsed)
-            q_type = parsed_dict.get("question_type", "unknown") if parsed_dict else "unknown"
-            slm_queries_total.labels(question_type=q_type).inc()
+            q_type_out = parsed_dict.get("question_type", "unknown") if parsed_dict else "unknown"
+            slm_queries_total.labels(question_type=q_type_out).inc()
         except:
             pass
 

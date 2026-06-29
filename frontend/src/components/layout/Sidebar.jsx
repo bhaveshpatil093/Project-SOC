@@ -13,6 +13,7 @@ import {
   Network,
   Wrench,
   Crosshair,
+  Server,
 } from 'lucide-react'
 import { useIsTablet, useIsMobile } from '../../hooks/useMediaQuery'
 import { useAuth } from '../../contexts/AuthContext'
@@ -32,6 +33,7 @@ export const Sidebar = () => {
     { path: '/hunting', label: 'Threat Hunting', icon: Crosshair },
     { path: '/feedback', label: 'Feedback Loop', icon: MessageSquare },
     { path: '/training', label: 'ML Training', icon: Activity },
+    { path: '/diagnostics', label: 'Diagnostics', icon: Server },
     { path: '/settings', label: 'Settings', icon: Settings },
   ]
 

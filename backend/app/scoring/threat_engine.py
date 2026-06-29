@@ -1,13 +1,13 @@
 import time
-from datetime import datetime
-
+import uuid
+import datetime
 import pandas as pd
+from typing import Any
 
-from app.features.feature_merger import run_feature_pipeline, store_feature_vectors
-from app.ingestion.es_client import INDEX_NAMES, get_es_client
-from app.ingestion.scheduler import bulk_index
+from app.features.feature_merger import run_feature_pipeline
 from app.logging_config import get_logger
 from app.auth.team_manager import team_manager_instance
+from app.ingestion.log_fetcher import fetch_by_entity
 
 from app.models.baseline_learner import BaselineLearner
 from app.models.model_manager import ModelManager, get_model_manager
@@ -21,43 +21,20 @@ from app.scoring.explainability import (
     explain_scoring_result,
 )
 from app.scoring.threat_intel import ThreatIntelEnricher
+from app.storage import local_db
+from app.ingestion.kibana_client import KibanaProxyClient
+from app.config import settings
 
 logger = get_logger(__name__)
 
-from typing import Any
-
 
 class ThreatEngine:
-
-    async def assign_alert_to_team(self, es, alert: dict) -> str | None:
-        try:
-            teams = await team_manager_instance.list_teams(es)
-            if not teams:
-                return None
-            
-            # Simple assignment: pick first team or base it on workload
-            # For now, just assign to the first team available
-            assigned_team = teams[0].team_id
-            alert["assigned_team"] = assigned_team
-            alert["assigned_at"] = __import__("datetime").datetime.utcnow().isoformat() + "Z"
-            return assigned_team
-        except Exception as e:
-            logger.error(f"Error assigning alert to team: {e}")
-            return None
-
-    """The central orchestrator driving feature extraction, mathematical evaluations, and linguistic generation safely down pipeline arrays."""
-
-    def __init__(self, es: "AsyncElasticsearch", model_manager: ModelManager, explainability_engine: ExplainabilityEngine) -> None:
-        """Initialize the ThreatEngine orchestrator.
-        
-        Args:
-            es: AsyncElasticsearch client instance.
-            model_manager: ModelManager instance for inference.
-            explainability_engine: ExplainabilityEngine for SHAP/LIME values.
-        """
-        self.es = es
+    def __init__(self, kibana_client: KibanaProxyClient, model_manager: ModelManager, explainability_engine: ExplainabilityEngine, db_path: str) -> None:
+        self.kibana_client = kibana_client
         self.model_manager = model_manager
         self.explainability_engine = explainability_engine
+        self.db_path = db_path
+        
         self.correlator = AlertCorrelator()
         self.baseline_learner = BaselineLearner()
         self.intel_enricher = ThreatIntelEnricher()
@@ -65,30 +42,43 @@ class ThreatEngine:
         self.temporal_analyzer = TemporalAnalyzer()
         self.entity_risk_scorer = EntityRiskScorer()
 
+    async def assign_alert_to_team(self, alert: dict) -> str | None:
+        try:
+            teams = await team_manager_instance.list_teams(self.kibana_client)
+            if not teams:
+                return None
+            assigned_team = teams[0].team_id
+            alert["assigned_team"] = assigned_team
+            alert["assigned_at"] = datetime.datetime.utcnow().isoformat() + "Z"
+            return assigned_team
+        except Exception as e:
+            logger.error(f"Error assigning alert to team: {e}")
+            return None
+
     async def run_scoring_cycle(self, since_minutes: int = 5) -> dict[str, Any]:
-        """Execute a full feature extraction and scoring cycle across all active entities.
-
-        Args:
-            since_minutes: The lookback window in minutes to evaluate.
-
-        Returns:
-            Dictionary containing metrics for the scoring cycle including counts of critical, high, medium, and low alerts.
-            
-        Raises:
-            ConnectionError: If Elasticsearch is unreachable.
-        """
         start_t = time.time()
 
         # 1. Pipeline Execution
-        feature_df, normalized_df = await run_feature_pipeline(self.es, since_minutes=since_minutes)
+        feature_df, normalized_df = await run_feature_pipeline(self.kibana_client, since_minutes=since_minutes)
         if feature_df.empty:
             return {
                 "scored": 0, "alerts_above_threshold": 0, "critical": 0,
                 "high": 0, "medium": 0, "low": 0, "cycle_time_ms": 0.0
             }
 
-        # Optional: Save feature mapping states to vector index seamlessly bounding upstream architectures
-        await store_feature_vectors(self.es, feature_df)
+        # Save feature mapping states to SQLite
+        for _, row in feature_df.iterrows():
+            record = {
+                "feature_id": str(uuid.uuid4()),
+                "entity_key": row.get("entity_key"),
+                "host_id": row.get("host_id", ""),
+                "user_name": row.get("user_name", ""),
+                "window_bucket": row.get("window_bucket"),
+                "feature_vector": row.to_dict(),
+                "feature_names": list(row.index),
+                "created_at": datetime.datetime.utcnow().isoformat() + "Z"
+            }
+            await local_db.insert_feature_vector(self.db_path, record)
 
         # 2. Universal ML Inference
         scoring_results = await self.model_manager.score_all_entities(feature_df, normalized_df)
@@ -99,7 +89,6 @@ class ThreatEngine:
 
         for res in scoring_results:
             if res.threat_score > 0.3:
-                # Isolate context features identically tracking downstream dependencies
                 row_match = feature_df[
                     (feature_df['entity_key'] == res.entity_key) &
                     (feature_df['window_bucket'] == res.window_bucket)
@@ -116,48 +105,39 @@ class ThreatEngine:
                     res.threat_level = "low"
 
                 # Temporal Pattern Analysis
-                timestamp_str = feature_row.get("timestamp") or datetime.utcnow().isoformat()
+                timestamp_str = feature_row.get("timestamp") or datetime.datetime.utcnow().isoformat()
                 try:
                     ts = pd.to_datetime(timestamp_str)
                 except:
-                    ts = datetime.utcnow()
+                    ts = datetime.datetime.utcnow()
 
-                temporal_baseline = await self.temporal_analyzer.load_temporal_baseline(self.es, res.entity_key)
+                temporal_baseline = await self.temporal_analyzer.load_temporal_baseline(self.kibana_client, res.entity_key)
                 if not temporal_baseline:
-                    # Create empty/default for the function if missing
                     temporal_baseline = TemporalBaseline(res.entity_key, {}, (9, 18), False)
 
                 temporal_ctx = self.temporal_analyzer.compute_temporal_anomaly_score(feature_row, temporal_baseline, ts)
 
-                # Boost threat score based on temporal anomaly
                 res.threat_score = min(1.0, res.threat_score * temporal_ctx["off_hours_severity"])
-
-                # Append temporal context string
                 res.human_explanation = f"Time Context: {temporal_ctx['context']}\n\n{res.human_explanation or ''}".strip()
 
-                # Add to row dict for downstream indexing (we'll inject it into ctx later)
                 feature_row["temporal_context"] = temporal_ctx['context']
                 feature_row["is_off_hours"] = temporal_ctx['is_off_hours']
 
                 # Inject Baseline Behavior Deviations
-                baseline = await self.baseline_learner.get_baseline(self.es, res.entity_key)
+                baseline = await self.baseline_learner.get_baseline(self.kibana_client, res.entity_key)
                 if baseline:
                     devs = self.baseline_learner.compute_deviation_ratios(baseline, feature_row)
                     dev_ctx = self.baseline_learner.format_deviation_context(devs, feature_row, baseline)
                     if dev_ctx:
                         res.human_explanation = f"Behavior Context: {dev_ctx}\n\n{res.human_explanation or ''}".strip()
 
-                # Bind localized SHAP explainer attributes directly over anomaly outputs
                 explained_res = explain_scoring_result(res, feature_row, self.explainability_engine)
                 ctx = build_explanation_context(explained_res)
 
-                # Enrich with Offline Threat Intelligence
                 ctx = self.intel_enricher.enrich_alert(ctx, feature_row)
                 intel = ctx.get("threat_intel", {})
 
-                # Adjust threat score dynamically
                 ctx["threat_score"] = self.intel_enricher.adjust_threat_score(ctx["threat_score"], intel)
-                # Recalculate threat level
                 if ctx["threat_score"] >= 0.8:
                     ctx["threat_level"] = "critical"
                 elif ctx["threat_score"] >= 0.6:
@@ -167,7 +147,6 @@ class ThreatEngine:
                 else:
                     ctx["threat_level"] = "low"
 
-                # Append Intel to explanation
                 intel_strs = []
                 if intel.get("ip_reputation", {}).get("src_ip_is_bad"):
                     intel_strs.append(f"Source IP matches known malicious range ({intel['ip_reputation']['matching_range']}).")
@@ -190,36 +169,58 @@ class ThreatEngine:
                     ctx["suppression_reason"] = reason
                 else:
                     ctx["suppressed"] = False
-
+                    
+                ctx["alert_id"] = str(uuid.uuid4())
+                ctx["created_at"] = datetime.datetime.utcnow().isoformat() + "Z"
+                
+                # SQLite mapping
+                alert_dict = {
+                    "alert_id": ctx["alert_id"],
+                    "entity_key": ctx.get("entity_key"),
+                    "host_id": feature_row.get("host_id", ""),
+                    "user_name": feature_row.get("user_name", ""),
+                    "log_type": "anomaly",
+                    "threat_score": ctx.get("threat_score"),
+                    "threat_level": ctx.get("threat_level"),
+                    "anomaly_scores": ctx.get("anomaly_scores"),
+                    "shap_features": ctx.get("shap_features"),
+                    "triggered_rules": ctx.get("triggered_rules"),
+                    "mitre_tactic": ctx.get("mitre_tactic"),
+                    "mitre_technique": ctx.get("mitre_technique"),
+                    "human_explanation": ctx.get("human_explanation"),
+                    "alert_status": ctx.get("status", "open"),
+                    "suppressed": 1 if ctx.get("suppressed") else 0,
+                    "created_at": ctx["created_at"],
+                    "raw_context": ctx
+                }
+                
+                await local_db.insert_alert(self.db_path, alert_dict)
                 alerts_to_store.append(ctx)
 
                 lvl = explained_res.threat_level
                 if lvl in stats:
                     stats[lvl] += 1
 
-        # 4. Structural Storage Commits tracking natively against soc-processed-alerts
+        # 4. Post-processing
         if alerts_to_store:
             from app.api.routes.websocket import manager
             from app.slm.rag_pipeline import _rag_pipeline
 
-            await bulk_index(self.es, alerts_to_store, INDEX_NAMES["alerts_processed"])
-
-            # Group into unified incidents
             incidents = self.correlator.correlate(alerts_to_store)
             for inc in incidents:
-                # Filter alerts bound to this specific incident for pattern detection
-                inc_alerts = [a for a in alerts_to_store if a.get("id", a.get("_id")) in inc.alert_ids]
+                inc_alerts = [a for a in alerts_to_store if a.get("alert_id") in inc.alert_ids]
                 matches = self.pattern_detector.detect_patterns(inc, inc_alerts)
                 from dataclasses import asdict
                 inc.matched_patterns = [asdict(m) for m in matches]
 
-                await self.correlator.store_incident(self.es, inc)
+                try:
+                    await self.correlator.store_incident(self.kibana_client, inc)
+                except Exception:
+                    pass
 
-                # Dispatch webhook event for new incident
                 try:
                     from app.integrations.webhook_manager import webhook_manager
-                    from dataclasses import asdict as _asdict
-                    await webhook_manager.dispatch_event(self.es, "new_incident", {
+                    await webhook_manager.dispatch_event(self.kibana_client, "new_incident", {
                         "incident_id": inc.incident_id,
                         "attack_stage": inc.attack_stage,
                         "alert_count": len(inc.alert_ids),
@@ -229,32 +230,27 @@ class ThreatEngine:
                 except Exception as wh_err:
                     logger.warning(f"Webhook incident dispatch failed: {wh_err}")
 
-            import datetime
             for alert in alerts_to_store:
                 if alert.get("threat_score", 0) > 0.3:
-                    # Index directly into RAG Vector DB mapping real-time alert boundaries natively
                     await _rag_pipeline.index_alert(alert)
-
-                    # In a real app we'd fetch the ES _id, but sending the payload is sufficient for real-time feed
                     await manager.broadcast({
                         "type": "new_alert",
                         "data": alert,
                         "timestamp": datetime.datetime.utcnow().isoformat()
                     })
 
-                    # Dispatch webhook event for new alert
                     try:
                         from app.integrations.webhook_manager import webhook_manager
                         alert_payload = {
-                            "id": alert.get("_id", ""),
+                            "id": alert.get("alert_id", ""),
                             "entity_key": alert.get("entity_key", ""),
                             "threat_level": alert.get("threat_level", ""),
                             "threat_score": alert.get("threat_score", 0),
                             "mitre_tactics": alert.get("mitre_tactics", []),
                             "human_explanation": alert.get("human_explanation", ""),
-                            "link": f"http://soc.isro.gov.in/alerts/{alert.get('_id', '')}",
+                            "link": f"http://soc.isro.gov.in/alerts/{alert.get('alert_id', '')}",
                         }
-                        await webhook_manager.dispatch_event(self.es, "new_alert", {"alert": alert_payload})
+                        await webhook_manager.dispatch_event(self.kibana_client, "new_alert", {"alert": alert_payload})
                     except Exception as wh_err:
                         logger.warning(f"Webhook dispatch failed: {wh_err}")
 
@@ -263,8 +259,8 @@ class ThreatEngine:
             if incidents:
                 await cache.delete("incident_stats")
 
-        # 5. Evolve baselines incrementally over latest mapped boundaries
-        await self.baseline_learner.update_all_baselines(self.es, feature_df)
+        # 5. Evolve baselines
+        await self.baseline_learner.update_all_baselines(self.kibana_client, feature_df)
 
         cycle_time = (time.time() - start_t) * 1000
 
@@ -279,60 +275,62 @@ class ThreatEngine:
         }
 
     async def get_alert(self, alert_id: str) -> dict:
-        """Retrieves exact generated ML threat alerts directly via explicit ID mapping."""
-        try:
-            resp = await self.es.get(index=INDEX_NAMES["alerts_processed"], id=alert_id)
-            return resp.get("_source", {})
-        except Exception as e:
-            logger.warning("get_alert_failed", alert_id=alert_id, error=str(e))
-            return {}
+        alert = await local_db.get_alert(self.db_path, alert_id)
+        return alert.get("raw_context", {}) if alert else {}
 
     async def list_alerts(self, status="open", limit=50, offset=0) -> dict:
-        """Fetches bulk aggregated ML alerts tracking bounding variables linearly."""
-        query = {
-            "from": offset,
-            "size": limit,
-            "sort": [{"timestamp": {"order": "desc"}}],
-            "query": {
-                "match": {
-                    "status": status
-                }
-            }
+        alerts = await local_db.list_alerts(self.db_path, status=status, limit=limit, offset=offset)
+        return {
+            "total": len(alerts),
+            "alerts": [a.get("raw_context", {}) for a in alerts]
         }
-        try:
-            resp = await self.es.search(index=INDEX_NAMES["alerts_processed"], body=query, ignore_unavailable=True)
-            hits = resp.get("hits", {}).get("hits", [])
-            return {
-                "total": resp.get("hits", {}).get("total", {}).get("value", 0),
-                "alerts": [{"id": h["_id"], **h["_source"]} for h in hits]
-            }
-        except Exception as e:
-            logger.warning("list_alerts_failed", status=status, limit=limit, error=str(e))
-            return {"total": 0, "alerts": []}
 
     async def update_alert_status(self, alert_id: str, status: str):
-        """Overrides ML tracked alert states enabling interactive frontend mitigations."""
-        body = {"doc": {"status": status}}
-        try:
-            await self.es.update(index=INDEX_NAMES["alerts_processed"], id=alert_id, body=body)
-        except Exception as e:
-            logger.error("update_alert_status_failed", alert_id=alert_id, status=status, error=str(e))
+        await local_db.update_alert_status(self.db_path, alert_id, status)
 
+    async def get_entity_timeline(self, entity_key: str) -> list[dict]:
+        host_id = entity_key.split("|")[0] if "|" in entity_key else entity_key
+        user_name = entity_key.split("|")[1] if "|" in entity_key else ""
+        
+        # Pull alerts from SQLite
+        all_alerts = await local_db.list_alerts(self.db_path, host_id=host_id, limit=1000)
+        entity_alerts = [a for a in all_alerts if a.get("entity_key") == entity_key]
+        
+        # Pull raw logs from Kibana
+        raw_logs = await fetch_by_entity(self.kibana_client, host_id, user_name, since_minutes=1440)
+        
+        combined = []
+        for a in entity_alerts:
+            ctx = a.get("raw_context", {})
+            ctx["event_type"] = "alert"
+            ctx["@timestamp"] = a.get("created_at")
+            combined.append(ctx)
+            
+        for log_type, logs in raw_logs.items():
+            for log in logs:
+                log["event_type"] = "raw_log"
+                log["log_type"] = log_type
+                combined.append(log)
+                
+        # Sort combined list
+        combined.sort(key=lambda x: x.get("@timestamp") or "", reverse=True)
+        return combined
 
 _threat_engine_instance = None
 
 async def init_threat_engine():
-    """Binds architectural components dynamically into native global singletons scaling inference endpoints."""
     global _threat_engine_instance
-    es = await get_es_client()
+    from app.config import settings
+    
+    kibana_client = KibanaProxyClient()
     mm = get_model_manager()
     ee = ExplainabilityEngine()
 
-    _threat_engine_instance = ThreatEngine(es, mm, ee)
+    _threat_engine_instance = ThreatEngine(kibana_client, mm, ee, db_path=settings.DB_PATH)
 
-    # Pre-warm False Positive lists securely off ES boundaries
+    # Pre-warm False Positive lists securely off Kibana boundaries
     from app.feedback.suppressor import get_suppressor
-    await get_suppressor().refresh_suppression_list(es)
+    await get_suppressor().refresh_suppression_list(kibana_client)
 
     logger.info("threat_engine_initialized", message="Central ThreatEngine fully initialized and wired to ML subsystems.")
 

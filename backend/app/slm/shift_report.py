@@ -1,4 +1,3 @@
-import logging
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
@@ -6,7 +5,8 @@ from typing import Any
 
 from app.slm.engine import SLMEngine
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 INDEX_NAME = "soc-shift-reports"
 

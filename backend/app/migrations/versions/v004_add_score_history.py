@@ -1,8 +1,8 @@
 """Add score history"""
-import logging
-from app.ingestion.es_client import INDEX_NAMES
+from app.ingestion.kibana_client import KibanaProxyClient
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 async def up(es):
     alerts_index = INDEX_NAMES.get("alerts_processed", "soc-processed-alerts")

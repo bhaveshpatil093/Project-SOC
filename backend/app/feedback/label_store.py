@@ -1,11 +1,15 @@
-import logging
+import uuid
+import json
 from datetime import datetime
 
 from pydantic import BaseModel
 
-logger = logging.getLogger(__name__)
+from app.storage import local_db
+from app.config import settings
 
-FEEDBACK_INDEX = "soc-analyst-feedback"
+from app.logging_config import get_logger
+logger = get_logger(__name__)
+
 
 class AnalystFeedback(BaseModel):
     alert_id: str
@@ -14,70 +18,86 @@ class AnalystFeedback(BaseModel):
     notes: str | None = ""
     mitre_override: list[str] | None = []
 
-async def submit_feedback(es, feedback: AnalystFeedback) -> dict:
+
+async def submit_feedback(db_path: str, feedback: AnalystFeedback) -> dict:
+    """Inserts a new feedback record mapping directly to SQLite."""
     doc = feedback.dict()
-    doc["timestamp"] = datetime.utcnow().isoformat() + "Z"
+    doc["feedback_id"] = str(uuid.uuid4())
+    doc["created_at"] = datetime.utcnow().isoformat() + "Z"
+
+    # SQLite needs strings for arrays
+    doc["mitre_override"] = json.dumps(doc.get("mitre_override", []))
 
     try:
-        from app.ingestion.es_client import INDEX_NAMES
-        alert_resp = await es.get(index=INDEX_NAMES["alerts_processed"], id=feedback.alert_id, ignore_unavailable=True)
-        if "_source" in alert_resp:
-            alert_doc = alert_resp["_source"]
-            doc["entity_key"] = alert_doc.get("entity_key", "")
-            doc["triggered_rules"] = alert_doc.get("triggered_rules", [])
-
-        resp = await es.index(index=FEEDBACK_INDEX, document=doc)
-        return {"status": "success", "id": resp["_id"]}
+        feedback_id = await local_db.insert_feedback(db_path, doc)
+        return {"status": "success", "id": feedback_id}
     except Exception as e:
         logger.error(f"Error submitting feedback mapping: {e}")
         return {"status": "error", "message": str(e)}
 
-async def get_feedback_for_alert(es, alert_id: str) -> list[dict]:
-    query = {"query": {"match": {"alert_id.keyword": alert_id}}, "sort": [{"timestamp": {"order": "desc"}}]}
+
+async def get_feedback_for_alert(db_path: str, alert_id: str) -> list[dict]:
+    """Retrieves all feedback records tied to a specific alert."""
     try:
-        resp = await es.search(index=FEEDBACK_INDEX, body=query, ignore_unavailable=True)
-        return [{"id": h["_id"], **h["_source"]} for h in resp.get("hits", {}).get("hits", [])]
+        # Fetch up to 10k feedback items and filter manually (since local_db.list_feedback only filters by label currently)
+        all_feedback = await local_db.list_feedback(db_path, limit=10000)
+        return [f for f in all_feedback if f.get("alert_id") == alert_id]
     except Exception:
         return []
 
-async def get_all_feedback(es, label: str = None, limit: int = 500) -> list[dict]:
-    must = []
-    if label: must.append({"match": {"label.keyword": label}})
 
-    query = {
-        "size": limit,
-        "sort": [{"timestamp": {"order": "desc"}}],
-        "query": {"bool": {"must": must}} if must else {"match_all": {}}
-    }
+async def get_all_feedback(db_path: str, label: str = None, limit: int = 500) -> list[dict]:
+    """Retrieves a bulk list of feedback records from SQLite."""
     try:
-        resp = await es.search(index=FEEDBACK_INDEX, body=query, ignore_unavailable=True)
-        return [{"id": h["_id"], **h["_source"]} for h in resp.get("hits", {}).get("hits", [])]
+        return await local_db.list_feedback(db_path, label=label, limit=limit)
     except Exception:
         return []
 
-async def get_fp_suppression_patterns(es) -> list[dict]:
+
+async def get_fp_suppression_patterns(db_path: str) -> list[dict]:
     """Isolates explicit False Positive bounds mapping historical intersections recursively matching entities + heuristics."""
-    query = {
-        "size": 0,
-        "query": {"match": {"label.keyword": "FP"}},
-        "aggs": {
-            "entities": {
-                "terms": {"field": "entity_key.keyword", "size": 100},
-                "aggs": {
-                    "rules": {
-                        "terms": {"field": "triggered_rules.keyword", "size": 10}
-                    }
-                }
-            }
-        }
-    }
     try:
-        resp = await es.search(index=FEEDBACK_INDEX, body=query, ignore_unavailable=True)
+        fp_feedback = await local_db.list_feedback(db_path, label="FP", limit=10000)
+
+        # We need entity_key and triggered_rules. Feedback doesn't store these directly,
+        # so we fetch the corresponding alerts.
+        patterns_map = {}
+
+        for fb in fp_feedback:
+            alert = await local_db.get_alert(db_path, fb.get("alert_id"))
+            if not alert:
+                continue
+
+            entity_key = alert.get("entity_key")
+            rules = alert.get("triggered_rules", [])
+
+            if not entity_key:
+                continue
+
+            # Map entity to each triggered rule
+            for rule in rules:
+                key = (entity_key, rule)
+                if key not in patterns_map:
+                    patterns_map[key] = {"entity_key": entity_key, "rule": rule, "count": 0}
+                patterns_map[key]["count"] += 1
+
+        # Group by entity mapping rules linearly
+        entity_rule_groups = {}
+        for (entity, rule), data in patterns_map.items():
+            if entity not in entity_rule_groups:
+                entity_rule_groups[entity] = {"rules": [], "count": 0}
+            entity_rule_groups[entity]["rules"].append(rule)
+            entity_rule_groups[entity]["count"] += data["count"]
+
         patterns = []
-        for b in resp.get("aggregations", {}).get("entities", {}).get("buckets", []):
-            entity = b["key"]
-            rules = [rb["key"] for rb in b.get("rules", {}).get("buckets", [])]
-            patterns.append({"entity_key": entity, "rules": rules, "count": b["doc_count"]})
+        for entity, data in entity_rule_groups.items():
+            patterns.append({
+                "entity_key": entity,
+                "rules": data["rules"],
+                "count": data["count"]
+            })
+
         return patterns
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error fetching FP patterns: {e}")
         return []

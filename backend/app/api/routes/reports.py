@@ -1,19 +1,19 @@
 import uuid
-import logging
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.auth.jwt import get_current_user, require_role
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.reports.report_scheduler import (
     report_scheduler,
     ReportSchedule,
     FREQ_TO_HOURS
 )
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 router = APIRouter()
 
 
@@ -31,7 +31,7 @@ from pydantic import BaseModel
 @router.get("/schedules", dependencies=[Depends(require_role("admin"))])
 async def list_schedules():
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         schedules = await report_scheduler.get_schedules(es)
         return {"schedules": [vars(s) for s in schedules]}
     except Exception as e:
@@ -42,7 +42,7 @@ async def list_schedules():
 @router.post("/schedules", dependencies=[Depends(require_role("admin"))])
 async def create_schedule(payload: CreateScheduleRequest):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         now = datetime.utcnow()
         hours = FREQ_TO_HOURS.get(payload.frequency, 24) or 24
         
@@ -67,7 +67,7 @@ async def create_schedule(payload: CreateScheduleRequest):
 @router.post("/schedules/{schedule_id}/run-now", dependencies=[Depends(require_role("admin"))])
 async def run_schedule_now(schedule_id: str):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         schedules = await report_scheduler.get_schedules(es)
         sched = next((s for s in schedules if s.schedule_id == schedule_id), None)
         
@@ -92,7 +92,7 @@ async def run_schedule_now(schedule_id: str):
 @router.get("/generated", dependencies=[Depends(require_role("admin"))])
 async def list_generated_reports():
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         reports = await report_scheduler.get_reports(es)
         # Exclude massive content from list view
         return {
@@ -109,7 +109,7 @@ async def list_generated_reports():
 @router.get("/generated/{report_id}", dependencies=[Depends(require_role("admin"))])
 async def get_generated_report(report_id: str):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         report = await report_scheduler.get_report(es, report_id)
         if not report:
             raise HTTPException(status_code=404, detail="Report not found")

@@ -1,4 +1,3 @@
-import logging
 import os
 import time
 
@@ -9,7 +8,8 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 def build_event_sequences(df: pd.DataFrame, entity_key: str, sequence_len: int = 20) -> list[list[str]]:
     """

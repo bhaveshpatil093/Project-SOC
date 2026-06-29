@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.auth.jwt import require_role
 from app.cache.cache_manager import cache_result
 from app.features.feature_merger import run_feature_pipeline, store_feature_vectors
-from app.ingestion.es_client import INDEX_NAMES, get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 
 router = APIRouter(dependencies=[Depends(require_role("admin", "analyst"))])
 
@@ -12,7 +12,7 @@ router = APIRouter(dependencies=[Depends(require_role("admin", "analyst"))])
 async def run_features_manually():
     """Triggers run_feature_pipeline manually."""
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         merged_df, _ = await run_feature_pipeline(es, since_minutes=5)
         if merged_df.empty:
             return {"entities_processed": 0, "window": "None", "top_entities": []}
@@ -39,7 +39,7 @@ async def run_features_manually():
 async def get_latest_features():
     """Queries soc-feature-vectors for most recent window_bucket, returns up to 100 records."""
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         query = {
             "query": {"match_all": {}},
             "sort": [{"window_bucket": {"order": "desc"}}],
@@ -56,7 +56,7 @@ async def get_latest_features():
 async def get_entity_features(entity_key: str):
     """Returns feature vector history for entity (last 24h)."""
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         query = {
             "query": {
                 "bool": {

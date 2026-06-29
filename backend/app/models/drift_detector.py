@@ -5,7 +5,7 @@ from datetime import datetime
 import numpy as np
 
 from app.api.routes.websocket import manager
-from app.ingestion.es_client import INDEX_NAMES
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.logging_config import get_logger
 from app.models.model_manager import get_model_manager
 

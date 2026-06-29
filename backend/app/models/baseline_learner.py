@@ -5,7 +5,7 @@ from datetime import datetime
 import pandas as pd
 
 from app.cache.cache_manager import cache, cache_result
-from app.ingestion.es_client import INDEX_NAMES
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.logging_config import get_logger
 
 logger = get_logger(__name__)

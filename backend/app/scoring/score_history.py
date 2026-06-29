@@ -1,11 +1,11 @@
-import logging
 from datetime import datetime, timedelta
 
 import numpy as np
 
 from app.models.model_manager import ScoringResult
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 INDEX_NAME = "soc-score-history"
 

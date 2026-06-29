@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.models.model_manager import get_model_manager
 from app.slm.model_loader import get_slm_engine
 from app.slm.rag_pipeline import get_rag_pipeline
@@ -24,7 +24,7 @@ class HealthChecker:
         status = "healthy"
         details = {}
         try:
-            es = await get_es_client()
+            es = KibanaProxyClient()
             info = await es.info()
             latency = (time.time() - start) * 1000
             details = {"cluster_name": info.get("cluster_name"), "version": info.get("version", {}).get("number")}

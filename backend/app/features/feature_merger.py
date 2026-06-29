@@ -4,16 +4,14 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
-from elasticsearch import AsyncElasticsearch
 from sklearn.preprocessing import StandardScaler
 
 from app.features.alert_features import extract_all_alert_features
 from app.features.network_features import extract_all_network_features
 from app.features.process_features import extract_all_process_features
-from app.ingestion.es_client import INDEX_NAMES
 from app.ingestion.log_fetcher import fetch_all_sources
 from app.ingestion.normalizer import normalize_batch
-from app.ingestion.scheduler import bulk_index, get_window_bucket
+from app.ingestion.scheduler import get_window_bucket
 
 # The 50 carefully selected numeric ML input vectors representing
 # network flow, endpoint execution, and semantic alert severity aggregations.
@@ -205,11 +203,11 @@ async def extract_alert_async(df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
     return await asyncio.to_thread(extract_all_alert_features, df)
 
-async def run_feature_pipeline_parallel(es: AsyncElasticsearch, since_minutes: int = 5) -> tuple[pd.DataFrame, pd.DataFrame]:
+async def run_feature_pipeline_parallel(kibana_client, since_minutes: int = 5) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Full pipeline: fetch -> normalize -> extract all three feature sets concurrently -> merge
     """
-    raw_results = await fetch_all_sources(es, since_minutes=since_minutes)
+    raw_results = await fetch_all_sources(kibana_client, since_minutes=since_minutes)
 
     network_raw = raw_results.get("network", [])
     process_raw = raw_results.get("process", [])
@@ -253,23 +251,34 @@ async def run_feature_pipeline_parallel(es: AsyncElasticsearch, since_minutes: i
 
     return merged_df, normalized_df
 
-async def store_feature_vectors(es: AsyncElasticsearch, feature_df: pd.DataFrame):
+async def store_feature_vectors(db_path: str, feature_df: pd.DataFrame):
     """
-    Bulk-index into soc-feature-vectors: entity_key, window_bucket, all feature columns, feature_vector as list
+    Insert features into SQLite
     """
     if feature_df is None or feature_df.empty:
         return {"indexed": 0, "errors": []}
 
-    index_name = INDEX_NAMES["features"]
-    docs = []
+    from app.storage import local_db
+    import uuid
+    import datetime
 
+    indexed = 0
     for _, row in feature_df.iterrows():
-        doc = row.to_dict()
         vec = get_feature_vector(row).tolist()
-        doc["feature_vector"] = vec
-        docs.append(doc)
+        record = {
+            "feature_id": str(uuid.uuid4()),
+            "entity_key": row.get("entity_key"),
+            "host_id": row.get("host_id", ""),
+            "user_name": row.get("user_name", ""),
+            "window_bucket": row.get("window_bucket"),
+            "feature_vector": vec,
+            "feature_names": list(row.index),
+            "created_at": datetime.datetime.utcnow().isoformat() + "Z"
+        }
+        await local_db.insert_feature_vector(db_path, record)
+        indexed += 1
 
-    return await bulk_index(es, docs, index_name)
+    return {"indexed": indexed, "errors": []}
 
 # Alias for backwards compatibility
 run_feature_pipeline = run_feature_pipeline_parallel

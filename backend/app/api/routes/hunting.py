@@ -1,14 +1,14 @@
 import time
 import uuid
 import datetime
-import logging
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from pydantic import BaseModel
 from app.auth.jwt import get_current_user, require_role
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 router = APIRouter()
 
 HUNT_RESULTS_INDEX = "soc-hunt-results"
@@ -101,7 +101,7 @@ async def run_hunt(
     hunt_id = uuid.uuid4().hex
 
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         query = await _build_es_query(hunt_request, user)
 
         # Search across both logs and alerts
@@ -171,7 +171,7 @@ async def get_hunt_results(
     user: dict = Depends(get_current_user),
 ):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         resp = await es.get(index=HUNT_RESULTS_INDEX, id=hunt_id, ignore=[404])
         if not resp or not resp.get("found"):
             raise HTTPException(status_code=404, detail="Hunt not found")
@@ -197,7 +197,7 @@ async def get_hunt_results(
 @router.get("/saved")
 async def get_saved_hunts(user: dict = Depends(get_current_user)):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         resp = await es.search(
             index=HUNT_SAVED_INDEX,
             body={"query": {"match_all": {}}, "sort": [{"created_at": {"order": "desc"}}], "size": 50},
@@ -216,7 +216,7 @@ async def save_hunt(
     user: dict = Depends(get_current_user),
 ):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         doc = {
             "name": payload.name,
             "description": payload.description,
@@ -239,7 +239,7 @@ async def delete_saved_hunt(
     user: dict = Depends(get_current_user),
 ):
     try:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         await es.delete(index=HUNT_SAVED_INDEX, id=hunt_id, ignore=[404])
         return {"status": "deleted"}
     except Exception as e:

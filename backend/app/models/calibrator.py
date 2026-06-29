@@ -1,4 +1,3 @@
-import logging
 import os
 import pickle
 from datetime import datetime
@@ -8,7 +7,8 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import brier_score_loss, roc_auc_score
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 class ScoreCalibrator:
     def __init__(self):

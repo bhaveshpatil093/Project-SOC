@@ -1,14 +1,14 @@
 import importlib
-import logging
 import pkgutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable, Any
 
-from app.ingestion.es_client import INDEX_NAMES
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.migrations import versions
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 @dataclass
 class Migration:

@@ -1,6 +1,5 @@
 import base64
 import json
-import logging
 import os
 import platform
 import secrets
@@ -9,7 +8,8 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 class SecretsManager:
     """

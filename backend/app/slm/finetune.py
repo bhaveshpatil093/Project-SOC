@@ -1,5 +1,4 @@
 import argparse
-import logging
 import os
 
 import torch
@@ -12,7 +11,8 @@ try:
 except ImportError:
     pass
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 MODEL_NAME = "microsoft/Phi-3-mini-4k-instruct"

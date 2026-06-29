@@ -8,9 +8,9 @@ logger = get_logger(__name__)
 async def validate_startup_config(settings: Settings) -> list[str]:
     errors = []
 
-    # 1. ES Constraints
-    if not settings.ES_PASSWORD:
-        errors.append("ES_PASSWORD is empty. A valid Elasticsearch password is required.")
+    # 1. Kibana Constraints
+    if not settings.KIBANA_PASSWORD:
+        errors.append("KIBANA_PASSWORD is empty. A valid Kibana password is required.")
 
     # 2. File boundaries
     try:
@@ -41,8 +41,8 @@ async def validate_startup_config(settings: Settings) -> list[str]:
     if ENVIRONMENT == "production":
         if settings.JWT_SECRET_KEY == "dev-secret-key-not-for-production":
             errors.append("FATAL: Default JWT secret in production!")
-        if settings.ES_VERIFY_CERTS is False:
-            errors.append("FATAL: ES_VERIFY_CERTS must be True in production!")
+        if settings.KIBANA_VERIFY_SSL is False:
+            errors.append("FATAL: KIBANA_VERIFY_SSL must be True in production!")
         if settings.DEBUG is True:
             errors.append("FATAL: DEBUG must be False in production!")
         if len(settings.JWT_SECRET_KEY) < 32:

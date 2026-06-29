@@ -3,16 +3,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # Elasticsearch
-    ES_HOST: str = "localhost"
-    ES_PORT: int = 9200
-    ES_USERNAME: str = "elastic"
-    ES_PASSWORD: str = ""
-    ES_VERIFY_CERTS: bool = False
-    ES_TIMEOUT: int = 30
-    ES_MAX_RETRIES: int = 3
+    # Kibana Console Proxy
+    KIBANA_URL: str = "https://172.30.253.121:5601"
+    KIBANA_USER: str = "intern"
+    KIBANA_PASSWORD: str = "test123"
+    KIBANA_VERIFY_SSL: bool = False
 
     # App
+    DB_PATH: str = "backend/data/soc.db"
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
     LOG_LEVEL: str = "INFO"

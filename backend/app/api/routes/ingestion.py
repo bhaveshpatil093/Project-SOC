@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.auth.jwt import require_role
-from app.ingestion.es_client import get_es_client
+from app.ingestion.kibana_client import KibanaProxyClient
 from app.ingestion.scheduler import run_ingestion_cycle, scheduler_state
 
 router = APIRouter(dependencies=[Depends(require_role("admin", "analyst"))])
@@ -18,7 +18,7 @@ def get_ingestion_status():
 @router.post("/run")
 async def trigger_ingestion_cycle():
     """Manually triggers the ingestion pipeline synchronously."""
-    es = await get_es_client()
+    es = KibanaProxyClient()
     try:
         await run_ingestion_cycle(es)
         return {"status": "completed", "details": "Ingestion cycle executed"}

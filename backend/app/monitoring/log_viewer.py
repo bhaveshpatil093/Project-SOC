@@ -1,8 +1,8 @@
 import datetime
-import logging
 from typing import Dict, List, Any
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 class LogViewer:
     INDEX_NAME = "soc-application-logs"

@@ -1,8 +1,8 @@
 """Initial SOC indices creation"""
-import logging
-from app.ingestion.es_client import create_soc_indices
+from app.ingestion.kibana_client import KibanaProxyClient
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 async def up(es):
     logger.info("Running v001 up: Creating initial indices")

@@ -32,6 +32,7 @@ const Hunting = lazy(() => import('./pages/Hunting').then(m => ({ default: m.Hun
 const Training = lazy(() => import('./pages/Training').then((m) => ({ default: m.Training })))
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
 const SystemMonitor = lazy(() => import('./pages/SystemMonitor').then((m) => ({ default: m.SystemMonitor })))
+const Diagnostics = lazy(() => import('./pages/Diagnostics').then((m) => ({ default: m.Diagnostics })))
 
 const NotFound = () => (
   <div className="flex flex-col items-center justify-center h-full min-h-[500px]">
@@ -146,6 +147,14 @@ const AppContent = () => {
                 element={
                   <ErrorBoundary>
                     <PageTransition><SystemMonitor /></PageTransition>
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="diagnostics"
+                element={
+                  <ErrorBoundary>
+                    <PageTransition><Diagnostics /></PageTransition>
                   </ErrorBoundary>
                 }
               />

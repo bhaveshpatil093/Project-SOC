@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 import threading
 import time
@@ -8,7 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-logger = logging.getLogger(__name__)
+from app.logging_config import get_logger
+logger = get_logger(__name__)
 
 SOC_SYSTEM_PROMPT = """You are an expert cybersecurity analyst assistant for the ISRO ISTRAC SOC team.
 You help Level-1 SOC engineers investigate security alerts.
