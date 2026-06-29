@@ -55,7 +55,7 @@ async def get_soc_agent() -> SOCAgent:
         raise HTTPException(status_code=503, detail="SLM Engine is currently offline or loading.")
     rag = get_rag_pipeline()
     es = KibanaProxyClient()
-    return SOCAgent(slm_engine=slm, rag_pipeline=rag, es=es)
+    return SOCAgent(slm_engine=slm, rag_pipeline=rag, kibana_client=es)
 
 @router.post("/chat", response_model=ChatResponse, dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 @limiter.limit("20/minute")
@@ -147,9 +147,9 @@ async def slm_status():
     rag = get_rag_pipeline()
 
     indexed = 0
-    if rag.collection:
+    if rag.faiss_store:
         try:
-            indexed = rag.collection.count()
+            indexed = rag.faiss_store.index.ntotal
         except:
             pass
 

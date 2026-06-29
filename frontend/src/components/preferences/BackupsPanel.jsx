@@ -58,10 +58,10 @@ export const BackupsPanel = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)]">
+      <div className="flex justify-between items-center bg-[var(--bg-secondary)] p-6 rounded-xl border border-[var(--border)]">
         <div>
-          <h3 className="text-lg font-semibold text-[var(--text\_primary)]">Elasticsearch Snapshots</h3>
-          <p className="text-[var(--text\_secondary)] text-sm mt-1">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Elasticsearch Snapshots</h3>
+          <p className="text-[var(--text-secondary)] text-sm mt-1">
             Manage full cluster backups for disaster recovery. Automated backups run daily at 02:30 IST.
           </p>
         </div>
@@ -75,31 +75,31 @@ export const BackupsPanel = () => {
         </button>
       </div>
 
-      <div className="bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-xl overflow-hidden">
+      <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl overflow-hidden">
         {isLoading ? (
           <div className="p-12 flex justify-center"><LoadingSpinner size="lg" /></div>
         ) : !backups || backups.length === 0 ? (
-          <div className="p-12 text-center text-[var(--text\_secondary)]">
+          <div className="p-12 text-center text-[var(--text-secondary)]">
             <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>No backups found. Create one to get started.</p>
           </div>
         ) : (
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-[var(--border)] bg-[var(--bg\_tertiary)]">
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">Snapshot Name</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">Created</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">Duration</th>
-                <th className="px-6 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider text-right">Actions</th>
+              <tr className="border-b border-[var(--border)] bg-[var(--bg-tertiary)]">
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Snapshot Name</th>
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Created</th>
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Duration</th>
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {backups.map((snap) => (
-                <tr key={snap.snapshot_name} className="hover:bg-[var(--bg\_tertiary)]/50 transition-colors">
+                <tr key={snap.snapshot_name} className="hover:bg-[var(--bg-tertiary)]/50 transition-colors">
                   <td className="px-6 py-4">
-                    <div className="font-medium text-[var(--text\_primary)]">{snap.snapshot_name}</div>
-                    <div className="text-xs text-[var(--text\_secondary)] mt-1">{snap.indices.length} indices</div>
+                    <div className="font-medium text-[var(--text-primary)]">{snap.snapshot_name}</div>
+                    <div className="text-xs text-[var(--text-secondary)] mt-1">{snap.indices.length} indices</div>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
@@ -110,22 +110,22 @@ export const BackupsPanel = () => {
                       {snap.state}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-[var(--text\_secondary)]">
+                  <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">
                     {formatDate(new Date(snap.start_time))}
                   </td>
-                  <td className="px-6 py-4 text-sm text-[var(--text\_secondary)]">
+                  <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">
                     {(snap.duration_ms / 1000).toFixed(1)}s
                   </td>
                   <td className="px-6 py-4 text-right space-x-2">
                     <button
                       onClick={() => setRestoreSnap(snap.snapshot_name)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--bg\_tertiary)] hover:bg-orange-500/20 text-orange-400 rounded transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--bg-tertiary)] hover:bg-orange-500/20 text-orange-400 rounded transition-colors"
                     >
                       <Download className="h-3.5 w-3.5" /> Restore
                     </button>
                     <button
                       onClick={() => setDeleteSnap(snap.snapshot_name)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--bg\_tertiary)] hover:bg-red-500/20 text-red-400 rounded transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--bg-tertiary)] hover:bg-red-500/20 text-red-400 rounded transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" /> Delete
                     </button>

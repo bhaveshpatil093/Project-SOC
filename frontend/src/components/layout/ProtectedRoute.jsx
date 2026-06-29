@@ -8,7 +8,7 @@ export const ProtectedRoute = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-[var(--bg\_primary)] text-[var(--text\_secondary)]">
+      <div className="flex h-screen w-full items-center justify-center bg-[var(--bg-primary)] text-[var(--text-secondary)]">
         <Loader2 className="w-10 h-10 animate-spin mr-3 text-blue-500" />
         <span className="text-xl font-medium tracking-tight">
           Verifying authorization protocols...

@@ -63,10 +63,10 @@ export const PlatformHealthDropdown = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 rounded-xl bg-[var(--bg\_secondary)] border border-[var(--border)] shadow-xl z-50 overflow-hidden transform opacity-100 scale-100 transition-all duration-200">
-          <div className="p-3 border-b border-[var(--border)] bg-[var(--bg\_tertiary)] flex justify-between items-center">
-            <h3 className="text-sm font-semibold text-[var(--text\_primary)] flex items-center gap-2">
-              <Activity className="h-4 w-4 text-[var(--text\_secondary)]" />
+        <div className="absolute right-0 mt-2 w-80 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] shadow-xl z-50 overflow-hidden transform opacity-100 scale-100 transition-all duration-200">
+          <div className="p-3 border-b border-[var(--border)] bg-[var(--bg-tertiary)] flex justify-between items-center">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <Activity className="h-4 w-4 text-[var(--text-secondary)]" />
               Platform Health
             </h3>
             {activeAlerts.length === 0 && (
@@ -78,12 +78,12 @@ export const PlatformHealthDropdown = () => {
             {activeAlerts.length === 0 ? (
               <div className="p-6 text-center">
                 <CheckCircle className="h-8 w-8 text-green-500/50 mx-auto mb-2" />
-                <p className="text-sm text-[var(--text\_secondary)]">All systems operational.</p>
+                <p className="text-sm text-[var(--text-secondary)]">All systems operational.</p>
               </div>
             ) : (
               <div className="divide-y divide-[var(--border)]">
                 {activeAlerts.map((alert) => (
-                  <div key={alert.alert_id} className="p-3 hover:bg-[var(--bg\_tertiary)]/50 transition-colors">
+                  <div key={alert.alert_id} className="p-3 hover:bg-[var(--bg-tertiary)]/50 transition-colors">
                     <div className="flex gap-3">
                       <div className="mt-0.5 flex-shrink-0">
                         {alert.severity === 'critical' ? (
@@ -96,18 +96,18 @@ export const PlatformHealthDropdown = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start mb-1">
-                          <p className="text-sm font-medium text-[var(--text\_primary)] truncate pr-2">
+                          <p className="text-sm font-medium text-[var(--text-primary)] truncate pr-2">
                             {alert.title}
                           </p>
-                          <span className="text-[10px] font-mono text-[var(--text\_secondary)] whitespace-nowrap bg-[var(--bg\_primary)] px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] font-mono text-[var(--text-secondary)] whitespace-nowrap bg-[var(--bg-primary)] px-1.5 py-0.5 rounded">
                             {formatDistanceToNow(new Date(alert.triggered_at), { addSuffix: true })}
                           </span>
                         </div>
-                        <p className="text-xs text-[var(--text\_secondary)] line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
                           {alert.description}
                         </p>
                         <div className="mt-2 flex gap-2">
-                          <span className="inline-flex text-[10px] font-medium bg-[var(--bg\_primary)] border border-[var(--border)] px-1.5 py-0.5 rounded text-[var(--text\_secondary)] uppercase">
+                          <span className="inline-flex text-[10px] font-medium bg-[var(--bg-primary)] border border-[var(--border)] px-1.5 py-0.5 rounded text-[var(--text-secondary)] uppercase">
                             {alert.component}
                           </span>
                         </div>

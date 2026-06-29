@@ -66,13 +66,13 @@ const AddWebhookModal = ({ onClose, onCreated }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[var(--bg\_primary)] w-full max-w-lg rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden">
+      <div className="bg-[var(--bg-primary)] w-full max-w-lg rounded-2xl border border-[var(--border)] shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[var(--border)] bg-black/20">
           <h3 className="font-bold text-lg flex items-center gap-2">
             <Webhook className="w-5 h-5 text-blue-400" /> Add Webhook
           </h3>
-          <button onClick={onClose} className="p-1 hover:bg-[var(--bg\_secondary)] rounded-md transition-colors">
+          <button onClick={onClose} className="p-1 hover:bg-[var(--bg-secondary)] rounded-md transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -80,49 +80,49 @@ const AddWebhookModal = ({ onClose, onCreated }) => {
         <div className="p-5 space-y-5">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-1.5">Webhook Name</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">Webhook Name</label>
             <input
               autoFocus
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="e.g., Slack Critical Alerts"
-              className="w-full bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
 
           {/* URL */}
           <div>
-            <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-1.5">Endpoint URL</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">Endpoint URL</label>
             <input
               value={form.url}
               onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
               placeholder="https://hooks.slack.com/services/T…"
-              className="w-full bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500"
+              className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500"
             />
           </div>
 
           {/* Secret */}
           <div>
-            <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-1.5">
-              HMAC Secret <span className="text-xs text-[var(--text\_secondary)]">(auto-generated if empty)</span>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
+              HMAC Secret <span className="text-xs text-[var(--text-secondary)]">(auto-generated if empty)</span>
             </label>
             <input
               value={form.secret}
               onChange={e => setForm(f => ({ ...f, secret: e.target.value }))}
               placeholder="my-webhook-secret"
-              className="w-full bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500"
+              className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-blue-500"
             />
           </div>
 
           {/* Events */}
           <div>
-            <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-2">Subscribe to Events</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Subscribe to Events</label>
             <div className="flex flex-wrap gap-2">
               {EVENT_OPTIONS.map(ev => (
                 <button
                   key={ev}
                   onClick={() => toggleEvent(ev)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${form.events.includes(ev) ? 'bg-blue-500/20 border-blue-500/50 text-blue-300' : 'border-[var(--border)] text-[var(--text\_secondary)] hover:bg-[var(--bg\_secondary)]'}`}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${form.events.includes(ev) ? 'bg-blue-500/20 border-blue-500/50 text-blue-300' : 'border-[var(--border)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
                 >
                   {ev}
                 </button>
@@ -133,30 +133,30 @@ const AddWebhookModal = ({ onClose, onCreated }) => {
           {/* Filters */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-[var(--text\_secondary)] mb-1.5">Min Threat Level</label>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Min Threat Level</label>
               <select
                 value={form.filters.min_threat_level}
                 onChange={e => setForm(f => ({ ...f, filters: { ...f.filters, min_threat_level: e.target.value } }))}
-                className="w-full bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
               >
                 {LEVEL_OPTIONS.map(l => <option key={l} value={l}>{l || 'All'}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-[var(--text\_secondary)] mb-1.5">Min Score</label>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Min Score</label>
               <input
                 type="number"
                 min="0" max="1" step="0.05"
                 value={form.filters.min_score}
                 onChange={e => setForm(f => ({ ...f, filters: { ...f.filters, min_score: parseFloat(e.target.value) } }))}
-                className="w-full bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
         </div>
 
         <div className="flex gap-3 px-5 pb-5">
-          <button onClick={onClose} className="flex-1 py-2.5 text-sm border border-[var(--border)] rounded-lg hover:bg-[var(--bg\_secondary)] transition-colors">Cancel</button>
+          <button onClick={onClose} className="flex-1 py-2.5 text-sm border border-[var(--border)] rounded-lg hover:bg-[var(--bg-secondary)] transition-colors">Cancel</button>
           <button
             onClick={() => form.name && form.url && mutation.mutate()}
             disabled={!form.name || !form.url || mutation.isPending}
@@ -215,7 +215,7 @@ export const WebhooksPanel = () => {
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Webhook className="w-6 h-6 text-blue-500" /> API Webhooks
           </h2>
-          <p className="text-[var(--text\_secondary)] text-sm mt-1">Push alerts to Slack, Teams, JIRA, and external systems.</p>
+          <p className="text-[var(--text-secondary)] text-sm mt-1">Push alerts to Slack, Teams, JIRA, and external systems.</p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
@@ -226,23 +226,23 @@ export const WebhooksPanel = () => {
       </div>
 
       {/* Payload format hint */}
-      <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 text-xs text-[var(--text\_secondary)] font-mono">
+      <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 text-xs text-[var(--text-secondary)] font-mono">
         <div className="text-blue-400 font-bold mb-1.5">Outgoing payload format (HMAC-SHA256 signed):</div>
         {`{ "event_type": "new_alert", "timestamp": "ISO", "data": { "alert": { ... } } }`}
-        <div className="mt-2 text-[var(--text\_secondary)]">Verify with header: <span className="text-blue-400">X-SOC-Signature: sha256=...</span></div>
+        <div className="mt-2 text-[var(--text-secondary)]">Verify with header: <span className="text-blue-400">X-SOC-Signature: sha256=...</span></div>
       </div>
 
       {/* Webhooks Table */}
       {data?.length === 0 ? (
-        <div className="bg-[var(--bg\_secondary)] border border-dashed border-[var(--border)] rounded-xl p-12 text-center">
-          <Webhook className="w-10 h-10 text-[var(--text\_secondary)] mx-auto mb-3 opacity-40" />
-          <p className="text-[var(--text\_secondary)] font-medium">No webhooks configured</p>
-          <p className="text-xs text-[var(--text\_secondary)] mt-1">Add a webhook to start receiving alerts in Slack, Teams, or any HTTP endpoint.</p>
+        <div className="bg-[var(--bg-secondary)] border border-dashed border-[var(--border)] rounded-xl p-12 text-center">
+          <Webhook className="w-10 h-10 text-[var(--text-secondary)] mx-auto mb-3 opacity-40" />
+          <p className="text-[var(--text-secondary)] font-medium">No webhooks configured</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">Add a webhook to start receiving alerts in Slack, Teams, or any HTTP endpoint.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {data?.map(wh => (
-            <div key={wh.webhook_id} className="bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-xl overflow-hidden hover:border-blue-500/30 transition-colors">
+            <div key={wh.webhook_id} className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl overflow-hidden hover:border-blue-500/30 transition-colors">
               <div className="p-4 flex items-center gap-4">
                 {/* Status */}
                 <div className="flex-none">
@@ -252,14 +252,14 @@ export const WebhooksPanel = () => {
                     className="flex flex-col items-center gap-1"
                   >
                     <STATUS_DOT active={wh.is_active} />
-                    <span className="text-[9px] text-[var(--text\_secondary)]">{wh.is_active ? 'ON' : 'OFF'}</span>
+                    <span className="text-[9px] text-[var(--text-secondary)]">{wh.is_active ? 'ON' : 'OFF'}</span>
                   </button>
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-[var(--text\_primary)]">{wh.name}</span>
+                    <span className="font-bold text-[var(--text-primary)]">{wh.name}</span>
                     <div className="flex gap-1 flex-wrap">
                       {wh.events?.map(ev => (
                         <span key={ev} className="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full">{ev}</span>
@@ -271,20 +271,20 @@ export const WebhooksPanel = () => {
                       href={wh.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs text-[var(--text\_secondary)] font-mono hover:text-blue-400 flex items-center gap-1 truncate max-w-xs"
+                      className="text-xs text-[var(--text-secondary)] font-mono hover:text-blue-400 flex items-center gap-1 truncate max-w-xs"
                     >
                       {wh.url} <ExternalLink className="w-3 h-3 flex-none" />
                     </a>
                   </div>
                   {wh.filters && Object.keys(wh.filters).length > 0 && (
-                    <div className="text-[10px] text-[var(--text\_secondary)] mt-1">
+                    <div className="text-[10px] text-[var(--text-secondary)] mt-1">
                       Filters: {Object.entries(wh.filters).map(([k,v]) => `${k}: ${v}`).join(', ')}
                     </div>
                   )}
                 </div>
 
                 {/* Stats */}
-                <div className="flex-none text-right text-xs text-[var(--text\_secondary)] hidden md:block">
+                <div className="flex-none text-right text-xs text-[var(--text-secondary)] hidden md:block">
                   <div className="text-green-400 font-mono">{wh.success_count} ✓</div>
                   <div className="text-red-400 font-mono">{wh.failure_count} ✗</div>
                 </div>
@@ -293,7 +293,7 @@ export const WebhooksPanel = () => {
                 <div className="flex-none hidden lg:block">
                   <button
                     onClick={() => copySecret(wh.secret)}
-                    className="flex items-center gap-1 px-2 py-1 text-xs text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] bg-[var(--bg\_tertiary)] hover:bg-[var(--bg\_primary)] rounded border border-[var(--border)] transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] rounded border border-[var(--border)] transition-colors"
                     title="Copy HMAC Secret"
                   >
                     <Copy className="w-3 h-3" /> Secret

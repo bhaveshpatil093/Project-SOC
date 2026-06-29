@@ -37,26 +37,26 @@ export const AuditLogPanel = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center bg-[var(--bg\_secondary)] p-4 rounded-xl border border-[var(--border)] shadow-sm">
+      <div className="flex justify-between items-center bg-[var(--bg-secondary)] p-4 rounded-xl border border-[var(--border)] shadow-sm">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-[var(--bg\_primary)] px-3 py-1.5 rounded-lg border border-[var(--border)] focus-within:border-blue-500">
-            <Search className="w-4 h-4 text-[var(--text\_secondary)]" />
+          <div className="flex items-center gap-2 bg-[var(--bg-primary)] px-3 py-1.5 rounded-lg border border-[var(--border)] focus-within:border-blue-500">
+            <Search className="w-4 h-4 text-[var(--text-secondary)]" />
             <input 
               type="text" 
               placeholder="Filter by user..." 
               value={filterUser}
               onChange={(e) => setFilterUser(e.target.value)}
-              className="bg-transparent border-none outline-none text-sm w-40 text-[var(--text\_primary)]"
+              className="bg-transparent border-none outline-none text-sm w-40 text-[var(--text-primary)]"
             />
           </div>
-          <div className="flex items-center gap-2 bg-[var(--bg\_primary)] px-3 py-1.5 rounded-lg border border-[var(--border)] focus-within:border-blue-500">
-            <Filter className="w-4 h-4 text-[var(--text\_secondary)]" />
+          <div className="flex items-center gap-2 bg-[var(--bg-primary)] px-3 py-1.5 rounded-lg border border-[var(--border)] focus-within:border-blue-500">
+            <Filter className="w-4 h-4 text-[var(--text-secondary)]" />
             <input 
               type="text" 
               placeholder="Filter by action..." 
               value={filterAction}
               onChange={(e) => setFilterAction(e.target.value)}
-              className="bg-transparent border-none outline-none text-sm w-40 text-[var(--text\_primary)]"
+              className="bg-transparent border-none outline-none text-sm w-40 text-[var(--text-primary)]"
             />
           </div>
         </div>
@@ -70,59 +70,59 @@ export const AuditLogPanel = () => {
 
       {activityData && (
         <div className="grid grid-cols-4 gap-4">
-          <div className="bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-4">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-4">
             <div className="p-3 bg-blue-500/10 rounded-lg text-blue-500"><Activity className="w-5 h-5"/></div>
             <div>
-              <p className="text-xs text-[var(--text\_secondary)] uppercase font-bold tracking-wider">Total Actions</p>
-              <p className="text-xl font-bold text-[var(--text\_primary)]">{activityData.total_actions}</p>
+              <p className="text-xs text-[var(--text-secondary)] uppercase font-bold tracking-wider">Total Actions</p>
+              <p className="text-xl font-bold text-[var(--text-primary)]">{activityData.total_actions}</p>
             </div>
           </div>
-          <div className="bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-4">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-4">
             <div className="p-3 bg-orange-500/10 rounded-lg text-orange-500"><AlertTriangle className="w-5 h-5"/></div>
             <div>
-              <p className="text-xs text-[var(--text\_secondary)] uppercase font-bold tracking-wider">Alerts Triaged</p>
-              <p className="text-xl font-bold text-[var(--text\_primary)]">{activityData.alerts_triaged}</p>
+              <p className="text-xs text-[var(--text-secondary)] uppercase font-bold tracking-wider">Alerts Triaged</p>
+              <p className="text-xl font-bold text-[var(--text-primary)]">{activityData.alerts_triaged}</p>
             </div>
           </div>
-          <div className="bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-4">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-4">
             <div className="p-3 bg-green-500/10 rounded-lg text-green-500"><FileText className="w-5 h-5"/></div>
             <div>
-              <p className="text-xs text-[var(--text\_secondary)] uppercase font-bold tracking-wider">Feedback Submitted</p>
-              <p className="text-xl font-bold text-[var(--text\_primary)]">{activityData.feedback_submitted}</p>
+              <p className="text-xs text-[var(--text-secondary)] uppercase font-bold tracking-wider">Feedback Submitted</p>
+              <p className="text-xl font-bold text-[var(--text-primary)]">{activityData.feedback_submitted}</p>
             </div>
           </div>
-          <div className="bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-4">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 flex items-center gap-4">
             <div className="p-3 bg-purple-500/10 rounded-lg text-purple-500"><User className="w-5 h-5"/></div>
             <div>
-              <p className="text-xs text-[var(--text\_secondary)] uppercase font-bold tracking-wider">SLM Queries</p>
-              <p className="text-xl font-bold text-[var(--text\_primary)]">{activityData.slm_queries}</p>
+              <p className="text-xs text-[var(--text-secondary)] uppercase font-bold tracking-wider">SLM Queries</p>
+              <p className="text-xl font-bold text-[var(--text-primary)]">{activityData.slm_queries}</p>
             </div>
           </div>
         </div>
       )}
 
-      <div className="bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-xl overflow-hidden shadow-lg">
+      <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl overflow-hidden shadow-lg">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-[var(--bg\_tertiary)] border-b border-[var(--border)]">
+            <thead className="bg-[var(--bg-tertiary)] border-b border-[var(--border)]">
               <tr>
-                <th className="px-6 py-4 font-semibold text-[var(--text\_secondary)]">Timestamp</th>
-                <th className="px-6 py-4 font-semibold text-[var(--text\_secondary)]">User</th>
-                <th className="px-6 py-4 font-semibold text-[var(--text\_secondary)]">Action</th>
-                <th className="px-6 py-4 font-semibold text-[var(--text\_secondary)]">Resource</th>
-                <th className="px-6 py-4 font-semibold text-[var(--text\_secondary)]">Result</th>
-                <th className="px-6 py-4 font-semibold text-[var(--text\_secondary)]">IP Address</th>
+                <th className="px-6 py-4 font-semibold text-[var(--text-secondary)]">Timestamp</th>
+                <th className="px-6 py-4 font-semibold text-[var(--text-secondary)]">User</th>
+                <th className="px-6 py-4 font-semibold text-[var(--text-secondary)]">Action</th>
+                <th className="px-6 py-4 font-semibold text-[var(--text-secondary)]">Resource</th>
+                <th className="px-6 py-4 font-semibold text-[var(--text-secondary)]">Result</th>
+                <th className="px-6 py-4 font-semibold text-[var(--text-secondary)]">IP Address</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {isLoading ? (
                 <tr><td colSpan="6" className="p-8 text-center"><LoadingSpinner /></td></tr>
               ) : data?.length === 0 ? (
-                <tr><td colSpan="6" className="p-8 text-center text-[var(--text\_secondary)]">No audit logs found.</td></tr>
+                <tr><td colSpan="6" className="p-8 text-center text-[var(--text-secondary)]">No audit logs found.</td></tr>
               ) : (
                 data?.map((log) => (
-                  <tr key={log.event_id} className="hover:bg-[var(--bg\_tertiary)]/50 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-[var(--text\_secondary)]">
+                  <tr key={log.event_id} className="hover:bg-[var(--bg-tertiary)]/50 transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-[var(--text-secondary)]">
                       {formatDate(new Date(log.timestamp))}
                     </td>
                     <td className="px-6 py-4">
@@ -130,16 +130,16 @@ export const AuditLogPanel = () => {
                         <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-500 flex items-center justify-center font-bold text-xs">
                           {log.user.charAt(0).toUpperCase()}
                         </span>
-                        <span className="font-medium text-[var(--text\_primary)]">{log.user}</span>
+                        <span className="font-medium text-[var(--text-primary)]">{log.user}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-mono text-xs text-[var(--text\_primary)] bg-[var(--bg\_primary)]/30 rounded px-2">
+                    <td className="px-6 py-4 font-mono text-xs text-[var(--text-primary)] bg-[var(--bg-primary)]/30 rounded px-2">
                       {log.action}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-[var(--text\_secondary)]">{log.resource_type}</span>
+                      <span className="text-[var(--text-secondary)]">{log.resource_type}</span>
                       {log.resource_id && (
-                        <span className="ml-2 font-mono text-xs px-2 py-0.5 rounded bg-[var(--bg\_primary)] border border-[var(--border)] text-[var(--text\_primary)]">
+                        <span className="ml-2 font-mono text-xs px-2 py-0.5 rounded bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)]">
                           {log.resource_id.substring(0, 8)}...
                         </span>
                       )}
@@ -151,7 +151,7 @@ export const AuditLogPanel = () => {
                         {log.result}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-mono text-xs text-[var(--text\_secondary)]">
+                    <td className="px-6 py-4 font-mono text-xs text-[var(--text-secondary)]">
                       {log.ip_address}
                     </td>
                   </tr>

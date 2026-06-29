@@ -32,23 +32,20 @@ class RestoreRequest(BaseModel):
 
 @router.get("/backups", dependencies=[Depends(require_role("admin"))])
 async def list_backups() -> list[dict[str, Any]]:
-    es = KibanaProxyClient()
-    bm = BackupManager(es)
+    bm = BackupManager()
     return await bm.list_snapshots()
 
 @router.post("/backups", dependencies=[Depends(require_role("admin"))])
 async def create_backup() -> dict[str, Any]:
-    es = KibanaProxyClient()
-    bm = BackupManager(es)
+    bm = BackupManager()
     try:
-        return await bm.create_snapshot()
+        return await bm.create_local_backup()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/backups/{name}", dependencies=[Depends(require_role("admin"))])
 async def get_backup_details(name: str) -> dict[str, Any]:
-    es = KibanaProxyClient()
-    bm = BackupManager(es)
+    bm = BackupManager()
     snaps = await bm.list_snapshots()
     for s in snaps:
         if s["snapshot_name"] == name:
@@ -59,19 +56,22 @@ async def get_backup_details(name: str) -> dict[str, Any]:
 
 @router.post("/backups/{name}/restore", dependencies=[Depends(require_role("admin"))])
 async def restore_backup(name: str, req: RestoreRequest) -> dict[str, Any]:
-    es = KibanaProxyClient()
-    bm = BackupManager(es)
+    bm = BackupManager()
     try:
-        return await bm.restore_snapshot(name, target_indices=req.target_indices)
+        # Note: Local restore function would need to be implemented
+        raise NotImplementedError("Restore not implemented for local DB backups yet")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/backups/{name}", dependencies=[Depends(require_role("admin"))])
 async def delete_backup(name: str) -> dict[str, Any]:
-    es = KibanaProxyClient()
-    bm = BackupManager(es)
+    bm = BackupManager()
     try:
-        await bm.es.snapshot.delete(repository=bm.repo_name, snapshot=name)
+        import os
+        import shutil
+        target_dir = os.path.join(bm.backup_dir, name)
+        if os.path.exists(target_dir):
+            shutil.rmtree(target_dir)
         return {"status": "success", "deleted": name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { usePreferencesStore } from '../store/preferencesStore'
 import {
   startInitialTraining,
   startRetraining,
@@ -82,7 +83,7 @@ const TabButton = ({ active, onClick, children }) => (
     className={`px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
       active
         ? 'border-blue-500 text-blue-400'
-        : 'border-transparent text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] hover:border-[var(--border)]'
+        : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border)]'
     }`}
   >
     {children}
@@ -170,6 +171,8 @@ export const Training = () => {
   })
   const driftData = driftResp?.data ||
     driftResp || { status: 'Unknown', overall_drift_score: 0, top_drifted_features: [] }
+    
+  const { data: calibrationData } = useCalibration()
 
   const initialMutation = useMutation({
     mutationFn: startInitialTraining,
@@ -253,10 +256,10 @@ export const Training = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
       <div>
-        <h1 className="text-3xl font-bold text-[var(--text\_primary)] tracking-tight flex items-center gap-3">
+        <h1 className="text-3xl font-bold text-[var(--text-primary)] tracking-tight flex items-center gap-3">
           <Activity className="h-8 w-8 text-blue-500" /> MLflow Model Dashboard
         </h1>
-        <p className="text-[var(--text\_secondary)] mt-1">
+        <p className="text-[var(--text-secondary)] mt-1">
           Track ML experiments, compare runs, and orchestrate training cycles natively.
         </p>
       </div>
@@ -287,12 +290,12 @@ export const Training = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 animate-in fade-in slide-in-from-bottom-2">
           {/* Isolation Forest Card */}
           <div
-            className={`rounded-xl border p-6 flex flex-col justify-between ${latestIF ? 'bg-[var(--bg\_secondary)] border-[var(--border)]' : 'bg-[var(--bg\_primary)] border-[var(--border)] opacity-80'}`}
+            className={`rounded-xl border p-6 flex flex-col justify-between ${latestIF ? 'bg-[var(--bg-secondary)] border-[var(--border)]' : 'bg-[var(--bg-primary)] border-[var(--border)] opacity-80'}`}
           >
             <div>
               <div className="flex justify-between items-start mb-4">
                 <div
-                  className={`p-2 rounded-lg ${latestIF ? 'bg-blue-500/20 text-blue-500' : 'bg-[var(--bg\_secondary)] text-[var(--text\_secondary)]'}`}
+                  className={`p-2 rounded-lg ${latestIF ? 'bg-blue-500/20 text-blue-500' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'}`}
                 >
                   <Network className="h-6 w-6" />
                 </div>
@@ -301,29 +304,29 @@ export const Training = () => {
                 </Badge>
               </div>
               <h3
-                className={`text-lg font-bold ${latestIF ? 'text-[var(--text\_primary)]' : 'text-[var(--text\_secondary)]'}`}
+                className={`text-lg font-bold ${latestIF ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
               >
                 Isolation Forest
               </h3>
-              <p className="text-xs text-[var(--text\_secondary)] mt-1">
+              <p className="text-xs text-[var(--text-secondary)] mt-1">
                 Unsupervised Outlier Detection
               </p>
             </div>
             <div className="mt-6 space-y-2 border-t border-[var(--border)]/50 pt-4">
               <div className="flex justify-between text-sm">
-                <span className="text-[var(--text\_secondary)]">N Samples:</span>
-                <span className="text-[var(--text\_primary)] font-medium">
+                <span className="text-[var(--text-secondary)]">N Samples:</span>
+                <span className="text-[var(--text-primary)] font-medium">
                   {latestIF?.metrics?.n_samples || '—'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-[var(--text\_secondary)]">Contamination:</span>
-                <span className="text-[var(--text\_primary)] font-medium">
+                <span className="text-[var(--text-secondary)]">Contamination:</span>
+                <span className="text-[var(--text-primary)] font-medium">
                   {latestIF?.metrics?.contamination || '—'}
                 </span>
               </div>
               <div className="flex justify-between text-sm mt-2 pt-2 border-t border-[var(--border)]">
-                <span className="text-[var(--text\_secondary)]">Active Run:</span>
+                <span className="text-[var(--text-secondary)]">Active Run:</span>
                 <span className="text-blue-400 font-mono text-xs">
                   {latestIF?.run_id?.substring(0, 8) || '—'}
                 </span>
@@ -332,7 +335,7 @@ export const Training = () => {
             <button
               onClick={handleInitial}
               disabled={initialMutation.isPending}
-              className="w-full mt-4 bg-[var(--bg\_tertiary)] hover:bg-[var(--bg\_tertiary)] text-[var(--text\_primary)] text-sm py-2 rounded-lg transition-colors"
+              className="w-full mt-4 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-sm py-2 rounded-lg transition-colors"
             >
               Retrain Baseline
             </button>
@@ -340,12 +343,12 @@ export const Training = () => {
 
           {/* Autoencoder Card */}
           <div
-            className={`rounded-xl border p-6 flex flex-col justify-between ${latestAE ? 'bg-[var(--bg\_secondary)] border-[var(--border)]' : 'bg-[var(--bg\_primary)] border-[var(--border)] opacity-80'}`}
+            className={`rounded-xl border p-6 flex flex-col justify-between ${latestAE ? 'bg-[var(--bg-secondary)] border-[var(--border)]' : 'bg-[var(--bg-primary)] border-[var(--border)] opacity-80'}`}
           >
             <div>
               <div className="flex justify-between items-start mb-4">
                 <div
-                  className={`p-2 rounded-lg ${latestAE ? 'bg-purple-500/20 text-purple-500' : 'bg-[var(--bg\_secondary)] text-[var(--text\_secondary)]'}`}
+                  className={`p-2 rounded-lg ${latestAE ? 'bg-purple-500/20 text-purple-500' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'}`}
                 >
                   <Brain className="h-6 w-6" />
                 </div>
@@ -354,29 +357,29 @@ export const Training = () => {
                 </Badge>
               </div>
               <h3
-                className={`text-lg font-bold ${latestAE ? 'text-[var(--text\_primary)]' : 'text-[var(--text\_secondary)]'}`}
+                className={`text-lg font-bold ${latestAE ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
               >
                 Autoencoder
               </h3>
-              <p className="text-xs text-[var(--text\_secondary)] mt-1">
+              <p className="text-xs text-[var(--text-secondary)] mt-1">
                 Deep Feature Reconstruction
               </p>
             </div>
             <div className="mt-6 space-y-2 border-t border-[var(--border)]/50 pt-4">
               <div className="flex justify-between text-sm">
-                <span className="text-[var(--text\_secondary)]">Final Loss:</span>
-                <span className="text-[var(--text\_primary)] font-medium">
+                <span className="text-[var(--text-secondary)]">Final Loss:</span>
+                <span className="text-[var(--text-primary)] font-medium">
                   {latestAE?.metrics?.final_loss?.toFixed(4) || '—'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-[var(--text\_secondary)]">Threshold:</span>
-                <span className="text-[var(--text\_primary)] font-medium">
+                <span className="text-[var(--text-secondary)]">Threshold:</span>
+                <span className="text-[var(--text-primary)] font-medium">
                   {latestAE?.metrics?.threshold?.toFixed(4) || '—'}
                 </span>
               </div>
               <div className="flex justify-between text-sm mt-2 pt-2 border-t border-[var(--border)]">
-                <span className="text-[var(--text\_secondary)]">Active Run:</span>
+                <span className="text-[var(--text-secondary)]">Active Run:</span>
                 <span className="text-purple-400 font-mono text-xs">
                   {latestAE?.run_id?.substring(0, 8) || '—'}
                 </span>
@@ -393,12 +396,12 @@ export const Training = () => {
 
           {/* LSTM Card */}
           <div
-            className={`rounded-xl border p-6 flex flex-col justify-between ${latestLSTM ? 'bg-[var(--bg\_secondary)] border-[var(--border)]' : 'bg-[var(--bg\_primary)] border-[var(--border)] opacity-80'}`}
+            className={`rounded-xl border p-6 flex flex-col justify-between ${latestLSTM ? 'bg-[var(--bg-secondary)] border-[var(--border)]' : 'bg-[var(--bg-primary)] border-[var(--border)] opacity-80'}`}
           >
             <div>
               <div className="flex justify-between items-start mb-4">
                 <div
-                  className={`p-2 rounded-lg ${latestLSTM ? 'bg-green-500/20 text-green-500' : 'bg-[var(--bg\_secondary)] text-[var(--text\_secondary)]'}`}
+                  className={`p-2 rounded-lg ${latestLSTM ? 'bg-green-500/20 text-green-500' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)]'}`}
                 >
                   <Activity className="h-6 w-6" />
                 </div>
@@ -407,29 +410,29 @@ export const Training = () => {
                 </Badge>
               </div>
               <h3
-                className={`text-lg font-bold ${latestLSTM ? 'text-[var(--text\_primary)]' : 'text-[var(--text\_secondary)]'}`}
+                className={`text-lg font-bold ${latestLSTM ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)]'}`}
               >
                 LSTM Sequence
               </h3>
-              <p className="text-xs text-[var(--text\_secondary)] mt-1">
+              <p className="text-xs text-[var(--text-secondary)] mt-1">
                 Temporal Sequence Forecasting
               </p>
             </div>
             <div className="mt-6 space-y-2 border-t border-[var(--border)]/50 pt-4">
               <div className="flex justify-between text-sm">
-                <span className="text-[var(--text\_secondary)]">Vocab Size:</span>
-                <span className="text-[var(--text\_primary)] font-medium">
+                <span className="text-[var(--text-secondary)]">Vocab Size:</span>
+                <span className="text-[var(--text-primary)] font-medium">
                   {latestLSTM?.metrics?.vocab_size || '—'}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-[var(--text\_secondary)]">Seq Length:</span>
-                <span className="text-[var(--text\_primary)] font-medium">
+                <span className="text-[var(--text-secondary)]">Seq Length:</span>
+                <span className="text-[var(--text-primary)] font-medium">
                   {latestLSTM?.params?.sequence_length || '—'}
                 </span>
               </div>
               <div className="flex justify-between text-sm mt-2 pt-2 border-t border-[var(--border)]">
-                <span className="text-[var(--text\_secondary)]">Active Run:</span>
+                <span className="text-[var(--text-secondary)]">Active Run:</span>
                 <span className="text-green-400 font-mono text-xs">
                   {latestLSTM?.run_id?.substring(0, 8) || '—'}
                 </span>
@@ -438,20 +441,20 @@ export const Training = () => {
             <button
               onClick={handleInitial}
               disabled={initialMutation.isPending}
-              className="w-full mt-4 bg-[var(--bg\_tertiary)] hover:bg-[var(--bg\_tertiary)] text-[var(--text\_primary)] text-sm py-2 rounded-lg transition-colors"
+              className="w-full mt-4 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-sm py-2 rounded-lg transition-colors"
             >
               Retrain Baseline
             </button>
           </div>
 
           {/* Drift Status Card */}
-          <div className="md:col-span-3 bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg flex flex-col md:flex-row gap-6 justify-between items-start md:items-center mt-2">
+          <div className="md:col-span-3 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg flex flex-col md:flex-row gap-6 justify-between items-start md:items-center mt-2">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <AlertTriangle
                   className={`h-6 w-6 ${driftData.overall_drift_score > 0.2 ? 'text-red-500' : driftData.overall_drift_score > 0.1 ? 'text-yellow-500' : 'text-green-500'}`}
                 />
-                <h3 className="text-xl font-bold text-[var(--text\_primary)]">Feature Data Drift</h3>
+                <h3 className="text-xl font-bold text-[var(--text-primary)]">Feature Data Drift</h3>
                 <Badge
                   variant={
                     driftData.overall_drift_score > 0.2
@@ -464,16 +467,16 @@ export const Training = () => {
                   {driftData.status || 'No Drift'}
                 </Badge>
               </div>
-              <p className="text-sm text-[var(--text\_secondary)]">
+              <p className="text-sm text-[var(--text-secondary)]">
                 Overall Population Stability Index (PSI):{' '}
-                <span className="font-mono font-bold text-[var(--text\_primary)]">
+                <span className="font-mono font-bold text-[var(--text-primary)]">
                   {driftData.overall_drift_score?.toFixed(4)}
                 </span>
               </p>
             </div>
 
             <div className="flex-1 w-full md:w-auto">
-              <h4 className="text-xs font-bold text-[var(--text\_secondary)] uppercase tracking-wider mb-2">
+              <h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
                 Top Drifted Features
               </h4>
               {driftData.top_drifted_features && driftData.top_drifted_features.length > 0 ? (
@@ -481,15 +484,15 @@ export const Training = () => {
                   {driftData.top_drifted_features.map((f, i) => (
                     <div
                       key={i}
-                      className="bg-[var(--bg\_primary)] px-3 py-1.5 rounded-lg border border-[var(--border)] text-xs"
+                      className="bg-[var(--bg-primary)] px-3 py-1.5 rounded-lg border border-[var(--border)] text-xs"
                     >
-                      <span className="text-[var(--text\_secondary)]">{f.name}:</span>{' '}
+                      <span className="text-[var(--text-secondary)]">{f.name}:</span>{' '}
                       <span className="font-mono text-red-400">{f.psi?.toFixed(4)}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <span className="text-sm text-[var(--text\_secondary)]">
+                <span className="text-sm text-[var(--text-secondary)]">
                   No significant drift detected.
                 </span>
               )}
@@ -500,14 +503,14 @@ export const Training = () => {
                 <button
                   onClick={handleRetrain}
                   disabled={retrainMutation.isPending}
-                  className="bg-red-600 hover:bg-red-700 text-[var(--text\_primary)] px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-red-900/20 whitespace-nowrap"
+                  className="bg-red-600 hover:bg-red-700 text-[var(--text-primary)] px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-red-900/20 whitespace-nowrap"
                 >
                   Recommend Retraining
                 </button>
               ) : (
                 <button
                   disabled
-                  className="bg-[var(--bg\_tertiary)] text-[var(--text\_secondary)] px-4 py-2 rounded-lg text-sm font-medium opacity-50 cursor-not-allowed whitespace-nowrap border border-[var(--border)]"
+                  className="bg-[var(--bg-tertiary)] text-[var(--text-secondary)] px-4 py-2 rounded-lg text-sm font-medium opacity-50 cursor-not-allowed whitespace-nowrap border border-[var(--border)]"
                 >
                   Retraining Not Required
                 </button>
@@ -522,11 +525,11 @@ export const Training = () => {
         <div className="pt-4 animate-in fade-in slide-in-from-bottom-2 space-y-4">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-3">
-              <span className="text-[var(--text\_secondary)] text-sm">Experiment:</span>
+              <span className="text-[var(--text-secondary)] text-sm">Experiment:</span>
               <select
                 value={selectedExperiment || ''}
                 onChange={(e) => setSelectedExperiment(e.target.value)}
-                className="bg-[var(--bg\_secondary)] border border-[var(--border)] text-[var(--text\_primary)] text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500"
+                className="bg-[var(--bg-secondary)] border border-[var(--border)] text-[var(--text-primary)] text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500"
               >
                 {experiments.map((exp) => (
                   <option key={exp.experiment_id} value={exp.experiment_id}>
@@ -538,33 +541,33 @@ export const Training = () => {
             <button
               onClick={() => setActiveTab('compare')}
               disabled={selectedRuns.length < 2}
-              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-[var(--text\_primary)] px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-[var(--text-primary)] px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               <GitCompare className="w-4 h-4" /> Compare Selected
             </button>
           </div>
 
-          <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg">
+          <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg">
             <div className="overflow-x-auto">
               <table className="w-full text-left whitespace-nowrap">
-                <thead className="bg-[var(--bg\_primary)]/80 border-b border-[var(--border)]">
+                <thead className="bg-[var(--bg-primary)]/80 border-b border-[var(--border)]">
                   <tr>
-                    <th className="px-4 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase">
+                    <th className="px-4 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase">
                       Compare
                     </th>
-                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase">
+                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase">
                       Run ID
                     </th>
-                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase">
+                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase">
                       Timestamp
                     </th>
-                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase">
+                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase">
+                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase">
                       Samples
                     </th>
-                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase">
+                    <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase">
                       Final Loss / Cont
                     </th>
                   </tr>
@@ -580,7 +583,7 @@ export const Training = () => {
                     <tr>
                       <td
                         colSpan="6"
-                        className="px-6 py-8 text-center text-[var(--text\_secondary)]"
+                        className="px-6 py-8 text-center text-[var(--text-secondary)]"
                       >
                         No runs in this experiment.
                       </td>
@@ -588,13 +591,13 @@ export const Training = () => {
                   ) : (
                     runs.map((run) => (
                       <React.Fragment key={run.run_id}>
-                        <tr className="hover:bg-[var(--bg\_tertiary)]/50 transition-colors">
+                        <tr className="hover:bg-[var(--bg-tertiary)]/50 transition-colors">
                           <td className="px-4 py-4 text-center">
                             <input
                               type="checkbox"
                               checked={selectedRuns.includes(run.run_id)}
                               onChange={() => toggleRunSelection(run.run_id)}
-                              className="w-4 h-4 rounded border-[var(--border)] bg-[var(--bg\_primary)] text-blue-500 focus:ring-blue-500 focus:ring-offset-[var(--bg\_secondary)]"
+                              className="w-4 h-4 rounded border-[var(--border)] bg-[var(--bg-primary)] text-blue-500 focus:ring-blue-500 focus:ring-offset-[var(--bg-secondary)]"
                             />
                           </td>
                           <td className="px-6 py-4">
@@ -607,11 +610,11 @@ export const Training = () => {
                               <GitCommit className="w-4 h-4" />
                               {run.run_id.substring(0, 8)}
                             </button>
-                            <div className="text-[10px] text-[var(--text\_secondary)] mt-0.5">
+                            <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
                               {run.tags?.['mlflow.runName'] || 'unnamed'}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-xs text-[var(--text\_secondary)]">
+                          <td className="px-6 py-4 text-xs text-[var(--text-secondary)]">
                             {new Date(parseInt(run.start_time)).toLocaleString()}
                           </td>
                           <td className="px-6 py-4">
@@ -627,27 +630,27 @@ export const Training = () => {
                               {run.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-[var(--text\_secondary)]">
+                          <td className="px-6 py-4 text-sm text-[var(--text-secondary)]">
                             {run.metrics?.n_samples || '-'}
                           </td>
-                          <td className="px-6 py-4 text-sm font-mono text-[var(--text\_secondary)]">
+                          <td className="px-6 py-4 text-sm font-mono text-[var(--text-secondary)]">
                             {run.metrics?.final_loss
                               ? run.metrics.final_loss.toFixed(4)
                               : run.metrics?.contamination || '-'}
                           </td>
                         </tr>
                         {expandedRun === run.run_id && (
-                          <tr className="bg-[var(--bg\_primary)]/50 border-b border-[var(--border)]/50">
+                          <tr className="bg-[var(--bg-primary)]/50 border-b border-[var(--border)]/50">
                             <td colSpan="6" className="px-8 py-6">
                               {expandedLoading ? (
                                 <LoadingSpinner />
                               ) : (
                                 <div className="grid grid-cols-2 gap-8">
                                   <div>
-                                    <h4 className="text-sm font-bold text-[var(--text\_secondary)] mb-3 uppercase tracking-wider">
+                                    <h4 className="text-sm font-bold text-[var(--text-secondary)] mb-3 uppercase tracking-wider">
                                       Parameters
                                     </h4>
-                                    <div className="bg-[var(--bg\_primary)] p-4 rounded-lg border border-[var(--border)]">
+                                    <div className="bg-[var(--bg-primary)] p-4 rounded-lg border border-[var(--border)]">
                                       {Object.entries(
                                         expandedRunData?.data?.params ||
                                           expandedRunData?.params ||
@@ -657,8 +660,8 @@ export const Training = () => {
                                           key={k}
                                           className="flex justify-between py-1 border-b border-[var(--border)] last:border-0 text-sm"
                                         >
-                                          <span className="text-[var(--text\_secondary)]">{k}</span>
-                                          <span className="text-[var(--text\_secondary)] font-mono">
+                                          <span className="text-[var(--text-secondary)]">{k}</span>
+                                          <span className="text-[var(--text-secondary)] font-mono">
                                             {v}
                                           </span>
                                         </div>
@@ -666,10 +669,10 @@ export const Training = () => {
                                     </div>
                                   </div>
                                   <div>
-                                    <h4 className="text-sm font-bold text-[var(--text\_secondary)] mb-3 uppercase tracking-wider">
+                                    <h4 className="text-sm font-bold text-[var(--text-secondary)] mb-3 uppercase tracking-wider">
                                       Metrics
                                     </h4>
-                                    <div className="bg-[var(--bg\_primary)] p-4 rounded-lg border border-[var(--border)]">
+                                    <div className="bg-[var(--bg-primary)] p-4 rounded-lg border border-[var(--border)]">
                                       {Object.entries(
                                         expandedRunData?.data?.metrics ||
                                           expandedRunData?.metrics ||
@@ -679,8 +682,8 @@ export const Training = () => {
                                           key={k}
                                           className="flex justify-between py-1 border-b border-[var(--border)] last:border-0 text-sm"
                                         >
-                                          <span className="text-[var(--text\_secondary)]">{k}</span>
-                                          <span className="text-[var(--text\_secondary)] font-mono">
+                                          <span className="text-[var(--text-secondary)]">{k}</span>
+                                          <span className="text-[var(--text-secondary)] font-mono">
                                             {typeof v === 'number' ? v.toFixed(4) : v}
                                           </span>
                                         </div>
@@ -706,7 +709,7 @@ export const Training = () => {
       {activeTab === 'compare' && (
         <div className="pt-4 animate-in fade-in slide-in-from-bottom-2 space-y-6">
           {selectedRuns.length < 2 ? (
-            <div className="bg-[var(--bg\_secondary)] rounded-xl p-8 border border-[var(--border)] text-center text-[var(--text\_secondary)]">
+            <div className="bg-[var(--bg-secondary)] rounded-xl p-8 border border-[var(--border)] text-center text-[var(--text-secondary)]">
               <GitCompare className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>
                 Select at least 2 runs from the Experiment Runs tab to compare them side-by-side.
@@ -719,23 +722,23 @@ export const Training = () => {
           ) : (
             <>
               {/* Metrics Comparison Table */}
-              <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg">
-                <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg\_primary)]/50">
-                  <h3 className="text-lg font-bold text-[var(--text\_primary)] flex items-center gap-2">
+              <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] overflow-hidden shadow-lg">
+                <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--bg-primary)]/50">
+                  <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
                     <Database className="w-5 h-5 text-blue-500" /> Metric & Parameter Comparison
                   </h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left whitespace-nowrap">
-                    <thead className="bg-[var(--bg\_primary)]/80 border-b border-[var(--border)]">
+                    <thead className="bg-[var(--bg-primary)]/80 border-b border-[var(--border)]">
                       <tr>
-                        <th className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase">
+                        <th className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase">
                           Field
                         </th>
                         {compareRuns.map((r, i) => (
                           <th
                             key={r.run_id}
-                            className="px-6 py-3 text-xs font-semibold text-[var(--text\_secondary)] uppercase"
+                            className="px-6 py-3 text-xs font-semibold text-[var(--text-secondary)] uppercase"
                           >
                             <div className="flex items-center gap-2">
                               <div
@@ -744,7 +747,7 @@ export const Training = () => {
                               ></div>
                               {r.name}
                             </div>
-                            <div className="text-[10px] text-[var(--text\_secondary)] font-mono lowercase mt-1">
+                            <div className="text-[10px] text-[var(--text-secondary)] font-mono lowercase mt-1">
                               {r.run_id.substring(0, 8)}
                             </div>
                           </th>
@@ -756,8 +759,8 @@ export const Training = () => {
                       {Array.from(
                         new Set(compareRuns.flatMap((r) => Object.keys(r.metrics || {}))),
                       ).map((metricKey) => (
-                        <tr key={`m_${metricKey}`} className="hover:bg-[var(--bg\_tertiary)]/50">
-                          <td className="px-6 py-3 text-sm font-bold text-[var(--text\_secondary)]">
+                        <tr key={`m_${metricKey}`} className="hover:bg-[var(--bg-tertiary)]/50">
+                          <td className="px-6 py-3 text-sm font-bold text-[var(--text-secondary)]">
                             metric: {metricKey}
                           </td>
                           {compareRuns.map((r) => {
@@ -765,7 +768,7 @@ export const Training = () => {
                             return (
                               <td
                                 key={r.run_id}
-                                className="px-6 py-3 text-sm font-mono text-[var(--text\_primary)]"
+                                className="px-6 py-3 text-sm font-mono text-[var(--text-primary)]"
                               >
                                 {val !== undefined
                                   ? typeof val === 'number'
@@ -783,9 +786,9 @@ export const Training = () => {
                       ).map((paramKey) => (
                         <tr
                           key={`p_${paramKey}`}
-                          className="hover:bg-[var(--bg\_tertiary)]/50 bg-[var(--bg\_primary)]/20"
+                          className="hover:bg-[var(--bg-tertiary)]/50 bg-[var(--bg-primary)]/20"
                         >
-                          <td className="px-6 py-3 text-sm font-bold text-[var(--text\_secondary)]">
+                          <td className="px-6 py-3 text-sm font-bold text-[var(--text-secondary)]">
                             param: {paramKey}
                           </td>
                           {compareRuns.map((r) => {
@@ -793,7 +796,7 @@ export const Training = () => {
                             return (
                               <td
                                 key={r.run_id}
-                                className="px-6 py-3 text-sm font-mono text-[var(--text\_secondary)]"
+                                className="px-6 py-3 text-sm font-mono text-[var(--text-secondary)]"
                               >
                                 {val !== undefined ? val : '—'}
                               </td>
@@ -808,8 +811,8 @@ export const Training = () => {
 
               {/* Loss Curve Chart */}
               {chartData.length > 0 && (
-                <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg">
-                  <h3 className="text-lg font-bold text-[var(--text\_primary)] mb-6">
+                <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg">
+                  <h3 className="text-lg font-bold text-[var(--text-primary)] mb-6">
                     Loss Curves per Epoch
                   </h3>
                   <div className="h-[400px] w-full">
@@ -854,25 +857,25 @@ export const Training = () => {
       {/* TAB 4: Training Schedule */}
       {activeTab === 'schedule' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 animate-in fade-in slide-in-from-bottom-2">
-          <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg h-fit">
+          <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg h-fit">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-[var(--bg\_primary)] rounded-lg text-blue-500 border border-[var(--border)]">
+              <div className="p-2 bg-[var(--bg-primary)] rounded-lg text-blue-500 border border-[var(--border)]">
                 <Calendar className="h-5 w-5" />
               </div>
-              <h3 className="text-lg font-bold text-[var(--text\_primary)]">Cron Scheduler</h3>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">Cron Scheduler</h3>
             </div>
 
-            <div className="bg-[var(--bg\_primary)] rounded-lg border border-[var(--border)] p-5 relative overflow-hidden">
+            <div className="bg-[var(--bg-primary)] rounded-lg border border-[var(--border)] p-5 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-              <h4 className="text-base font-bold text-[var(--text\_primary)] mb-2">
+              <h4 className="text-base font-bold text-[var(--text-primary)] mb-2">
                 Weekly Baseline Sync
               </h4>
-              <p className="text-sm text-[var(--text\_secondary)] leading-relaxed mb-6">
+              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-6">
                 Automated background tasks trigger the `run_incremental_retraining` pipeline
                 natively evaluating active vectors overriding historical entropy shifts.
               </p>
 
-              <div className="bg-[var(--bg\_secondary)] rounded px-4 py-3 text-sm font-mono text-[var(--text\_secondary)] flex items-center justify-between border border-[var(--border)]">
+              <div className="bg-[var(--bg-secondary)] rounded px-4 py-3 text-sm font-mono text-[var(--text-secondary)] flex items-center justify-between border border-[var(--border)]">
                 <span>Every Sunday</span>
                 <span className="text-blue-400 font-bold">02:00 AM UTC</span>
               </div>
@@ -885,7 +888,7 @@ export const Training = () => {
                   initialMutation.isPending ||
                   (jobId && statusData?.status !== 'completed' && statusData?.status !== 'failed')
                 }
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-[var(--text\_primary)] font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-[var(--text-primary)] font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
               >
                 {initialMutation.isPending ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -901,7 +904,7 @@ export const Training = () => {
                   retrainMutation.isPending ||
                   (jobId && statusData?.status !== 'completed' && statusData?.status !== 'failed')
                 }
-                className="w-full bg-[var(--bg\_tertiary)] hover:bg-[var(--bg\_tertiary)] disabled:opacity-50 text-[var(--text\_primary)] font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                className="w-full bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-50 text-[var(--text-primary)] font-medium py-3 rounded-lg flex items-center justify-center gap-2 transition-colors"
               >
                 {retrainMutation.isPending ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -913,15 +916,15 @@ export const Training = () => {
             </div>
           </div>
 
-          <div className="bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg flex flex-col">
-            <h3 className="text-lg font-bold text-[var(--text\_primary)] flex items-center gap-2 mb-4">
+          <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-6 shadow-lg flex flex-col">
+            <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2 mb-4">
               <Activity className="h-5 w-5 text-green-500" /> Active Job Status
             </h3>
 
             {jobId ? (
-              <div className="flex-1 bg-[var(--bg\_primary)] border border-[var(--border)] rounded-lg p-5">
+              <div className="flex-1 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg p-5">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm font-mono text-[var(--text\_secondary)]">
+                  <span className="text-sm font-mono text-[var(--text-secondary)]">
                     Job: {jobId.substring(0, 12)}...
                   </span>
                   <span
@@ -940,9 +943,9 @@ export const Training = () => {
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 text-sm">
                     <Loader2
-                      className={`h-4 w-4 ${statusData?.status !== 'completed' && statusData?.status !== 'failed' ? 'text-blue-500 animate-spin' : 'text-[var(--text\_secondary)]'}`}
+                      className={`h-4 w-4 ${statusData?.status !== 'completed' && statusData?.status !== 'failed' ? 'text-blue-500 animate-spin' : 'text-[var(--text-secondary)]'}`}
                     />
-                    <span className="text-[var(--text\_secondary)]">
+                    <span className="text-[var(--text-secondary)]">
                       Step:{' '}
                       {statusData?.current_step || statusData?.step || 'Initializing environment'}
                     </span>
@@ -957,7 +960,7 @@ export const Training = () => {
                   {statusData?.status === 'completed' && (
                     <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
                       <h4 className="text-green-400 text-sm font-bold mb-2">Job Successful</h4>
-                      <p className="text-xs text-[var(--text\_secondary)]">
+                      <p className="text-xs text-[var(--text-secondary)]">
                         Check Model Status or Experiment Runs to view new artifacts.
                       </p>
                     </div>
@@ -965,12 +968,12 @@ export const Training = () => {
                 </div>
               </div>
             ) : (
-              <div className="flex-1 bg-[var(--bg\_primary)] border border-[var(--border)] rounded-lg p-8 flex flex-col items-center justify-center text-center">
-                <Clock className="w-12 h-12 text-[var(--text\_secondary)] mb-4" />
-                <p className="text-[var(--text\_secondary)]">
+              <div className="flex-1 bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg p-8 flex flex-col items-center justify-center text-center">
+                <Clock className="w-12 h-12 text-[var(--text-secondary)] mb-4" />
+                <p className="text-[var(--text-secondary)]">
                   No active training jobs executing natively right now.
                 </p>
-                <p className="text-xs text-[var(--text\_secondary)] mt-2">
+                <p className="text-xs text-[var(--text-secondary)] mt-2">
                   Trigger a manual job or wait for scheduler.
                 </p>
               </div>
@@ -983,7 +986,7 @@ export const Training = () => {
       {activeTab === 'accuracy' && (
         <div className="pt-4 animate-in fade-in slide-in-from-bottom-2 space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-[var(--text_primary)] flex items-center gap-2">
+            <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
               <Target className="w-6 h-6 text-indigo-500" />
               Model Accuracy Evaluation
             </h2>
@@ -1001,7 +1004,7 @@ export const Training = () => {
           {accuracyLoading ? (
             <div className="p-10 flex justify-center"><LoadingSpinner /></div>
           ) : accuracyError && accuracyError.response?.data?.error === 'insufficient data' ? (
-            <div className="bg-[var(--bg_secondary)] border border-[var(--border)] rounded-xl p-8 text-center text-[var(--text_secondary)] shadow-lg">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-8 text-center text-[var(--text-secondary)] shadow-lg">
               <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p className="text-lg">Insufficient labeled data</p>
               <p className="mt-2 text-sm">The accuracy evaluator requires a minimum of 30 analyst-labeled samples. Please label more alerts in the triage queue.</p>
@@ -1018,9 +1021,9 @@ export const Training = () => {
                   { label: "F1 Score", value: accuracy.f1_score, format: "pct" },
                   { label: "Accuracy", value: accuracy.accuracy, format: "pct" }
                 ].map((stat, i) => (
-                  <div key={i} className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-4 shadow-sm">
-                    <div className="text-sm text-[var(--text_secondary)]">{stat.label}</div>
-                    <div className="text-2xl font-bold text-[var(--text_primary)] mt-1">
+                  <div key={i} className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-4 shadow-sm">
+                    <div className="text-sm text-[var(--text-secondary)]">{stat.label}</div>
+                    <div className="text-2xl font-bold text-[var(--text-primary)] mt-1">
                       {(stat.value * 100).toFixed(1)}%
                     </div>
                   </div>
@@ -1029,8 +1032,8 @@ export const Training = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Confusion Matrix */}
-                <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-sm flex flex-col items-center">
-                  <h3 className="text-md font-bold text-[var(--text_primary)] mb-6 self-start">Confusion Matrix (Threshold: {accuracy.optimal_threshold.toFixed(2)})</h3>
+                <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-6 shadow-sm flex flex-col items-center">
+                  <h3 className="text-md font-bold text-[var(--text-primary)] mb-6 self-start">Confusion Matrix (Threshold: {accuracy.optimal_threshold.toFixed(2)})</h3>
                   <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
                     <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4 text-center">
                       <div className="text-xs text-green-400 mb-1">True Positive (TP)</div>
@@ -1052,10 +1055,10 @@ export const Training = () => {
                 </div>
 
                 {/* PR Curve */}
-                <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-sm">
-                  <h3 className="text-md font-bold text-[var(--text_primary)] mb-2 flex justify-between">
+                <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-6 shadow-sm">
+                  <h3 className="text-md font-bold text-[var(--text-primary)] mb-2 flex justify-between">
                     <span>Precision-Recall Curve</span>
-                    <span className="text-sm font-mono text-[var(--text_secondary)]">AUC: {accuracy.pr_auc?.toFixed(3)}</span>
+                    <span className="text-sm font-mono text-[var(--text-secondary)]">AUC: {accuracy.pr_auc?.toFixed(3)}</span>
                   </h3>
                   <div className="h-[250px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1064,10 +1067,10 @@ export const Training = () => {
                         margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
-                        <XAxis dataKey="recall" type="number" domain={[0, 1]} tick={{ fill: 'var(--text_secondary)', fontSize: 12 }} />
-                        <YAxis domain={[0, 1]} tick={{ fill: 'var(--text_secondary)', fontSize: 12 }} />
+                        <XAxis dataKey="recall" type="number" domain={[0, 1]} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+                        <YAxis domain={[0, 1]} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
                         <RechartsTooltip
-                          contentStyle={{ backgroundColor: 'var(--bg_secondary)', borderColor: 'var(--border)', color: 'var(--text_primary)' }}
+                          contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         />
                         <Line type="monotone" dataKey="precision" stroke="#8b5cf6" strokeWidth={2} dot={false} name="PR Curve" />
                       </LineChart>
@@ -1076,8 +1079,8 @@ export const Training = () => {
                 </div>
 
                 {/* Threshold Sweep */}
-                <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-sm lg:col-span-2">
-                  <h3 className="text-md font-bold text-[var(--text_primary)] mb-4">Threshold Sweep (F1 Maximization)</h3>
+                <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-6 shadow-sm lg:col-span-2">
+                  <h3 className="text-md font-bold text-[var(--text-primary)] mb-4">Threshold Sweep (F1 Maximization)</h3>
                   <div className="h-[250px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
@@ -1085,12 +1088,12 @@ export const Training = () => {
                         margin={{ top: 5, right: 20, left: -20, bottom: 5 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
-                        <XAxis dataKey="threshold" type="number" domain={[0, 1]} tick={{ fill: 'var(--text_secondary)', fontSize: 12 }} />
-                        <YAxis domain={[0, 1]} tick={{ fill: 'var(--text_secondary)', fontSize: 12 }} />
+                        <XAxis dataKey="threshold" type="number" domain={[0, 1]} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+                        <YAxis domain={[0, 1]} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
                         <RechartsTooltip
-                          contentStyle={{ backgroundColor: 'var(--bg_secondary)', borderColor: 'var(--border)', color: 'var(--text_primary)' }}
+                          contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                         />
-                        <Legend wrapperStyle={{ fontSize: '12px', color: 'var(--text_secondary)' }} />
+                        <Legend wrapperStyle={{ fontSize: '12px', color: 'var(--text-secondary)' }} />
                         <Line type="monotone" dataKey="precision" stroke="#3b82f6" strokeWidth={2} dot={false} name="Precision" />
                         <Line type="monotone" dataKey="recall" stroke="#ef4444" strokeWidth={2} dot={false} name="Recall" />
                         <Line type="monotone" dataKey="f1" stroke="#10b981" strokeWidth={3} dot={false} name="F1 Score" />
@@ -1100,23 +1103,23 @@ export const Training = () => {
                 </div>
 
                 {/* Per Model AUC & Calibration */}
-                <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-sm">
-                  <h3 className="text-md font-bold text-[var(--text_primary)] mb-4">Model Contributions (AUC-ROC)</h3>
+                <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-6 shadow-sm">
+                  <h3 className="text-md font-bold text-[var(--text-primary)] mb-4">Model Contributions (AUC-ROC)</h3>
                   <div className="space-y-4">
                     {Object.entries(accuracy.per_model_auc || {}).map(([model, aucScore]) => (
                       <div key={model}>
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="text-[var(--text_secondary)] font-mono">{model}</span>
-                          <span className="text-[var(--text_primary)]">{aucScore.toFixed(3)}</span>
+                          <span className="text-[var(--text-secondary)] font-mono">{model}</span>
+                          <span className="text-[var(--text-primary)]">{aucScore.toFixed(3)}</span>
                         </div>
-                        <div className="w-full bg-[var(--bg_primary)] rounded-full h-2">
+                        <div className="w-full bg-[var(--bg-primary)] rounded-full h-2">
                           <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${Math.max(0, aucScore) * 100}%` }}></div>
                         </div>
                       </div>
                     ))}
                     <div className="mt-6 pt-4 border-t border-[var(--border)]">
                       <div className="flex justify-between text-sm">
-                        <span className="text-[var(--text_secondary)]">Expected Calibration Error (ECE):</span>
+                        <span className="text-[var(--text-secondary)]">Expected Calibration Error (ECE):</span>
                         <span className="text-yellow-400 font-mono">{(accuracy.calibration_error * 100).toFixed(1)}%</span>
                       </div>
                     </div>
@@ -1124,25 +1127,25 @@ export const Training = () => {
                 </div>
 
                 {/* Per Rule Precision */}
-                <div className="bg-[var(--bg_secondary)] rounded-xl border border-[var(--border)] p-6 shadow-sm">
-                  <h3 className="text-md font-bold text-[var(--text_primary)] mb-4">Rule Precision Breakdown</h3>
+                <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-6 shadow-sm">
+                  <h3 className="text-md font-bold text-[var(--text-primary)] mb-4">Rule Precision Breakdown</h3>
                   <div className="overflow-y-auto max-h-[200px] border border-[var(--border)] rounded-lg">
                     <table className="w-full text-left text-sm">
-                      <thead className="bg-[var(--bg_primary)] sticky top-0">
+                      <thead className="bg-[var(--bg-primary)] sticky top-0">
                         <tr>
-                          <th className="px-4 py-2 font-semibold text-[var(--text_secondary)]">Rule ID</th>
-                          <th className="px-4 py-2 font-semibold text-[var(--text_secondary)]">Precision</th>
+                          <th className="px-4 py-2 font-semibold text-[var(--text-secondary)]">Rule ID</th>
+                          <th className="px-4 py-2 font-semibold text-[var(--text-secondary)]">Precision</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[var(--border)]">
                         {Object.entries(accuracy.per_rule_precision || {}).sort((a, b) => b[1] - a[1]).map(([rule, prec]) => (
-                          <tr key={rule} className="hover:bg-[var(--bg_tertiary)]">
-                            <td className="px-4 py-2 font-mono text-[var(--text_primary)]">{rule}</td>
-                            <td className="px-4 py-2 text-[var(--text_primary)]">{(prec * 100).toFixed(1)}%</td>
+                          <tr key={rule} className="hover:bg-[var(--bg-tertiary)]">
+                            <td className="px-4 py-2 font-mono text-[var(--text-primary)]">{rule}</td>
+                            <td className="px-4 py-2 text-[var(--text-primary)]">{(prec * 100).toFixed(1)}%</td>
                           </tr>
                         ))}
                         {Object.keys(accuracy.per_rule_precision || {}).length === 0 && (
-                          <tr><td colSpan="2" className="px-4 py-4 text-center text-xs text-[var(--text_secondary)]">No rule triggers in feedback.</td></tr>
+                          <tr><td colSpan="2" className="px-4 py-4 text-center text-xs text-[var(--text-secondary)]">No rule triggers in feedback.</td></tr>
                         )}
                       </tbody>
                     </table>

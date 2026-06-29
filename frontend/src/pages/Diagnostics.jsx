@@ -60,7 +60,7 @@ export const Diagnostics = () => {
   const isLoadingData = khLoading || isLoading || dfLoading || ldbLoading
 
   return (
-    <div className="flex flex-col min-h-screen bg-[var(--bg\_primary)] p-4 md:p-8">
+    <div className="flex flex-col min-h-screen bg-[var(--bg-primary)] p-4 md:p-8">
       <h1 className="text-2xl font-bold mb-6">Platform Diagnostics</h1>
       
       {isLoadingData ? (
@@ -68,7 +68,7 @@ export const Diagnostics = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Kibana Health */}
-          <div className="bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)]">
+          <div className="bg-[var(--bg-secondary)] p-6 rounded-xl border border-[var(--border)]">
             <div className="flex items-center gap-3 mb-4">
               <Activity className="h-5 w-5 text-blue-500" />
               <h2 className="text-lg font-semibold">Kibana Connection</h2>
@@ -82,7 +82,7 @@ export const Diagnostics = () => {
               </div>
               <div className="flex justify-between items-center">
                 <span>URL</span>
-                <span className="font-mono text-sm text-[var(--text\_secondary)]">{kibanaHealth?.kibana_url}</span>
+                <span className="font-mono text-sm text-[var(--text-secondary)]">{kibanaHealth?.kibana_url}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Latency</span>
@@ -92,7 +92,7 @@ export const Diagnostics = () => {
           </div>
 
           {/* Index Stats */}
-          <div className="bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)]">
+          <div className="bg-[var(--bg-secondary)] p-6 rounded-xl border border-[var(--border)]">
             <div className="flex items-center gap-3 mb-4">
               <Database className="h-5 w-5 text-purple-500" />
               <h2 className="text-lg font-semibold">Index Stats</h2>
@@ -100,7 +100,7 @@ export const Diagnostics = () => {
             <div className="space-y-3">
               {indexStats && Object.entries(indexStats).map(([idx, stats]) => (
                 <div key={idx} className="flex justify-between items-center text-sm">
-                  <span className="truncate w-40 text-[var(--text\_secondary)]" title={idx}>{idx.replace('logs-', '')}</span>
+                  <span className="truncate w-40 text-[var(--text-secondary)]" title={idx}>{idx.replace('logs-', '')}</span>
                   <div className="flex items-center gap-2">
                     <span className="font-mono">{stats.doc_count.toLocaleString()} docs</span>
                     <Badge variant={stats.reachable ? 'success' : 'error'}>{stats.reachable ? 'OK' : 'ERR'}</Badge>
@@ -111,7 +111,7 @@ export const Diagnostics = () => {
           </div>
 
           {/* Data Freshness */}
-          <div className="bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)]">
+          <div className="bg-[var(--bg-secondary)] p-6 rounded-xl border border-[var(--border)]">
             <div className="flex items-center gap-3 mb-4">
               <Clock className="h-5 w-5 text-orange-500" />
               <h2 className="text-lg font-semibold">Data Freshness</h2>
@@ -120,14 +120,14 @@ export const Diagnostics = () => {
               {dataFreshness && Object.entries(dataFreshness).map(([key, timestamp]) => (
                 <div key={key} className="flex justify-between items-center text-sm">
                   <span className="capitalize">{key}</span>
-                  <span className="font-mono text-[var(--text\_secondary)]">{timestamp ? new Date(timestamp).toLocaleString() : 'N/A'}</span>
+                  <span className="font-mono text-[var(--text-secondary)]">{timestamp ? new Date(timestamp).toLocaleString() : 'N/A'}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Local DB Stats */}
-          <div className="bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)]">
+          <div className="bg-[var(--bg-secondary)] p-6 rounded-xl border border-[var(--border)]">
             <div className="flex items-center gap-3 mb-4">
               <Server className="h-5 w-5 text-green-500" />
               <h2 className="text-lg font-semibold">Local SQLite Stats</h2>
@@ -155,11 +155,11 @@ export const Diagnostics = () => {
       )}
 
       {/* Test Fetch */}
-      <div className="bg-[var(--bg\_secondary)] p-6 rounded-xl border border-[var(--border)] max-w-4xl">
+      <div className="bg-[var(--bg-secondary)] p-6 rounded-xl border border-[var(--border)] max-w-4xl">
         <h2 className="text-lg font-semibold mb-4">Test Fetch (Kibana Proxy)</h2>
         <form onSubmit={handleTestFetch} className="flex gap-4 items-end mb-6">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-[var(--text\_secondary)] mb-1">Index Pattern</label>
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Index Pattern</label>
             <input 
               type="text" 
               value={testIndex} 
@@ -168,7 +168,7 @@ export const Diagnostics = () => {
             />
           </div>
           <div className="w-24">
-            <label className="block text-xs font-medium text-[var(--text\_secondary)] mb-1">Minutes</label>
+            <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Minutes</label>
             <input 
               type="number" 
               value={testMinutes} 

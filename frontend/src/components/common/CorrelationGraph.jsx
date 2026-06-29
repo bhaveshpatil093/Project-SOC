@@ -488,20 +488,20 @@ export const CorrelationGraph = React.memo(
 
     if (!d3) {
       return (
-        <div className="w-full h-full flex items-center justify-center bg-[var(--bg\_primary)] border border-[var(--border)] rounded-xl">
-          <span className="text-[var(--text\_secondary)]">Loading Graph Engine...</span>
+        <div className="w-full h-full flex items-center justify-center bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl">
+          <span className="text-[var(--text-secondary)]">Loading Graph Engine...</span>
         </div>
       )
     }
 
     return (
-      <div className="relative w-full h-full bg-[var(--bg\_primary)] border border-[var(--border)] rounded-xl overflow-hidden shadow-inner flex flex-col">
+      <div className="relative w-full h-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl overflow-hidden shadow-inner flex flex-col">
         {/* Controls Overlay */}
-        <div className="absolute top-4 right-4 z-10 bg-[var(--bg\_primary)]/80 backdrop-blur border border-[var(--border)] p-3 rounded-lg flex flex-col gap-3 shadow-lg">
-          <div className="flex items-center gap-2 text-[var(--text\_secondary)] text-xs">
+        <div className="absolute top-4 right-4 z-10 bg-[var(--bg-primary)]/80 backdrop-blur border border-[var(--border)] p-3 rounded-lg flex flex-col gap-3 shadow-lg">
+          <div className="flex items-center gap-2 text-[var(--text-secondary)] text-xs">
             <FilterIcon className="h-4 w-4 text-blue-500" />
             <select
-              className="bg-[var(--bg\_secondary)] border border-[var(--border)] rounded px-2 py-1 outline-none"
+              className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded px-2 py-1 outline-none"
               value={minLevel}
               onChange={(e) => setMinLevel(e.target.value)}
             >
@@ -511,7 +511,7 @@ export const CorrelationGraph = React.memo(
               <option value="critical">Critical Only</option>
             </select>
           </div>
-          <label className="flex items-center gap-2 text-xs text-[var(--text\_secondary)] cursor-pointer">
+          <label className="flex items-center gap-2 text-xs text-[var(--text-secondary)] cursor-pointer">
             <input
               type="checkbox"
               checked={onlyIncidents}
@@ -522,11 +522,11 @@ export const CorrelationGraph = React.memo(
           </label>
           <button
             onClick={handleResetLayout}
-            className="flex items-center justify-center gap-2 bg-[var(--bg\_secondary)] hover:bg-[var(--bg\_tertiary)] text-xs text-[var(--text\_primary)] px-3 py-1.5 rounded transition-colors border border-[var(--border)]"
+            className="flex items-center justify-center gap-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] text-xs text-[var(--text-primary)] px-3 py-1.5 rounded transition-colors border border-[var(--border)]"
           >
             <RefreshCw className="h-3 w-3" /> Reset Layout
           </button>
-          <div className="text-[10px] text-[var(--text\_secondary)] mt-1 text-center font-mono">
+          <div className="text-[10px] text-[var(--text-secondary)] mt-1 text-center font-mono">
             Showing {graphData.nodes.length} nodes, {graphData.links.length} edges
           </div>
         </div>
@@ -547,7 +547,7 @@ export const CorrelationGraph = React.memo(
         {/* Tooltip */}
         {tooltip.show && (
           <div
-            className="fixed z-50 bg-[var(--bg\_primary)] border border-[var(--border)] text-[var(--text\_primary)] text-xs rounded shadow-2xl p-3 pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-10px]"
+            className="fixed z-50 bg-[var(--bg-primary)] border border-[var(--border)] text-[var(--text-primary)] text-xs rounded shadow-2xl p-3 pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-10px]"
             style={{ left: tooltip.x, top: tooltip.y }}
           >
             <p className="font-bold mb-1 border-b border-[var(--border)] pb-1 uppercase tracking-wider">

@@ -18,7 +18,7 @@ const LogEntry = ({ log, onTraceClick }) => {
   const baseColor = levelColors[log.level] || 'border-l-gray-500 text-gray-400'
   
   return (
-    <div className={`font-mono text-xs border-l-4 ${baseColor} bg-[var(--bg\_secondary)] mb-1 rounded-r-md overflow-hidden hover:bg-[var(--bg\_tertiary)] transition-colors`}>
+    <div className={`font-mono text-xs border-l-4 ${baseColor} bg-[var(--bg-secondary)] mb-1 rounded-r-md overflow-hidden hover:bg-[var(--bg-tertiary)] transition-colors`}>
       <div 
         className="px-3 py-2 cursor-pointer flex items-start gap-3"
         onClick={() => setExpanded(!expanded)}
@@ -33,11 +33,11 @@ const LogEntry = ({ log, onTraceClick }) => {
         <div className="flex-none w-48 truncate opacity-80" title={log.logger_name}>
           [{log.logger_name}]
         </div>
-        <div className="flex-1 break-words text-[var(--text\_primary)]">{log.message}</div>
+        <div className="flex-1 break-words text-[var(--text-primary)]">{log.message}</div>
       </div>
       
       {expanded && (
-        <div className="px-10 py-3 bg-black/20 border-t border-[var(--border)] text-[var(--text\_secondary)]">
+        <div className="px-10 py-3 bg-black/20 border-t border-[var(--border)] text-[var(--text-secondary)]">
           <div className="grid grid-cols-[120px_1fr] gap-2 mb-2">
             <span className="opacity-60">Module:</span><span>{log.module}.{log.funcName}:{log.lineno}</span>
             <span className="opacity-60">Correlation ID:</span>
@@ -75,16 +75,16 @@ const TraceModal = ({ correlationId, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[var(--bg\_primary)] w-full max-w-5xl h-[80vh] rounded-xl border border-[var(--border)] shadow-2xl flex flex-col">
-        <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg\_secondary)] rounded-t-xl">
+      <div className="bg-[var(--bg-primary)] w-full max-w-5xl h-[80vh] rounded-xl border border-[var(--border)] shadow-2xl flex flex-col">
+        <div className="p-4 border-b border-[var(--border)] flex justify-between items-center bg-[var(--bg-secondary)] rounded-t-xl">
           <div>
             <h2 className="text-lg font-bold flex items-center gap-2">
               <Activity className="w-5 h-5 text-purple-500" />
               Request Trace
             </h2>
-            <p className="text-xs font-mono text-[var(--text\_secondary)] mt-1">ID: {correlationId}</p>
+            <p className="text-xs font-mono text-[var(--text-secondary)] mt-1">ID: {correlationId}</p>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-[var(--bg\_tertiary)] rounded-md transition-colors">
+          <button onClick={onClose} className="p-1 hover:bg-[var(--bg-tertiary)] rounded-md transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -143,39 +143,39 @@ export const LogViewer = () => {
   return (
     <div className="flex flex-col h-[calc(100vh-180px)] border border-[var(--border)] rounded-xl overflow-hidden shadow-sm bg-[#0a0a0a]">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-[var(--bg\_secondary)] border-b border-[var(--border)]">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-[var(--bg-secondary)] border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
           <Terminal className="w-5 h-5 text-green-500" />
-          <span className="font-bold text-[var(--text\_primary)]">Log Console</span>
+          <span className="font-bold text-[var(--text-primary)]">Log Console</span>
         </div>
         
         <div className="flex items-center gap-3 flex-1 max-w-md">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text\_secondary)]" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
             <input 
               type="text" 
               placeholder="Search logs..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[var(--bg\_primary)] border border-[var(--border)] rounded-md pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-md pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-[var(--bg\_primary)] border border-[var(--border)] rounded-md overflow-hidden text-xs font-bold">
-            <button onClick={() => setLevel('')} className={`px-3 py-1.5 ${level === '' ? 'bg-gray-700 text-white' : 'hover:bg-[var(--bg\_tertiary)]'}`}>ALL</button>
-            <button onClick={() => setLevel('INFO')} className={`px-3 py-1.5 border-l border-[var(--border)] ${level === 'INFO' ? 'bg-blue-600 text-white' : 'hover:bg-[var(--bg\_tertiary)] text-blue-400'}`}>INFO</button>
-            <button onClick={() => setLevel('WARNING')} className={`px-3 py-1.5 border-l border-[var(--border)] ${level === 'WARNING' ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg\_tertiary)] text-amber-400'}`}>WARN</button>
-            <button onClick={() => setLevel('ERROR')} className={`px-3 py-1.5 border-l border-[var(--border)] ${level === 'ERROR' ? 'bg-red-600 text-white' : 'hover:bg-[var(--bg\_tertiary)] text-red-400'}`}>ERROR</button>
+          <div className="flex items-center bg-[var(--bg-primary)] border border-[var(--border)] rounded-md overflow-hidden text-xs font-bold">
+            <button onClick={() => setLevel('')} className={`px-3 py-1.5 ${level === '' ? 'bg-gray-700 text-white' : 'hover:bg-[var(--bg-tertiary)]'}`}>ALL</button>
+            <button onClick={() => setLevel('INFO')} className={`px-3 py-1.5 border-l border-[var(--border)] ${level === 'INFO' ? 'bg-blue-600 text-white' : 'hover:bg-[var(--bg-tertiary)] text-blue-400'}`}>INFO</button>
+            <button onClick={() => setLevel('WARNING')} className={`px-3 py-1.5 border-l border-[var(--border)] ${level === 'WARNING' ? 'bg-amber-600 text-white' : 'hover:bg-[var(--bg-tertiary)] text-amber-400'}`}>WARN</button>
+            <button onClick={() => setLevel('ERROR')} className={`px-3 py-1.5 border-l border-[var(--border)] ${level === 'ERROR' ? 'bg-red-600 text-white' : 'hover:bg-[var(--bg-tertiary)] text-red-400'}`}>ERROR</button>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-[var(--text\_secondary)] cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer">
             <input 
               type="checkbox" 
               checked={autoScroll} 
               onChange={() => setAutoScroll(!autoScroll)}
-              className="rounded border-[var(--border)] bg-[var(--bg\_primary)] text-blue-500 focus:ring-blue-500/20"
+              className="rounded border-[var(--border)] bg-[var(--bg-primary)] text-blue-500 focus:ring-blue-500/20"
             />
             Auto-scroll
           </label>

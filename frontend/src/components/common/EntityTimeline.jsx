@@ -43,7 +43,7 @@ export const EntityTimeline = ({
 
   if (sortedAlerts.length === 0) {
     return (
-      <div className="text-[var(--text\_secondary)] text-sm italic p-4">
+      <div className="text-[var(--text-secondary)] text-sm italic p-4">
         No correlated events found for this entity.
       </div>
     )
@@ -80,13 +80,13 @@ export const EntityTimeline = ({
                   style={{ backgroundColor: dotColor }}
                 />
                 <div
-                  className={`flex items-center gap-3 text-sm ${isCurrent ? 'bg-[var(--bg\_secondary)]/80 p-2 rounded-lg -ml-2 border border-[var(--border)]' : ''}`}
+                  className={`flex items-center gap-3 text-sm ${isCurrent ? 'bg-[var(--bg-secondary)]/80 p-2 rounded-lg -ml-2 border border-[var(--border)]' : ''}`}
                 >
-                  <span className="text-[var(--text\_secondary)] text-xs w-20 shrink-0">
+                  <span className="text-[var(--text-secondary)] text-xs w-20 shrink-0">
                     {formatRelativeTime(alert.timestamp)}
                   </span>
                   <Badge variant={threatLevel}>{threatLevel}</Badge>
-                  <span className="text-[var(--text\_secondary)] truncate max-w-[200px]">
+                  <span className="text-[var(--text-secondary)] truncate max-w-[200px]">
                     {alert.top_rule || alert.log_type || 'Unknown Rule'}
                   </span>
                   <Link
@@ -105,27 +105,27 @@ export const EntityTimeline = ({
             <div key={alert.id || idx} className="relative group">
               {/* Dot on the timeline */}
               <div
-                className={`absolute -left-[31px] top-4 h-4 w-4 rounded-full border-[3px] border-[var(--border)] z-10 transition-transform ${isCurrent ? 'ring-2 ring-blue-500 scale-125 ring-offset-2 ring-offset-[var(--bg\_primary)]' : 'group-hover:scale-110'}`}
+                className={`absolute -left-[31px] top-4 h-4 w-4 rounded-full border-[3px] border-[var(--border)] z-10 transition-transform ${isCurrent ? 'ring-2 ring-blue-500 scale-125 ring-offset-2 ring-offset-[var(--bg-primary)]' : 'group-hover:scale-110'}`}
                 style={{ backgroundColor: dotColor }}
               />
 
               {/* Connecting bracket for attack chains (visually implied by proximity and the orange banner above, but we highlight the card border if it's high/crit) */}
               <div
-                className={`ml-2 bg-[var(--bg\_secondary)]/80 rounded-xl border ${isCurrent ? 'border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]' : 'border-[var(--border)]'} p-4 transition-all hover:border-[var(--border)]`}
+                className={`ml-2 bg-[var(--bg-secondary)]/80 rounded-xl border ${isCurrent ? 'border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]' : 'border-[var(--border)]'} p-4 transition-all hover:border-[var(--border)]`}
               >
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-[var(--bg\_primary)] text-[var(--text\_secondary)] border border-[var(--border)]">
+                    <div className="p-1.5 rounded-lg bg-[var(--bg-primary)] text-[var(--text-secondary)] border border-[var(--border)]">
                       {getLogIcon(alert.log_type)}
                     </div>
                     <div>
                       <h4
-                        className="text-sm font-bold text-[var(--text\_primary)] truncate max-w-[250px]"
+                        className="text-sm font-bold text-[var(--text-primary)] truncate max-w-[250px]"
                         title={alert.top_rule || 'Unknown Signature'}
                       >
                         {truncate(alert.top_rule || 'Generic Anomaly Detected', 40)}
                       </h4>
-                      <div className="flex items-center gap-2 text-xs text-[var(--text\_secondary)] mt-0.5">
+                      <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)] mt-0.5">
                         <Clock className="h-3 w-3" />
                         <span title={formatTimestamp(alert.timestamp)}>
                           {formatRelativeTime(alert.timestamp)}
@@ -145,10 +145,10 @@ export const EntityTimeline = ({
                 <div className="flex items-center justify-between mt-4">
                   {/* Compact Threat Progress Bar */}
                   <div className="flex items-center gap-2 w-[120px]">
-                    <span className="text-xs font-bold text-[var(--text\_secondary)] w-6">
+                    <span className="text-xs font-bold text-[var(--text-secondary)] w-6">
                       {score.toFixed(0)}
                     </span>
-                    <div className="h-1.5 flex-1 bg-[var(--bg\_primary)] rounded-full overflow-hidden">
+                    <div className="h-1.5 flex-1 bg-[var(--bg-primary)] rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full"
                         style={{ width: `${score}%`, backgroundColor: dotColor }}

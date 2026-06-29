@@ -1,10 +1,10 @@
 export const THEMES = {
   dark: {
-    bg_primary: '#0f172a', // slate-900
-    bg_secondary: '#1e293b', // slate-800
-    bg_tertiary: '#334155', // slate-700
-    text_primary: '#f1f5f9', // slate-100
-    text_secondary: '#94a3b8', // slate-400
+    'bg-primary': '#0f172a', // slate-900
+    'bg-secondary': '#1e293b', // slate-800
+    'bg-tertiary': '#334155', // slate-700
+    'text-primary': '#f1f5f9', // slate-100
+    'text-secondary': '#94a3b8', // slate-400
     border: '#334155', // slate-700
     accent: '#3b82f6', // blue-500
     critical: '#ef4444',
@@ -13,11 +13,11 @@ export const THEMES = {
     low: '#22c55e',
   },
   light: {
-    bg_primary: '#f8fafc', // slate-50
-    bg_secondary: '#ffffff',
-    bg_tertiary: '#f1f5f9', // slate-100
-    text_primary: '#0f172a', // slate-900
-    text_secondary: '#475569', // slate-600
+    'bg-primary': '#f8fafc', // slate-50
+    'bg-secondary': '#ffffff',
+    'bg-tertiary': '#f1f5f9', // slate-100
+    'text-primary': '#0f172a', // slate-900
+    'text-secondary': '#475569', // slate-600
     border: '#e2e8f0', // slate-200
     accent: '#2563eb', // blue-600
     critical: '#dc2626',

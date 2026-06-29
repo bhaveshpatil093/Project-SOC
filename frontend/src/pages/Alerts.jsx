@@ -73,7 +73,7 @@ const SLACountdown = ({ alert }) => {
   }, [alert])
 
   if (alert.threat_level !== 'critical' && alert.threat_level !== 'high') {
-    return <div className="text-[var(--text\_secondary)]">-</div>
+    return <div className="text-[var(--text-secondary)]">-</div>
   }
   
   if (alert.alert_status === 'closed') {
@@ -108,10 +108,10 @@ const ProgressBar = ({ score }) => {
 
   return (
     <div className="flex items-center gap-3 w-full max-w-[150px]">
-      <div className="flex-1 h-2 bg-[var(--bg\_tertiary)] rounded-full overflow-hidden">
+      <div className="flex-1 h-2 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
         <div className={`h-full ${colorClass}`} style={{ width: `${percentage}%` }} />
       </div>
-      <span className="text-xs font-mono w-8 text-[var(--text\_secondary)]">
+      <span className="text-xs font-mono w-8 text-[var(--text-secondary)]">
         {percentage.toFixed(0)}%
       </span>
     </div>
@@ -123,28 +123,28 @@ const AlertRow = React.memo(({ alert, index, page, pageSize, updateStatus, colum
   return (
     <div
       style={style}
-      className="absolute top-0 left-0 w-full hover:bg-[var(--bg\_tertiary)]/70 transition-colors border-b border-[var(--border)]/50 flex"
+      className="absolute top-0 left-0 w-full hover:bg-[var(--bg-tertiary)]/70 transition-colors border-b border-[var(--border)]/50 flex"
     >
-      <div className="w-16 flex-none px-5 py-3 text-xs text-[var(--text\_secondary)] font-medium flex items-center">
+      <div className="w-16 flex-none px-5 py-3 text-xs text-[var(--text-secondary)] font-medium flex items-center">
         {page * pageSize + index + 1}
       </div>
       {columns.timestamp && (
-        <div className="w-40 flex-none px-5 py-3 text-sm text-[var(--text\_secondary)] flex items-center">
+        <div className="w-40 flex-none px-5 py-3 text-sm text-[var(--text-secondary)] flex items-center">
           {formatDate(alert.timestamp)}
         </div>
       )}
       {columns.host && (
-        <div className="w-32 flex-none px-5 py-3 text-sm font-medium text-[var(--text\_primary)] flex items-center truncate">
+        <div className="w-32 flex-none px-5 py-3 text-sm font-medium text-[var(--text-primary)] flex items-center truncate">
           {alert.host_id}
         </div>
       )}
       {columns.user && (
-        <div className="w-32 flex-none px-5 py-3 text-sm text-[var(--text\_secondary)] flex items-center truncate">
+        <div className="w-32 flex-none px-5 py-3 text-sm text-[var(--text-secondary)] flex items-center truncate">
           {alert.user_name}
         </div>
       )}
       {columns.logType && (
-        <div className="w-32 flex-none px-5 py-3 text-xs text-[var(--text\_secondary)] flex items-center truncate">
+        <div className="w-32 flex-none px-5 py-3 text-xs text-[var(--text-secondary)] flex items-center truncate">
           {alert.log_type}
         </div>
       )}
@@ -160,7 +160,7 @@ const AlertRow = React.memo(({ alert, index, page, pageSize, updateStatus, colum
       )}
       {columns.tactic && (
         <div
-          className="flex-1 px-5 py-3 text-xs text-[var(--text\_secondary)] truncate flex items-center"
+          className="flex-1 px-5 py-3 text-xs text-[var(--text-secondary)] truncate flex items-center"
           title={alert.mitre_tactic}
         >
           {alert.mitre_tactic || '-'}
@@ -179,8 +179,8 @@ const AlertRow = React.memo(({ alert, index, page, pageSize, updateStatus, colum
             onChange={(e) => updateStatus({ id: alert._id || alert.id, status: e.target.value })}
             className={`text-xs font-medium px-2 py-1.5 rounded border ${
               alert.alert_status === 'closed'
-                ? 'border-[var(--border)] bg-[var(--bg\_secondary)]/50 text-[var(--text\_secondary)]'
-                : 'border-[var(--border)] bg-[var(--bg\_secondary)] text-[var(--text\_primary)]'
+                ? 'border-[var(--border)] bg-[var(--bg-secondary)]/50 text-[var(--text-secondary)]'
+                : 'border-[var(--border)] bg-[var(--bg-secondary)] text-[var(--text-primary)]'
             } focus:outline-none focus:border-blue-500 transition-colors w-full`}
           >
             <option value="open">Open</option>
@@ -195,14 +195,14 @@ const AlertRow = React.memo(({ alert, index, page, pageSize, updateStatus, colum
             <Link
               to={`/alerts/${alert._id || alert.id}`}
               title="View Details"
-              className="text-[var(--text\_secondary)] hover:text-blue-400 transition-colors"
+              className="text-[var(--text-secondary)] hover:text-blue-400 transition-colors"
             >
               <Eye className="h-5 w-5" />
             </Link>
             <Link
               to={`/investigation?alert_id=${alert._id || alert.id}`}
               title="Investigate in SLM"
-              className="text-[var(--text\_secondary)] hover:text-purple-400 transition-colors"
+              className="text-[var(--text-secondary)] hover:text-purple-400 transition-colors"
             >
               <MessageSquare className="h-5 w-5" />
             </Link>
@@ -248,7 +248,7 @@ const AlertCard = React.memo(({ alert, updateStatus, style }) => {
   return (
     <div style={style} className="absolute top-0 left-0 w-full px-4 py-2 flex">
       <div
-        className="w-full bg-[var(--bg\_secondary)] rounded-xl border border-[var(--border)] p-4 shadow-sm relative overflow-hidden transition-transform"
+        className="w-full bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] p-4 shadow-sm relative overflow-hidden transition-transform"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -269,8 +269,8 @@ const AlertCard = React.memo(({ alert, updateStatus, style }) => {
 
         <div className="flex justify-between items-start ml-2 mb-2">
           <div>
-            <h3 className="font-bold text-[var(--text\_primary)]">{alert.entity_key}</h3>
-            <p className="text-xs text-[var(--text\_secondary)] mt-0.5">
+            <h3 className="font-bold text-[var(--text-primary)]">{alert.entity_key}</h3>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
               {formatDate(alert.timestamp)}
             </p>
           </div>
@@ -279,19 +279,19 @@ const AlertCard = React.memo(({ alert, updateStatus, style }) => {
 
         <div className="ml-2 mt-3 space-y-2">
           <div className="flex justify-between items-center text-xs">
-            <span className="text-[var(--text\_secondary)]">Log Type:</span>
-            <span className="text-[var(--text\_secondary)] truncate max-w-[150px]">
+            <span className="text-[var(--text-secondary)]">Log Type:</span>
+            <span className="text-[var(--text-secondary)] truncate max-w-[150px]">
               {alert.log_type}
             </span>
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-[var(--text\_secondary)]">Threat Score:</span>
+            <span className="text-[var(--text-secondary)]">Threat Score:</span>
             <ProgressBar score={alert.threat_score} />
           </div>
           <div className="flex justify-between items-center text-xs">
-            <span className="text-[var(--text\_secondary)]">Status:</span>
+            <span className="text-[var(--text-secondary)]">Status:</span>
             <span
-              className={`font-medium ${alert.alert_status === 'closed' ? 'text-[var(--text\_secondary)]' : 'text-[var(--text\_secondary)]'}`}
+              className={`font-medium ${alert.alert_status === 'closed' ? 'text-[var(--text-secondary)]' : 'text-[var(--text-secondary)]'}`}
             >
               {alert.alert_status || 'open'}
             </span>
@@ -301,7 +301,7 @@ const AlertCard = React.memo(({ alert, updateStatus, style }) => {
         <div className="ml-2 mt-4 flex gap-2 border-t border-[var(--border)]/50 pt-3">
           <Link
             to={`/alerts/${alert._id || alert.id}`}
-            className="flex-1 py-1.5 bg-[var(--bg\_tertiary)]/50 hover:bg-[var(--bg\_tertiary)] text-[var(--text\_secondary)] rounded text-xs font-medium text-center transition-colors"
+            className="flex-1 py-1.5 bg-[var(--bg-tertiary)]/50 hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] rounded text-xs font-medium text-center transition-colors"
           >
             Details
           </Link>
@@ -389,14 +389,14 @@ export const Alerts = () => {
   const renderFilters = () => (
     <>
       <div>
-        <label className="block text-xs text-[var(--text\_secondary)] mb-1 font-medium">
+        <label className="block text-xs text-[var(--text-secondary)] mb-1 font-medium">
           Status
         </label>
         <select
           name="status"
           value={filters.status}
           onChange={handleFilterChange}
-          className="w-full bg-[var(--bg\_primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text\_primary)] focus:outline-none focus:border-blue-500 transition-colors"
+          className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-colors"
         >
           <option value="">All</option>
           <option value="open">Open</option>
@@ -405,14 +405,14 @@ export const Alerts = () => {
         </select>
       </div>
       <div>
-        <label className="block text-xs text-[var(--text\_secondary)] mb-1 font-medium">
+        <label className="block text-xs text-[var(--text-secondary)] mb-1 font-medium">
           Threat Level
         </label>
         <select
           name="threat_level"
           value={filters.threat_level}
           onChange={handleFilterChange}
-          className="w-full bg-[var(--bg\_primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text\_primary)] focus:outline-none focus:border-blue-500 transition-colors"
+          className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-colors"
         >
           <option value="">All</option>
           <option value="critical">Critical</option>
@@ -422,7 +422,7 @@ export const Alerts = () => {
         </select>
       </div>
       <div>
-        <label className="block text-xs text-[var(--text\_secondary)] mb-1 font-medium">
+        <label className="block text-xs text-[var(--text-secondary)] mb-1 font-medium">
           From Date
         </label>
         <input
@@ -430,11 +430,11 @@ export const Alerts = () => {
           name="from_time"
           value={filters.from_time}
           onChange={handleFilterChange}
-          className="w-full bg-[var(--bg\_primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text\_primary)] focus:outline-none focus:border-blue-500 transition-colors"
+          className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-colors"
         />
       </div>
       <div>
-        <label className="block text-xs text-[var(--text\_secondary)] mb-1 font-medium">
+        <label className="block text-xs text-[var(--text-secondary)] mb-1 font-medium">
           To Date
         </label>
         <input
@@ -442,11 +442,11 @@ export const Alerts = () => {
           name="to_time"
           value={filters.to_time}
           onChange={handleFilterChange}
-          className="w-full bg-[var(--bg\_primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text\_primary)] focus:outline-none focus:border-blue-500 transition-colors"
+          className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-colors"
         />
       </div>
       <div>
-        <label className="block text-xs text-[var(--text\_secondary)] mb-1 font-medium">
+        <label className="block text-xs text-[var(--text-secondary)] mb-1 font-medium">
           Host Search
         </label>
         <input
@@ -455,12 +455,12 @@ export const Alerts = () => {
           value={filters.host_id}
           onChange={handleFilterChange}
           placeholder="Enter hostname..."
-          className="w-full bg-[var(--bg\_primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text\_primary)] focus:outline-none focus:border-blue-500 transition-colors"
+          className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-colors"
         />
       </div>
       <div className="flex gap-2">
         <div className="flex-1">
-          <label className="block text-xs text-[var(--text\_secondary)] mb-1 font-medium">
+          <label className="block text-xs text-[var(--text-secondary)] mb-1 font-medium">
             User Search
           </label>
           <input
@@ -469,13 +469,13 @@ export const Alerts = () => {
             value={filters.user_name}
             onChange={handleFilterChange}
             placeholder="Enter username..."
-            className="w-full bg-[var(--bg\_primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text\_primary)] focus:outline-none focus:border-blue-500 transition-colors"
+            className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-colors"
           />
         </div>
         <div className="flex items-end">
           <button
             onClick={clearFilters}
-            className="bg-[var(--bg\_tertiary)] hover:bg-[var(--bg\_tertiary)] text-[var(--text\_primary)] p-2 rounded-lg transition-colors h-[38px] w-[38px] flex items-center justify-center"
+            className="bg-[var(--bg-tertiary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] p-2 rounded-lg transition-colors h-[38px] w-[38px] flex items-center justify-center"
             title="Clear Filters"
           >
             <FilterX className="h-4 w-4" />
@@ -493,20 +493,20 @@ export const Alerts = () => {
           {isMobile && (
             <button
               onClick={() => setShowMobileFilters(true)}
-              className="flex items-center gap-2 bg-[var(--bg\_secondary)] text-[var(--text\_secondary)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-sm font-medium shrink-0"
+              className="flex items-center gap-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-sm font-medium shrink-0"
             >
               <Filter className="h-4 w-4" /> Filters
             </button>
           )}
           <button
             onClick={() => exportAlertsToCSV(memoizedAlerts)}
-            className="flex items-center gap-2 bg-[var(--bg\_secondary)] text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shrink-0"
+            className="flex items-center gap-2 bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border)] px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shrink-0"
           >
             <Download className="h-4 w-4" /> Export CSV
           </button>
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors shrink-0 ${autoRefresh ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' : 'bg-[var(--bg\_secondary)] text-[var(--text\_secondary)] border-[var(--border)] hover:text-[var(--text\_primary)]'}`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors shrink-0 ${autoRefresh ? 'bg-blue-500/20 text-blue-400 border-blue-500/50' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border)] hover:text-[var(--text-primary)]'}`}
           >
             <RefreshCw className={`h-4 w-4 ${autoRefresh ? 'animate-spin' : ''}`} />
             Auto-refresh
@@ -514,7 +514,7 @@ export const Alerts = () => {
           <button
             onClick={handleTriggerScoring}
             disabled={triggerScoringMutation.isPending}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-[var(--text\_primary)] px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-sm font-medium transition-colors shrink-0"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-[var(--text-primary)] px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-sm font-medium transition-colors shrink-0"
           >
             {triggerScoringMutation.isPending ? (
               <RefreshCw className="h-4 w-4 animate-spin" />
@@ -535,7 +535,7 @@ export const Alerts = () => {
 
       {/* Desktop Filters */}
       {!isMobile && (
-        <div className="hidden sm:grid bg-[var(--bg\_secondary)] p-4 rounded-xl border border-[var(--border)] grid-cols-2 lg:grid-cols-6 gap-4 items-end flex-none">
+        <div className="hidden sm:grid bg-[var(--bg-secondary)] p-4 rounded-xl border border-[var(--border)] grid-cols-2 lg:grid-cols-6 gap-4 items-end flex-none">
           {renderFilters()}
         </div>
       )}
@@ -543,14 +543,14 @@ export const Alerts = () => {
       {/* Mobile Filters Bottom Sheet */}
       {isMobile && showMobileFilters && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-end sm:hidden">
-          <div className="bg-[var(--bg\_primary)] w-full rounded-t-2xl p-4 border-t border-[var(--border)] max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom-full">
+          <div className="bg-[var(--bg-primary)] w-full rounded-t-2xl p-4 border-t border-[var(--border)] max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom-full">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-[var(--border)]">
-              <h3 className="font-bold text-[var(--text\_primary)] flex items-center gap-2">
+              <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
                 <Filter className="h-4 w-4" /> Filter Alerts
               </h3>
               <button
                 onClick={() => setShowMobileFilters(false)}
-                className="p-1 rounded-lg text-[var(--text\_secondary)] bg-[var(--bg\_secondary)]"
+                className="p-1 rounded-lg text-[var(--text-secondary)] bg-[var(--bg-secondary)]"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -562,70 +562,70 @@ export const Alerts = () => {
 
       {/* Main Content Area */}
       <div
-        className={`bg-[var(--bg\_secondary)] md:rounded-xl md:border border-[var(--border)] overflow-hidden shadow-lg flex-1 flex flex-col min-h-0 ${isMobile ? '-mx-4 border-y' : ''}`}
+        className={`bg-[var(--bg-secondary)] md:rounded-xl md:border border-[var(--border)] overflow-hidden shadow-lg flex-1 flex flex-col min-h-0 ${isMobile ? '-mx-4 border-y' : ''}`}
       >
         <div className="overflow-x-auto flex-1 flex flex-col min-h-0">
           <div className={`${isMobile ? 'w-full' : 'min-w-[1200px]'} flex-1 flex flex-col min-h-0`}>
             {/* Desktop Header */}
             {!isMobile && (
-              <div className="bg-[var(--bg\_primary)]/80 border-b border-[var(--border)] flex flex-none text-left">
-                <div className="w-16 flex-none px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
+              <div className="bg-[var(--bg-primary)]/80 border-b border-[var(--border)] flex flex-none text-left">
+                <div className="w-16 flex-none px-5 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
                   #
                 </div>
                 {alertColumns.timestamp && (
                   <div
-                    className="w-40 flex-none px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider cursor-pointer hover:text-[var(--text\_primary)] select-none flex items-center gap-1"
+                    className="w-40 flex-none px-5 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider cursor-pointer hover:text-[var(--text-primary)] select-none flex items-center gap-1"
                     onClick={() => handleSort('timestamp')}
                   >
                     Timestamp <ArrowUpDown className="h-3 w-3" />
                   </div>
                 )}
                 {alertColumns.host && (
-                  <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
+                  <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
                     Host
                   </div>
                 )}
                 {alertColumns.user && (
-                  <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
+                  <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
                     User
                   </div>
                 )}
                 {alertColumns.logType && (
-                  <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
+                  <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
                     Log Type
                   </div>
                 )}
                 {alertColumns.score && (
                   <div
-                    className="w-48 flex-none px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider cursor-pointer hover:text-[var(--text\_primary)] select-none flex items-center gap-1"
+                    className="w-48 flex-none px-5 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider cursor-pointer hover:text-[var(--text-primary)] select-none flex items-center gap-1"
                     onClick={() => handleSort('threat_score')}
                   >
                     Threat Score <ArrowUpDown className="h-3 w-3" />
                   </div>
                 )}
                 {alertColumns.level && (
-                  <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
+                  <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
                     Threat Level
                   </div>
                 )}
                 {alertColumns.tactic && (
-                  <div className="flex-1 px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
+                  <div className="flex-1 px-5 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
                     MITRE Tactic
                   </div>
                 )}
                 
                 {alertColumns.sla && (
-                  <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
+                  <div className="w-32 flex-none px-5 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
                     SLA
                   </div>
                 )}
                 {alertColumns.status && (
-                  <div className="w-36 flex-none px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider">
+                  <div className="w-36 flex-none px-5 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
                     Status
                   </div>
                 )}
                 {alertColumns.actions && (
-                  <div className="w-24 flex-none px-5 py-4 text-xs font-semibold text-[var(--text\_secondary)] uppercase tracking-wider text-center">
+                  <div className="w-24 flex-none px-5 py-4 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider text-center">
                     Actions
                   </div>
                 )}
@@ -694,30 +694,30 @@ export const Alerts = () => {
         </div>
 
         {/* Pagination */}
-        <div className="flex-none px-4 md:px-6 py-3 md:py-4 bg-[var(--bg\_primary)]/50 border-t border-[var(--border)] flex flex-col sm:flex-row justify-between items-center gap-3">
-          <div className="text-xs md:text-sm text-[var(--text\_secondary)] text-center sm:text-left">
+        <div className="flex-none px-4 md:px-6 py-3 md:py-4 bg-[var(--bg-primary)]/50 border-t border-[var(--border)] flex flex-col sm:flex-row justify-between items-center gap-3">
+          <div className="text-xs md:text-sm text-[var(--text-secondary)] text-center sm:text-left">
             Showing{' '}
-            <span className="font-medium text-[var(--text\_primary)]">
+            <span className="font-medium text-[var(--text-primary)]">
               {total === 0 ? 0 : page * pageSize + 1}
             </span>{' '}
             to{' '}
-            <span className="font-medium text-[var(--text\_primary)]">
+            <span className="font-medium text-[var(--text-primary)]">
               {Math.min(page * pageSize + pageSize, total)}
             </span>{' '}
-            of <span className="font-medium text-[var(--text\_primary)]">{total}</span>
+            of <span className="font-medium text-[var(--text-primary)]">{total}</span>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
-              className="px-3 md:px-4 py-1.5 bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-lg text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg\_tertiary)] transition-colors text-[var(--text\_primary)]"
+              className="px-3 md:px-4 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors text-[var(--text-primary)]"
             >
               Previous
             </button>
             <button
               onClick={() => setPage(page + 1)}
               disabled={(page + 1) * pageSize >= total}
-              className="px-3 md:px-4 py-1.5 bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-lg text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg\_tertiary)] transition-colors text-[var(--text\_primary)]"
+              className="px-3 md:px-4 py-1.5 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--bg-tertiary)] transition-colors text-[var(--text-primary)]"
             >
               Next
             </button>

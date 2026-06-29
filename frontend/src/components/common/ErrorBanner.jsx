@@ -11,7 +11,7 @@ export const ErrorBanner = ({ message, onRetry }) => {
         </div>
         <div>
           <h3 className="text-red-400 font-bold mb-1">System Error Encountered</h3>
-          <p className="text-[var(--text\_secondary)] text-sm leading-relaxed max-w-3xl">
+          <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-3xl">
             {message || 'An unexpected network or system error occurred.'}
           </p>
         </div>
@@ -20,7 +20,7 @@ export const ErrorBanner = ({ message, onRetry }) => {
       {onRetry && (
         <button
           onClick={onRetry}
-          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-[var(--text\_primary)] font-medium rounded-lg text-sm transition-colors shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-[var(--text-primary)] font-medium rounded-lg text-sm transition-colors shrink-0"
         >
           <RefreshCw className="h-4 w-4" />
           Retry Connection

@@ -36,13 +36,13 @@ const Diagnostics = lazy(() => import('./pages/Diagnostics').then((m) => ({ defa
 
 const NotFound = () => (
   <div className="flex flex-col items-center justify-center h-full min-h-[500px]">
-    <div className="p-4 bg-[var(--bg\_secondary)] rounded-full mb-6 text-[var(--text\_secondary)]">
+    <div className="p-4 bg-[var(--bg-secondary)] rounded-full mb-6 text-[var(--text-secondary)]">
       <AlertTriangle className="h-12 w-12" />
     </div>
-    <h2 className="text-3xl font-bold text-[var(--text\_primary)] mb-3">
+    <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-3">
       404 — Null Route Trajectory
     </h2>
-    <p className="text-[var(--text\_secondary)]">
+    <p className="text-[var(--text-secondary)]">
       The requested endpoint hash does not map to any active internal layout components.
     </p>
   </div>
@@ -60,7 +60,7 @@ const AppContent = () => {
       {isAuthenticated && <OnboardingWizard />}
       <Suspense
         fallback={
-          <div className="h-screen w-full flex items-center justify-center bg-[var(--bg\_primary)]">
+          <div className="h-screen w-full flex items-center justify-center bg-[var(--bg-primary)]">
             <LoadingSpinner />
           </div>
         }

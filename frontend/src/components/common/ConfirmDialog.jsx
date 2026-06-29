@@ -16,10 +16,10 @@ export const ConfirmDialog = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0">
       <div
-        className="absolute inset-0 bg-[var(--bg\_primary)]/80 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-[var(--bg-primary)]/80 backdrop-blur-sm transition-opacity"
         onClick={onCancel}
       ></div>
-      <div className="relative bg-[var(--bg\_primary)] border border-[var(--border)] rounded-xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200">
+      <div className="relative bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200">
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
             <div
@@ -29,20 +29,20 @@ export const ConfirmDialog = ({
             </div>
             <button
               onClick={onCancel}
-              className="text-[var(--text\_secondary)] hover:text-[var(--text\_secondary)] transition-colors p-1"
+              className="text-[var(--text-secondary)] hover:text-[var(--text-secondary)] transition-colors p-1"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <h3 className="text-xl font-bold text-[var(--text\_primary)] mb-2">{title}</h3>
-          <p className="text-[var(--text\_secondary)] text-sm leading-relaxed">{message}</p>
+          <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">{title}</h3>
+          <p className="text-[var(--text-secondary)] text-sm leading-relaxed">{message}</p>
         </div>
 
-        <div className="bg-[var(--bg\_secondary)]/50 px-6 py-4 rounded-b-xl border-t border-[var(--border)]/50 flex items-center justify-end gap-3">
+        <div className="bg-[var(--bg-secondary)]/50 px-6 py-4 rounded-b-xl border-t border-[var(--border)]/50 flex items-center justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-[var(--text\_secondary)] hover:text-[var(--text\_primary)] bg-[var(--bg\_secondary)] hover:bg-[var(--bg\_tertiary)] border border-[var(--border)] rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg transition-colors"
           >
             Cancel
           </button>
@@ -51,7 +51,7 @@ export const ConfirmDialog = ({
               onConfirm()
               onCancel()
             }}
-            className={`px-4 py-2 text-sm font-medium text-[var(--text\_primary)] rounded-lg transition-colors ${
+            className={`px-4 py-2 text-sm font-medium text-[var(--text-primary)] rounded-lg transition-colors ${
               danger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
             }`}
           >

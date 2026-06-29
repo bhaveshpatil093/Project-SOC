@@ -11,17 +11,17 @@ export const Badge = React.memo(({ children, className, variant = 'default' }) =
   const v = (variant || 'default').toLowerCase()
 
   const variants = {
-    default: 'bg-[var(--bg\_tertiary)] text-[var(--text\_primary)]',
+    default: 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]',
     critical: 'bg-red-500/10 text-red-500 border border-red-500/50',
     high: 'bg-orange-500/10 text-orange-500 border border-orange-500/50',
     medium: 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/50',
     low: 'bg-green-500/10 text-green-500 border border-green-500/50',
     open: 'bg-blue-500/10 text-blue-500 border border-blue-500/50',
     closed:
-      'bg-[var(--text\_secondary)]/10 text-[var(--text\_secondary)] border border-[var(--border)]',
+      'bg-[var(--text-secondary)]/10 text-[var(--text-secondary)] border border-[var(--border)]',
     in_progress: 'bg-purple-500/10 text-purple-400 border border-purple-500/50',
     tp: 'bg-red-500/10 text-red-500 border border-red-500/50',
-    fp: 'bg-[var(--text\_secondary)]/10 text-[var(--text\_secondary)] border border-[var(--border)]',
+    fp: 'bg-[var(--text-secondary)]/10 text-[var(--text-secondary)] border border-[var(--border)]',
     benign: 'bg-green-500/10 text-green-500 border border-green-500/50',
   }
 

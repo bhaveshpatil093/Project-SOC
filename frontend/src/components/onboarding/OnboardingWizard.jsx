@@ -68,10 +68,10 @@ export function OnboardingWizard() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-500">
-      <div className="bg-[var(--bg_primary)] w-full max-w-lg rounded-2xl border border-[var(--border)] shadow-2xl p-8 relative overflow-hidden transform animate-in zoom-in-95 duration-300">
+      <div className="bg-[var(--bg-primary)] w-full max-w-lg rounded-2xl border border-[var(--border)] shadow-2xl p-8 relative overflow-hidden transform animate-in zoom-in-95 duration-300">
         
         {/* Progress bar */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-[var(--bg_secondary)]">
+        <div className="absolute top-0 left-0 w-full h-1 bg-[var(--bg-secondary)]">
           <div 
             className="h-full bg-blue-500 transition-all duration-300 ease-out" 
             style={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
@@ -79,19 +79,19 @@ export function OnboardingWizard() {
         </div>
 
         <div className="flex flex-col items-center text-center space-y-6 mt-4">
-          <div className="w-20 h-20 bg-[var(--bg_secondary)] border border-[var(--border)] rounded-full flex items-center justify-center text-4xl shadow-inner">
+          <div className="w-20 h-20 bg-[var(--bg-secondary)] border border-[var(--border)] rounded-full flex items-center justify-center text-4xl shadow-inner">
             {step.icon}
           </div>
           
           <div>
-            <h2 className="text-2xl font-bold text-[var(--text_primary)] mb-2">{step.title}</h2>
-            <p className="text-[var(--text_secondary)] leading-relaxed">{step.description}</p>
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{step.title}</h2>
+            <p className="text-[var(--text-secondary)] leading-relaxed">{step.description}</p>
           </div>
 
           <div className="flex items-center gap-4 w-full pt-4">
             <button 
               onClick={handleSkip}
-              className="text-sm font-medium text-[var(--text_secondary)] hover:text-[var(--text_primary)] transition-colors px-4 py-2"
+              className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-4 py-2"
             >
               Skip Tour
             </button>

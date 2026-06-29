@@ -9,12 +9,12 @@ export function EmptyState({
   className = ""
 }) {
   return (
-    <div className={`flex flex-col items-center justify-center p-12 text-center bg-[var(--bg_secondary)] rounded-xl border border-dashed border-[var(--border)] ${className}`}>
+    <div className={`flex flex-col items-center justify-center p-12 text-center bg-[var(--bg-secondary)] rounded-xl border border-dashed border-[var(--border)] ${className}`}>
       <div className="text-5xl mb-4 opacity-50 select-none filter drop-shadow-lg grayscale hover:grayscale-0 transition-all duration-500">
         {icon}
       </div>
-      <h3 className="text-lg font-bold text-[var(--text_primary)] mb-2">{title}</h3>
-      <p className="text-sm text-[var(--text_secondary)] max-w-sm mb-6">{description}</p>
+      <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">{title}</h3>
+      <p className="text-sm text-[var(--text-secondary)] max-w-sm mb-6">{description}</p>
       {actionLabel && onAction && (
         <button
           onClick={onAction}

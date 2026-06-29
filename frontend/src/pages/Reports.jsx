@@ -78,31 +78,31 @@ const CreateScheduleModal = ({ onClose, onCreated }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[var(--bg\_primary)] w-full max-w-md rounded-2xl border border-[var(--border)] shadow-2xl p-6">
+      <div className="bg-[var(--bg-primary)] w-full max-w-md rounded-2xl border border-[var(--border)] shadow-2xl p-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="font-bold text-lg flex items-center gap-2">
             <Calendar className="w-5 h-5 text-blue-400" /> Create Schedule
           </h3>
-          <button onClick={onClose} className="p-1 hover:bg-[var(--bg\_secondary)] rounded-md transition-colors">
+          <button onClick={onClose} className="p-1 hover:bg-[var(--bg-secondary)] rounded-md transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-1">Schedule Name</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Schedule Name</label>
             <input
               value={form.name}
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               placeholder="e.g., Executive Weekly Summary"
-              className="w-full bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-1">Report Type</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Report Type</label>
             <select
               value={form.report_type}
               onChange={e => setForm(f => ({ ...f, report_type: e.target.value }))}
-              className="w-full bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
             >
               <option value="shift">Shift Handover (8h)</option>
               <option value="daily">Daily Summary</option>
@@ -110,11 +110,11 @@ const CreateScheduleModal = ({ onClose, onCreated }) => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[var(--text\_secondary)] mb-1">Frequency</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Frequency</label>
             <select
               value={form.frequency}
               onChange={e => setForm(f => ({ ...f, frequency: e.target.value }))}
-              className="w-full bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
             >
               <option value="every_8h">Every 8 Hours</option>
               <option value="daily">Daily</option>
@@ -123,7 +123,7 @@ const CreateScheduleModal = ({ onClose, onCreated }) => {
           </div>
         </div>
         <div className="flex gap-3 mt-8">
-          <button onClick={onClose} className="flex-1 py-2 text-sm border border-[var(--border)] rounded-lg hover:bg-[var(--bg\_secondary)] transition-colors">Cancel</button>
+          <button onClick={onClose} className="flex-1 py-2 text-sm border border-[var(--border)] rounded-lg hover:bg-[var(--bg-secondary)] transition-colors">Cancel</button>
           <button
             onClick={() => form.name && mutation.mutate()}
             disabled={!form.name || mutation.isPending}
@@ -166,9 +166,9 @@ const SchedulesTab = () => {
         </button>
       </div>
 
-      <div className="bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-xl overflow-hidden">
+      <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl overflow-hidden">
         <table className="w-full text-sm text-left">
-          <thead className="bg-black/20 text-xs uppercase text-[var(--text\_secondary)] border-b border-[var(--border)]">
+          <thead className="bg-black/20 text-xs uppercase text-[var(--text-secondary)] border-b border-[var(--border)]">
             <tr>
               <th className="px-6 py-4 font-semibold">Schedule Name</th>
               <th className="px-6 py-4 font-semibold">Type</th>
@@ -180,14 +180,14 @@ const SchedulesTab = () => {
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
             {schedules?.map(s => (
-              <tr key={s.schedule_id} className="hover:bg-[var(--bg\_tertiary)]/50 transition-colors">
-                <td className="px-6 py-4 font-bold text-[var(--text\_primary)]">{s.name}</td>
+              <tr key={s.schedule_id} className="hover:bg-[var(--bg-tertiary)]/50 transition-colors">
+                <td className="px-6 py-4 font-bold text-[var(--text-primary)]">{s.name}</td>
                 <td className="px-6 py-4">
                   <Badge variant={s.report_type === 'shift' ? 'critical' : s.report_type === 'daily' ? 'high' : 'medium'}>{s.report_type}</Badge>
                 </td>
-                <td className="px-6 py-4 text-[var(--text\_secondary)] capitalize">{s.frequency.replace('_', ' ')}</td>
-                <td className="px-6 py-4 text-[var(--text\_secondary)] font-mono text-xs">{s.last_run ? formatDate(s.last_run) : 'Never'}</td>
-                <td className="px-6 py-4 text-[var(--text\_secondary)] font-mono text-xs">{formatDate(s.next_run)}</td>
+                <td className="px-6 py-4 text-[var(--text-secondary)] capitalize">{s.frequency.replace('_', ' ')}</td>
+                <td className="px-6 py-4 text-[var(--text-secondary)] font-mono text-xs">{s.last_run ? formatDate(s.last_run) : 'Never'}</td>
+                <td className="px-6 py-4 text-[var(--text-secondary)] font-mono text-xs">{formatDate(s.next_run)}</td>
                 <td className="px-6 py-4 text-right">
                   <button
                     onClick={() => runMutation.mutate(s.schedule_id)}
@@ -202,7 +202,7 @@ const SchedulesTab = () => {
             ))}
           </tbody>
         </table>
-        {schedules?.length === 0 && <div className="p-8 text-center text-[var(--text\_secondary)]">No schedules defined.</div>}
+        {schedules?.length === 0 && <div className="p-8 text-center text-[var(--text-secondary)]">No schedules defined.</div>}
       </div>
 
       {showModal && <CreateScheduleModal onClose={() => setShowModal(false)} onCreated={() => queryClient.invalidateQueries(['schedules'])} />}
@@ -240,21 +240,21 @@ const GeneratedReportsTab = () => {
   if (selectedReportId) {
     return (
       <div className="space-y-4">
-        <button onClick={() => setSelectedReportId(null)} className="text-sm text-[var(--text\_secondary)] hover:text-blue-400 flex items-center gap-1">
+        <button onClick={() => setSelectedReportId(null)} className="text-sm text-[var(--text-secondary)] hover:text-blue-400 flex items-center gap-1">
           ← Back to Reports
         </button>
         {isReportLoading ? (
           <div className="mt-8"><SkeletonCard lines={10} /></div>
         ) : activeReport ? (
-          <div className="bg-[var(--bg\_secondary)] border border-[var(--border)] rounded-xl overflow-hidden shadow-2xl print:shadow-none print:border-none">
+          <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl overflow-hidden shadow-2xl print:shadow-none print:border-none">
             <div className="p-4 bg-black/20 border-b border-[var(--border)] flex justify-between items-center print:hidden">
               <div className="flex items-center gap-3">
                 <FileCheck className="w-5 h-5 text-blue-400" />
                 <span className="font-bold">{activeReport.schedule_name || 'Generated Report'}</span>
-                <span className="text-xs text-[var(--text\_secondary)] font-mono">{formatDate(activeReport.generated_at)}</span>
+                <span className="text-xs text-[var(--text-secondary)] font-mono">{formatDate(activeReport.generated_at)}</span>
               </div>
               <div className="flex gap-2">
-                <button onClick={handleCopy} className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg\_tertiary)] hover:bg-[var(--bg\_primary)] border border-[var(--border)] rounded text-xs transition-colors">
+                <button onClick={handleCopy} className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-primary)] border border-[var(--border)] rounded text-xs transition-colors">
                   <Copy className="w-3.5 h-3.5" /> Copy Markdown
                 </button>
                 <button onClick={handlePrint} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors">
@@ -279,16 +279,16 @@ const GeneratedReportsTab = () => {
         <button
           key={r.report_id}
           onClick={() => setSelectedReportId(r.report_id)}
-          className="bg-[var(--bg\_secondary)] hover:bg-[var(--bg\_tertiary)] hover:border-blue-500/50 border border-[var(--border)] rounded-xl p-5 text-left transition-all group relative overflow-hidden"
+          className="bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-blue-500/50 border border-[var(--border)] rounded-xl p-5 text-left transition-all group relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 w-1 h-full bg-blue-500/50 group-hover:bg-blue-400 transition-colors" />
-          <h4 className="font-bold text-[var(--text\_primary)] mb-1 truncate pr-6">{r.schedule_name || 'Manual Report'}</h4>
-          <p className="text-xs text-[var(--text\_secondary)] flex items-center gap-1 mb-4">
+          <h4 className="font-bold text-[var(--text-primary)] mb-1 truncate pr-6">{r.schedule_name || 'Manual Report'}</h4>
+          <p className="text-xs text-[var(--text-secondary)] flex items-center gap-1 mb-4">
             <Clock className="w-3 h-3" /> {formatDate(r.generated_at)}
           </p>
           <div className="grid grid-cols-2 gap-2 mt-auto">
-            <div className="bg-[var(--bg\_primary)] p-2 rounded border border-[var(--border)]">
-              <div className="text-[10px] text-[var(--text\_secondary)] uppercase font-bold">Alerts</div>
+            <div className="bg-[var(--bg-primary)] p-2 rounded border border-[var(--border)]">
+              <div className="text-[10px] text-[var(--text-secondary)] uppercase font-bold">Alerts</div>
               <div className="font-mono text-sm">{r.stats?.total_alerts || 0}</div>
             </div>
             <div className="bg-red-500/10 p-2 rounded border border-red-500/20 text-red-400">
@@ -298,7 +298,7 @@ const GeneratedReportsTab = () => {
           </div>
         </button>
       ))}
-      {reportsList?.length === 0 && <div className="col-span-full p-12 text-center text-[var(--text\_secondary)]">No reports generated yet. Run a schedule to create one.</div>}
+      {reportsList?.length === 0 && <div className="col-span-full p-12 text-center text-[var(--text-secondary)]">No reports generated yet. Run a schedule to create one.</div>}
     </div>
   )
 }
@@ -310,33 +310,33 @@ const Reports = () => {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text\_primary)] flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3">
             <span className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-xl">
               <FileText className="w-6 h-6 text-blue-400" />
             </span>
             Automated Reports
           </h1>
-          <p className="text-[var(--text\_secondary)] text-sm mt-1">
+          <p className="text-[var(--text-secondary)] text-sm mt-1">
             Configure periodic shift handovers, daily summaries, and SLA compliance.
           </p>
         </div>
 
-        <div className="flex bg-[var(--bg\_secondary)] p-1 rounded-xl border border-[var(--border)]">
+        <div className="flex bg-[var(--bg-secondary)] p-1 rounded-xl border border-[var(--border)]">
           <button
             onClick={() => setActiveTab('generated')}
-            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'generated' ? 'bg-blue-600 text-white shadow-md' : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
+            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'generated' ? 'bg-blue-600 text-white shadow-md' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           >
             Generated Reports
           </button>
           <button
             onClick={() => setActiveTab('schedules')}
-            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'schedules' ? 'bg-blue-600 text-white shadow-md' : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
+            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'schedules' ? 'bg-blue-600 text-white shadow-md' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           >
             Schedules
           </button>
           <button
             onClick={() => setActiveTab('sla')}
-            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'sla' ? 'bg-blue-600 text-white shadow-md' : 'text-[var(--text\_secondary)] hover:text-[var(--text\_primary)]'}`}
+            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === 'sla' ? 'bg-blue-600 text-white shadow-md' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           >
             SLA Dashboard
           </button>
