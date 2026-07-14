@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 
+from app.ingestion.es_client_protocol import supports_index_management
 from app.logging_config import get_logger
 logger = get_logger(__name__)
 
@@ -33,7 +34,15 @@ class WebhookConfig:
 
 class WebhookManager:
 
-    async def initialize(self, es):
+    async def initialize(self, es) -> None:
+        if not supports_index_management(es):
+            logger.info(
+                "webhook_index_skipped",
+                index=WEBHOOK_INDEX,
+                reason="KibanaProxyClient does not support index management",
+            )
+            return
+
         exists = await es.indices.exists(index=WEBHOOK_INDEX)
         if not exists:
             await es.indices.create(index=WEBHOOK_INDEX, body={

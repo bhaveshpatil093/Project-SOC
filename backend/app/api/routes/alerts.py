@@ -18,6 +18,20 @@ from app.monitoring.audit_logger import audit_logger_instance
 
 router = APIRouter()
 
+@router.get("/tags", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
+async def get_all_tags():
+    """Returns all unique tags used across alerts stored in the local DB."""
+    try:
+        alerts = await local_db.list_alerts(settings.DB_PATH, limit=10000)
+        tags = set()
+        for a in alerts:
+            raw = a.get("raw_context", {})
+            for t in raw.get("tags", []):
+                tags.add(t)
+        return {"tags": sorted(list(tags))}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 class AlertResponse(BaseModel):
     id: str
     entity_key: str

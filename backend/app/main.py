@@ -26,6 +26,7 @@ from app.api.routes.websocket import router as websocket_router
 from app.auth.routes import router as auth_router
 from app.config import settings
 from app.ingestion.kibana_client import KibanaProxyClient
+from app.ingestion.es_client_protocol import supports_index_management
 from app.ingestion.scheduler import start_scheduler, stop_scheduler
 from app.logging_config import configure_logging, get_logger
 from app.middleware.rate_limiter import limiter
@@ -46,18 +47,16 @@ async def lifespan(app: FastAPI):
     await run_startup_validation(settings)
 
     # Initialize SQLite database
+    # DB_PATH is now an absolute path (see config.py) so no CWD dependency.
     from app.storage.local_db import init_db
-    import os
-    os.makedirs(os.path.dirname(settings.DB_PATH), exist_ok=True)
     await init_db(settings.DB_PATH)
 
-    # Initialize Kibana Proxy connection
-    KibanaProxyClient()
-    
+    # Initialize shared Kibana client (singleton — subsequent calls return same instance)
+    es = KibanaProxyClient()
+
     # Initialize Webhook Manager
     from app.integrations.webhook_manager import webhook_manager
     try:
-        es = KibanaProxyClient()
         await webhook_manager.initialize(es)
     except Exception as e:
         logger.warning(f"Failed to initialize webhook manager: {e}")
@@ -65,7 +64,6 @@ async def lifespan(app: FastAPI):
     # Initialize Report Scheduler
     from app.reports.report_scheduler import report_scheduler
     try:
-        es = KibanaProxyClient()
         await report_scheduler.initialize(es)
     except Exception as e:
         logger.warning(f"Failed to initialize report scheduler: {e}")
@@ -73,7 +71,6 @@ async def lifespan(app: FastAPI):
     # Initialize Team Manager mappings
     from app.auth.team_manager import team_manager_instance
     try:
-        es = KibanaProxyClient()
         await team_manager_instance.initialize(es)
     except Exception as e:
         logger.warning(f"Failed to initialize team manager: {e}")
@@ -81,11 +78,9 @@ async def lifespan(app: FastAPI):
     # Initialize Log Viewer mappings
     from app.monitoring.log_viewer import log_viewer_instance
     try:
-        es = KibanaProxyClient()
         await log_viewer_instance.initialize(es)
     except Exception as e:
         logger.warning(f"Failed to initialize log viewer index: {e}")
-
 
     # Initialize ML Model orchestrator dynamically onto lifespan wrapper
     asyncio.create_task(get_model_manager().initialize())
@@ -113,19 +108,15 @@ async def lifespan(app: FastAPI):
     if not os.path.exists(if_path) or not os.path.exists(ae_path):
         try:
             from app.models.trainer import run_initial_training
-            kibana_client = KibanaProxyClient()
             mm = get_model_manager()
-            asyncio.create_task(run_initial_training(kibana_client, mm, settings.DB_PATH))
+            asyncio.create_task(run_initial_training(es, mm, settings.DB_PATH))
         except Exception as es_e:
             logger.warning("kibana_connection_for_trainer_failed", error=str(es_e))
 
-    # Startup: Initialize ES connection and verify indices
-    client = KibanaProxyClient()
-    is_connected = await client.check_connection()
+    # Verify Kibana connection and apply migrations / start scheduler
+    is_connected = await es.check_connection()
     if is_connected:
-        es = client
-        
-        # Apply pending Elasticsearch migrations
+        # Apply pending Elasticsearch migrations (skipped automatically for KibanaProxyClient)
         from app.migrations.migration_runner import MigrationRunner
         runner = MigrationRunner()
         migration_results = await runner.apply_pending(es)
@@ -133,6 +124,8 @@ async def lifespan(app: FastAPI):
             logger.info("migrations_applied", versions=migration_results["applied"])
         if migration_results.get("errors"):
             logger.error("migration_errors", errors=migration_results["errors"])
+        if migration_results.get("skipped"):
+            logger.info("migrations_skipped", reason=migration_results["skipped"])
 
         await start_scheduler(es)
 
@@ -147,10 +140,11 @@ async def lifespan(app: FastAPI):
         logger.warning("openapi_generation_failed", error=str(e))
 
     yield
-    # Shutdown: Clean up client
+
+    # Shutdown: clean up scheduler and client
     await stop_scheduler()
     await KibanaProxyClient().close()
-    scheduler.shutdown()
+
 
 from fastapi.exceptions import RequestValidationError
 
@@ -206,6 +200,8 @@ def create_app() -> FastAPI:
     from app.api.routes.diagnostics import router as diagnostics_router
     from app.api.routes.admin import router as admin_router
     from app.api.routes.admin_audit_log import router as admin_audit_log_router
+    from app.api.routes.kibana import router as kibana_router
+    from app.api.routes.entities import router as entities_router
 
     app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
     app.include_router(ingestion_router, prefix="/api/ingestion", tags=["Ingestion"])
@@ -222,6 +218,9 @@ def create_app() -> FastAPI:
     app.include_router(diagnostics_router, prefix="/api/diagnostics", tags=["Diagnostics"])
     app.include_router(health_router, prefix="/health", tags=["Health"])
     app.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
+    app.include_router(admin_audit_log_router, prefix="/api/admin", tags=["Admin"])
+    app.include_router(kibana_router, prefix="/api", tags=["Kibana"])
+    app.include_router(entities_router, prefix="/api/entities", tags=["Entities"])
 
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -230,7 +229,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(Exception, generic_exception_handler)
 
-    app.add_middleware(RequestSizeMiddleware, max_upload_size=1048576) # 1MB limit
+    app.add_middleware(RequestSizeMiddleware, max_upload_size=1048576)  # 1MB limit
     app.add_middleware(
         TrustedHostMiddleware,
         allowed_hosts=["localhost", "127.0.0.1", "*.isro.gov.in"]

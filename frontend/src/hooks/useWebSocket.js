@@ -44,7 +44,13 @@ export function useWebSocket(isAuthenticated = false) {
     if (!isAuthenticated) return
 
     const connect = () => {
-      const ws = new WebSocket('ws://localhost:8000/ws/alerts')
+      // Derive WebSocket URL from VITE_API_URL env var.
+      // Since Vite proxies /ws to the backend, we can connect via the same
+      // origin as the frontend (the proxy handles the upgrade to ws://).
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+      const wsBase = apiUrl.replace(/^https?/, (m) => (m === 'https' ? 'wss' : 'ws'))
+      const wsUrl = `${wsBase}/ws/alerts`
+      const ws = new WebSocket(wsUrl)
       wsRef.current = ws
 
       ws.onopen = () => {

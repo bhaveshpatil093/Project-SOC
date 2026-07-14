@@ -28,16 +28,11 @@ async def liveness():
 
 @router.get("/ready", summary="Readiness Probe")
 async def readiness():
-    try:
-        es = KibanaProxyClient()
-        await es.info()
-    except Exception:
-        raise HTTPException(status_code=503, detail="Elasticsearch not connected.")
-
-    mm = get_model_manager()
-    if len(mm.models) == 0:
-        raise HTTPException(status_code=503, detail="No ML models loaded.")
-
+    es = KibanaProxyClient()
+    connected = await es.check_connection()
+    if not connected:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=503, content={"status": "not_ready", "reason": "Kibana not reachable"})
     return {"status": "ready"}
 
 @router.get("/deep", summary="Deep Health Check")

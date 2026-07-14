@@ -330,7 +330,7 @@ async def init_threat_engine():
 
     # Pre-warm False Positive lists securely off Kibana boundaries
     from app.feedback.suppressor import get_suppressor
-    await get_suppressor().refresh_suppression_list(kibana_client)
+    await get_suppressor().refresh_suppression_list(settings.DB_PATH)
 
     logger.info("threat_engine_initialized", message="Central ThreatEngine fully initialized and wired to ML subsystems.")
 

@@ -1,13 +1,22 @@
 import datetime
 from typing import Dict, List, Any
 
+from app.ingestion.es_client_protocol import supports_index_management
 from app.logging_config import get_logger
 logger = get_logger(__name__)
 
 class LogViewer:
     INDEX_NAME = "soc-application-logs"
 
-    async def initialize(self, es):
+    async def initialize(self, es) -> None:
+        if not supports_index_management(es):
+            logger.info(
+                "log_viewer_index_skipped",
+                index=self.INDEX_NAME,
+                reason="KibanaProxyClient does not support index management",
+            )
+            return
+
         # Ensure the index exists with proper mapping
         exists = await es.indices.exists(index=self.INDEX_NAME)
         if not exists:

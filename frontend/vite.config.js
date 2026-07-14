@@ -9,6 +9,36 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './vitest.setup.js',
   },
+  server: {
+    port: 5173,
+    proxy: {
+      // Proxy all /api HTTP calls to the backend
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy /health calls
+      '/health': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy WebSocket connections
+      '/ws': {
+        target: 'ws://localhost:8000',
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+      },
+      // Proxy Prometheus metrics endpoint
+      '/metrics': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
   build: {
     cssMinify: false,
     rollupOptions: {

@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass, asdict
 from typing import List, Dict, Optional
 
+from app.ingestion.es_client_protocol import supports_index_management
 from app.logging_config import get_logger
 logger = get_logger(__name__)
 
@@ -88,7 +89,14 @@ class PlatformAlerter:
         },
     ]
 
-    async def _ensure_index(self, es):
+    async def _ensure_index(self, es) -> None:
+        if not supports_index_management(es):
+            logger.debug(
+                "platform_alerting_index_skipped",
+                index=self.INDEX_NAME,
+                reason="KibanaProxyClient does not support index management",
+            )
+            return
         try:
             if not await es.indices.exists(index=self.INDEX_NAME):
                 await es.indices.create(index=self.INDEX_NAME, body={

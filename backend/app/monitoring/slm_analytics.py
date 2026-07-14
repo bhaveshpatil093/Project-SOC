@@ -3,6 +3,7 @@ import uuid
 from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict
 
+from app.ingestion.es_client_protocol import supports_index_management
 from app.logging_config import get_logger
 logger = get_logger(__name__)
 
@@ -26,7 +27,14 @@ class SLMQueryEvent:
 class SLMAnalytics:
     INDEX_NAME = "soc-slm-analytics"
 
-    async def _ensure_index(self, es):
+    async def _ensure_index(self, es) -> None:
+        if not supports_index_management(es):
+            logger.debug(
+                "slm_analytics_index_skipped",
+                index=self.INDEX_NAME,
+                reason="KibanaProxyClient does not support index management",
+            )
+            return
         try:
             if not await es.indices.exists(index=self.INDEX_NAME):
                 await es.indices.create(index=self.INDEX_NAME, body={

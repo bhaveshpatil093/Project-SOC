@@ -2,7 +2,7 @@ from app.monitoring.audit_logger import audit_action
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from app.api.dependencies import require_role
+from app.auth.jwt import require_role
 from app.ingestion.kibana_client import KibanaProxyClient
 from app.scoring.entity_risk import EntityRiskScorer
 from app.scoring.score_history import get_score_history, get_score_trends, get_system_score_trends

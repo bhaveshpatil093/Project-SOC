@@ -25,9 +25,13 @@ class HealthChecker:
         details = {}
         try:
             es = KibanaProxyClient()
-            info = await es.info()
+            connected = await es.check_connection()
             latency = (time.time() - start) * 1000
-            details = {"cluster_name": info.get("cluster_name"), "version": info.get("version", {}).get("number")}
+            if connected:
+                details = {"kibana_url": es.base_url, "mode": "kibana_proxy"}
+            else:
+                status = "unhealthy"
+                details = {"error": "Kibana check_connection returned False", "kibana_url": es.base_url}
             if latency > 1000:
                 status = "degraded"
         except Exception as e:
@@ -99,23 +103,21 @@ class HealthChecker:
         status = "healthy"
         details = {}
         try:
-            from app.ingestion.scheduler import IngestionScheduler
-            sched = IngestionScheduler()
-            is_running = sched.scheduler.running if sched.scheduler else False
+            from app.ingestion.scheduler import _scheduler, scheduler_state
+            is_running = _scheduler is not None and _scheduler.running
             details["is_running"] = is_running
 
-            # Check last run
-            from app.ingestion.state import IngestionState
-            state = IngestionState()
-            last_run = state.get_last_run()
+            last_run = scheduler_state.get("last_run")
+            details["last_run"] = last_run
+            details["status"] = scheduler_state.get("status", "unknown")
+            details["docs_last_cycle"] = scheduler_state.get("docs_last_cycle", 0)
+
             if last_run:
-                details["last_run"] = last_run
                 diff = (datetime.now(UTC) - datetime.fromisoformat(last_run.replace('Z', '+00:00'))).total_seconds()
-                if diff > 600: # 10 min
+                if diff > 600:  # 10 minutes
                     status = "degraded"
                     details["warning"] = "Last ingestion cycle was over 10 minutes ago."
             else:
-                details["last_run"] = None
                 status = "degraded"
                 details["warning"] = "No ingestion cycle has run yet."
 

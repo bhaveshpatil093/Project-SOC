@@ -68,7 +68,8 @@ class SLMEngine:
                 if torch.cuda.is_available():
                     self.device = "cuda"
                 elif torch.backends.mps.is_available():
-                    self.device = "mps"
+                    # Disabled mps auto-selection due to Metal crashes (IOGPUMetalCommandBuffer)
+                    self.device = "cpu"
 
             device_map = "auto" if self.device != "cpu" else None
 
@@ -78,9 +79,15 @@ class SLMEngine:
 
             try:
                 def _load():
+                    from transformers import AutoConfig
+                    config = AutoConfig.from_pretrained(resolved_path, trust_remote_code=True)
+                    if getattr(config, "rope_scaling", None):
+                        config.rope_scaling = None
+
                     self.tokenizer = AutoTokenizer.from_pretrained(resolved_path, trust_remote_code=True)
                     self.model = AutoModelForCausalLM.from_pretrained(
                         resolved_path,
+                        config=config,
                         device_map=device_map,
                         torch_dtype=torch.float16 if self.device != "cpu" else torch.float32,
                         trust_remote_code=True,
@@ -93,7 +100,9 @@ class SLMEngine:
                 self.model_name = resolved_path if is_ft else "microsoft/Phi-3-mini-4k-instruct"
 
             except Exception as e:
+                import traceback
                 logger.error(f"Failed to load primary SLM: {e}")
+                traceback.print_exc()
                 logger.info("Initiating fallback to TinyLlama/TinyLlama-1.1B-Chat-v1.0")
                 self.model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
                 self.is_finetuned = False

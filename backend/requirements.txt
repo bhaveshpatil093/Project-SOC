@@ -10,6 +10,7 @@ pyod
 torch
 shap
 langchain
+langchain-community
 sentence-transformers
 transformers
 mlflow

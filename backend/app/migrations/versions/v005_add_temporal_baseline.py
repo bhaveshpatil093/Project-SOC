@@ -1,20 +1,28 @@
 """Add temporal baseline"""
-from app.ingestion.kibana_client import KibanaProxyClient
-
+from app.ingestion.es_client_protocol import supports_index_management
 from app.logging_config import get_logger
+
 logger = get_logger(__name__)
 
-async def up(es):
-    baselines_index = INDEX_NAMES.get("baselines", "soc-entity-baselines")
-    logger.info(f"Running v005 up: Adding active_hours, typical_days to {baselines_index}")
-    
+_BASELINES_INDEX = "soc-entity-baselines"
+
+
+async def up(es) -> None:
+    """v005 up: Adds active_hours and typical_days fields to the baselines index."""
+    if not supports_index_management(es):
+        logger.info("v005_up_skipped", reason="KibanaProxyClient does not support index management")
+        return
+
+    logger.info("v005_up_running", index=_BASELINES_INDEX)
     mapping = {
         "properties": {
             "active_hours": {"type": "integer"},
-            "typical_days": {"type": "keyword"}
+            "typical_days": {"type": "keyword"},
         }
     }
-    await es.indices.put_mapping(index=baselines_index, body=mapping, ignore_unavailable=True)
+    await es.indices.put_mapping(index=_BASELINES_INDEX, body=mapping, ignore_unavailable=True)
 
-async def down(es):
-    logger.warning("Running v005 down: cannot rollback field additions in ES")
+
+async def down(es) -> None:
+    """v005 down: Field additions cannot be rolled back in Elasticsearch."""
+    logger.warning("v005_down_noop", reason="Field additions cannot be rolled back in Elasticsearch")

@@ -7,6 +7,7 @@ async database operations.
 """
 
 import json
+from pathlib import Path
 from typing import Optional, List
 
 import aiosqlite
@@ -14,10 +15,14 @@ import aiosqlite
 from app.logging_config import get_logger
 logger = get_logger(__name__)
 
-async def init_db(db_path: str):
+async def init_db(db_path: str) -> None:
     """
-    Initializes the SQLite database, creating tables if they do not exist.
+    Initializes the SQLite database, creating parent directories and tables
+    if they do not already exist.
     """
+    # Ensure the parent directory exists — prevents 'unable to open database file'
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+
     async with aiosqlite.connect(db_path) as db:
         await db.execute('''
             CREATE TABLE IF NOT EXISTS soc_alerts (

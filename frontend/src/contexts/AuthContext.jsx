@@ -3,6 +3,9 @@ import { apiClient, setAuthToken } from '../api/client'
 
 const AuthContext = createContext(null)
 
+const SESSION_TOKEN_KEY = 'soc_auth_token'
+const SESSION_USER_KEY = 'soc_auth_user'
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -21,16 +24,22 @@ export const AuthProvider = ({ children }) => {
       })
 
       if (res.access_token) {
+        // Persist token in sessionStorage so page refresh doesn't log the user out
+        sessionStorage.setItem(SESSION_TOKEN_KEY, res.access_token)
+        if (res.user) {
+          sessionStorage.setItem(SESSION_USER_KEY, JSON.stringify(res.user))
+        }
+
         setAuthToken(res.access_token)
         setUser(res.user)
         setIsAuthenticated(true)
         return { success: true }
       }
-      return { success: false, error: 'Token not mapped successfully' }
+      return { success: false, error: 'Token not received from server' }
     } catch (err) {
       return {
         success: false,
-        error: err.message || 'Authentication handshake completely failed.',
+        error: err.message || 'Authentication failed. Check backend connection.',
         code: err.code,
         fields: err.fields,
       }
@@ -43,6 +52,8 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       console.warn('Logout ping failed gracefully.')
     } finally {
+      sessionStorage.removeItem(SESSION_TOKEN_KEY)
+      sessionStorage.removeItem(SESSION_USER_KEY)
       setAuthToken(null)
       setUser(null)
       setIsAuthenticated(false)
@@ -50,12 +61,41 @@ export const AuthProvider = ({ children }) => {
   }
 
   const fetchCurrentUser = useCallback(async () => {
-    // If we have no token, no point calling /me (page refresh drops memory state)
-    let currentToken = null
+    // Check sessionStorage for a persisted token from previous page load
+    const persistedToken = sessionStorage.getItem(SESSION_TOKEN_KEY)
+    const persistedUser = sessionStorage.getItem(SESSION_USER_KEY)
+
+    if (persistedToken) {
+      // Restore the token into the in-memory store so axios sends it
+      setAuthToken(persistedToken)
+
+      if (persistedUser) {
+        try {
+          setUser(JSON.parse(persistedUser))
+          setIsAuthenticated(true)
+          setIsLoading(false)
+          // Validate the token is still good in the background
+          try {
+            const res = await apiClient.get('/api/auth/me')
+            setUser(res)
+            setIsAuthenticated(true)
+          } catch {
+            // Token expired — clear and redirect to login
+            sessionStorage.removeItem(SESSION_TOKEN_KEY)
+            sessionStorage.removeItem(SESSION_USER_KEY)
+            setAuthToken(null)
+            setUser(null)
+            setIsAuthenticated(false)
+          }
+          return
+        } catch {
+          // JSON parse failed — fall through to /me request
+        }
+      }
+    }
+
+    // No persisted token — try /me endpoint (will fail gracefully if no token)
     try {
-      const { apiClient } = await import('../api/client')
-      // Actually we don't have access to memoryToken directly exported from client.js
-      // We can just try and let it fail or we can use another trick.
       const res = await apiClient.get('/api/auth/me')
       setUser(res)
       setIsAuthenticated(true)

@@ -1,5 +1,10 @@
 
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Derive an absolute default DB path relative to this file's location
+# so the path is correct regardless of the working directory when uvicorn starts.
+_BACKEND_DIR = Path(__file__).resolve().parent.parent  # .../backend/
 
 
 class Settings(BaseSettings):
@@ -10,7 +15,7 @@ class Settings(BaseSettings):
     KIBANA_VERIFY_SSL: bool = False
 
     # App
-    DB_PATH: str = "backend/data/soc.db"
+    DB_PATH: str = str(_BACKEND_DIR / "data" / "soc.db")
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
     LOG_LEVEL: str = "INFO"
@@ -30,7 +35,7 @@ class Settings(BaseSettings):
     MAX_LOGS_PER_FETCH: int = 1000
 
     # Models
-    MODEL_DIR: str = "backend/models/saved"
+    MODEL_DIR: str = str(_BACKEND_DIR / "models" / "saved")
     RETRAIN_DAY: str = "sun"
     RETRAIN_HOUR: int = 2
 

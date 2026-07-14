@@ -232,18 +232,21 @@ async def start_scheduler(kibana_client: KibanaProxyClient):
         replace_existing=True
     )
 
-    from scripts.cleanup import CleanupManager
-    async def weekly_cleanup_job():
-        manager = CleanupManager()
-        safe_ops = ["audit_logs", "score_history", "chromadb_entries", "conversations", "cache"]
-        await manager.run_full_cleanup(dry_run=False, execute_only=safe_ops)
-        
-    _scheduler.add_job(
-        weekly_cleanup_job,
-        trigger=CronTrigger(day_of_week='sun', hour=1, minute=0),
-        id="weekly_cleanup",
-        replace_existing=True
-    )
+    try:
+        from scripts.cleanup import CleanupManager
+        async def weekly_cleanup_job():
+            manager = CleanupManager()
+            safe_ops = ["audit_logs", "score_history", "chromadb_entries", "conversations", "cache"]
+            await manager.run_full_cleanup(dry_run=False, execute_only=safe_ops)
+            
+        _scheduler.add_job(
+            weekly_cleanup_job,
+            trigger=CronTrigger(day_of_week='sun', hour=1, minute=0),
+            id="weekly_cleanup",
+            replace_existing=True
+        )
+    except ImportError:
+        logger.warning("weekly_cleanup_job_skipped", reason="scripts.cleanup module not found")
 
     from app.monitoring.sla_tracker import sla_tracker_instance
     from app.api.routes.admin import ws_manager
