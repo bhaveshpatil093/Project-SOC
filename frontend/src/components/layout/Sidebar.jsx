@@ -51,7 +51,7 @@ export const Sidebar = () => {
 
       {/* Sidebar - Desktop fixed, Tablet overlay */}
       <div
-        className={`hidden sm:flex flex-col fixed top-0 left-0 bottom-0 bg-[var(--bg-primary)] border-r border-[var(--border)] transition-transform duration-300 z-50 shadow-2xl ${
+        className={`hidden sm:flex flex-col fixed top-0 left-0 bottom-0 bg-glass transition-transform duration-300 z-50 shadow-2xl ${
           isTablet
             ? sidebarOpen
               ? 'translate-x-0 w-64'
@@ -81,18 +81,18 @@ export const Sidebar = () => {
                 key={item.path}
                 to={item.path}
                 onClick={() => isTablet && toggleSidebar()}
-                className={`flex items-center px-3 py-3 rounded-xl transition-all duration-200 group relative ${
+                className={`flex items-center px-3 py-3 rounded-xl transition-all duration-300 group relative ${
                   isActive
-                    ? 'bg-blue-600/15 text-blue-400 font-bold border border-blue-500/20'
-                    : 'text-[var(--text-secondary)] font-medium hover:bg-[var(--bg-secondary)]/60 hover:text-[var(--text-primary)] border border-transparent'
+                    ? 'bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20 shadow-[inset_0_0_20px_rgba(59,130,246,0.05)]'
+                    : 'text-[var(--text-secondary)] font-medium hover:bg-[var(--bg-tertiary)]/50 hover:text-[var(--text-primary)] border border-transparent'
                 }`}
                 title={!sidebarOpen && !isTablet ? item.label : undefined}
               >
                 {isActive && sidebarOpen && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full"></div>
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-blue-500 rounded-r-full shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
                 )}
                 <Icon
-                  className={`h-5 w-5 shrink-0 ${isActive ? 'text-blue-500' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-secondary)]'} ${sidebarOpen ? 'ml-1' : 'mx-auto'}`}
+                  className={`h-5 w-5 shrink-0 transition-colors duration-300 ${isActive ? 'text-blue-500 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'} ${sidebarOpen ? 'ml-1' : 'mx-auto'}`}
                 />
                 {sidebarOpen && <span className="ml-3 whitespace-nowrap">{item.label}</span>}
               </NavLink>

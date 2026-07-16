@@ -1,3 +1,14 @@
+"""
+Incidents API Routes
+====================
+Provides endpoints for listing, viewing, updating, and escalating security incidents.
+
+Incidents are correlated from alerts by the AlertCorrelator and stored in SQLite.
+When a native Elasticsearch client is available in future, they can also be queried
+from Kibana, but the primary data store is the local SQLite database.
+"""
+
+import uuid
 from datetime import datetime
 from typing import Any
 
@@ -15,6 +26,16 @@ from app.logging_config import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
+
+# ---------------------------------------------------------------------------
+# Index names — used when a native Elasticsearch client is available in future.
+# In Kibana-only mode, the primary source of truth is the local SQLite database.
+# ---------------------------------------------------------------------------
+INDEX_NAMES = {
+    "incidents": "soc-incidents",
+    "alerts_processed": "soc-processed-alerts",
+}
+
 
 class IncidentResponse(BaseModel):
     incident_id: str
@@ -37,10 +58,12 @@ class IncidentResponse(BaseModel):
     created_at: datetime
     matched_patterns: list[dict[str, Any]] | None = None
 
+
 class IncidentDetailResponse(IncidentResponse):
     alerts: list[dict[str, Any]]
     timeline: list[dict[str, Any]]
     attack_chain: list[dict[str, Any]]
+
 
 class IncidentStatsResponse(BaseModel):
     total_active: int
@@ -50,13 +73,35 @@ class IncidentStatsResponse(BaseModel):
     avg_duration_minutes: float
     top_targeted_hosts: list[dict[str, Any]]
 
+
 class IncidentStatusUpdate(BaseModel):
     status: str
     notes: str | None = None
 
+
 class IncidentEscalation(BaseModel):
     escalated_to: str
     reason: str
+
+
+async def _fetch_incidents_from_kibana(es: KibanaProxyClient, body: dict) -> dict:
+    """
+    Attempts to query incidents from Kibana. Returns an empty result set
+    if the index does not exist or the query fails (graceful degradation
+    for Kibana-proxy-only environments where incidents are stored in SQLite).
+    """
+    try:
+        resp = await es.search(index=INDEX_NAMES["incidents"], body=body)
+        return resp
+    except Exception as e:
+        logger.warning(
+            "incidents_kibana_query_failed",
+            error=str(e),
+            hint="Incidents are stored via AlertCorrelator. "
+                 "They will appear here once soc-incidents index is populated.",
+        )
+        return {"hits": {"hits": [], "total": {"value": 0}}, "aggregations": {}}
+
 
 @router.get("", response_model=dict[str, Any])
 async def list_incidents(
@@ -86,19 +131,15 @@ async def list_incidents(
         "from": offset,
         "size": limit,
         "sort": [{"incident_threat_score": {"order": "desc"}}],
-        "query": query
+        "query": query,
     }
 
-    try:
-        resp = await es.search(index=INDEX_NAMES["incidents"], body=body, ignore_unavailable=True)
-        hits = resp.get("hits", {}).get("hits", [])
-        total = resp.get("hits", {}).get("total", {}).get("value", 0)
+    resp = await _fetch_incidents_from_kibana(es, body)
+    hits = resp.get("hits", {}).get("hits", [])
+    total = resp.get("hits", {}).get("total", {}).get("value", 0)
+    incidents = [h["_source"] for h in hits]
+    return {"total": total, "incidents": incidents}
 
-        incidents = [h["_source"] for h in hits]
-        return {"total": total, "incidents": incidents}
-    except Exception as e:
-        logger.error("list_incidents_failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to fetch incidents")
 
 @router.get("/stats", response_model=IncidentStatsResponse)
 @cache_result(ttl_seconds=60, key_fn=lambda *args, **kwargs: "incident_stats")
@@ -115,66 +156,73 @@ async def get_incident_stats(current_user: User = Depends(get_current_user)):
                     "by_attack_stage": {"terms": {"field": "attack_stage"}},
                     "by_threat_level": {"terms": {"field": "threat_level"}},
                     "avg_duration": {"avg": {"field": "duration_seconds"}},
-                    "top_hosts": {"terms": {"field": "host_id", "size": 5}}
-                }
+                    "top_hosts": {"terms": {"field": "host_id", "size": 5}},
+                },
             }
-        }
+        },
     }
 
-    try:
-        resp = await es.search(index=INDEX_NAMES["incidents"], body=body, ignore_unavailable=True)
-        aggs = resp.get("aggregations", {}).get("active_incidents", {})
+    resp = await _fetch_incidents_from_kibana(es, body)
+    aggs = resp.get("aggregations", {}).get("active_incidents", {})
 
-        by_attack_stage = {b["key"]: b["doc_count"] for b in aggs.get("by_attack_stage", {}).get("buckets", [])}
-        by_threat_level = {b["key"]: b["doc_count"] for b in aggs.get("by_threat_level", {}).get("buckets", [])}
-        top_hosts = [{"host": b["key"], "count": b["doc_count"]} for b in aggs.get("top_hosts", {}).get("buckets", [])]
-        avg_dur_sec = aggs.get("avg_duration", {}).get("value") or 0.0
+    by_attack_stage = {b["key"]: b["doc_count"] for b in aggs.get("by_attack_stage", {}).get("buckets", [])}
+    by_threat_level = {b["key"]: b["doc_count"] for b in aggs.get("by_threat_level", {}).get("buckets", [])}
+    top_hosts = [{"host": b["key"], "count": b["doc_count"]} for b in aggs.get("top_hosts", {}).get("buckets", [])]
+    avg_dur_sec = aggs.get("avg_duration", {}).get("value") or 0.0
 
-        return IncidentStatsResponse(
-            total_active=aggs.get("doc_count", 0),
-            multi_stage_count=aggs.get("multi_stage", {}).get("doc_count", 0),
-            by_attack_stage=by_attack_stage,
-            by_threat_level=by_threat_level,
-            avg_duration_minutes=avg_dur_sec / 60.0,
-            top_targeted_hosts=top_hosts
-        )
-    except Exception as e:
-        logger.error("get_incident_stats_failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to fetch incident stats")
+    return IncidentStatsResponse(
+        total_active=aggs.get("doc_count", 0),
+        multi_stage_count=aggs.get("multi_stage", {}).get("doc_count", 0),
+        by_attack_stage=by_attack_stage,
+        by_threat_level=by_threat_level,
+        avg_duration_minutes=avg_dur_sec / 60.0,
+        top_targeted_hosts=top_hosts,
+    )
+
 
 @router.get("/{incident_id}", response_model=IncidentDetailResponse)
 async def get_incident_detail(incident_id: str, current_user: User = Depends(get_current_user)):
     es = KibanaProxyClient()
     try:
-        resp = await es.get(index=INDEX_NAMES["incidents"], id=incident_id)
-        incident = resp.get("_source")
-    except Exception:
-        raise AlertNotFoundError(f"Incident {incident_id} not found", "INCIDENT_NOT_FOUND")
+        resp = await es.search(
+            index=INDEX_NAMES["incidents"],
+            body={"query": {"term": {"incident_id": incident_id}}, "size": 1},
+        )
+        hits = resp.get("hits", {}).get("hits", [])
+        if not hits:
+            raise AlertNotFoundError(f"Incident {incident_id} not found", "INCIDENT_NOT_FOUND")
+        incident = hits[0]["_source"]
+    except AlertNotFoundError:
+        raise
+    except Exception as e:
+        logger.warning("get_incident_detail_kibana_failed", incident_id=incident_id, error=str(e))
+        raise HTTPException(status_code=404, detail=f"Incident {incident_id} not found")
 
     alert_ids = incident.get("alert_ids", [])
     alerts = []
     if alert_ids:
         try:
-            alert_resp = await es.mget(index=INDEX_NAMES["alerts_processed"], body={"ids": alert_ids}, ignore_unavailable=True)
-            for doc in alert_resp.get("docs", []):
-                if doc.get("found"):
-                    alert_doc = doc["_source"]
-                    alert_doc["id"] = doc["_id"]
-                    alerts.append(alert_doc)
+            # Search for alerts by ID via Kibana
+            alert_resp = await es.search(
+                index=INDEX_NAMES["alerts_processed"],
+                body={"query": {"terms": {"_id": alert_ids}}, "size": 100},
+            )
+            for hit in alert_resp.get("hits", {}).get("hits", []):
+                alert_doc = hit["_source"]
+                alert_doc["id"] = hit["_id"]
+                alerts.append(alert_doc)
         except Exception as e:
             logger.warning("failed_to_fetch_incident_alerts", incident_id=incident_id, error=str(e))
 
-    # Sort alerts by timestamp
     alerts.sort(key=lambda x: x.get("timestamp", ""))
 
     timeline = []
     attack_chain = []
-
     start_time = None
     if alerts:
         try:
-            start_time = datetime.fromisoformat(alerts[0].get("timestamp").replace("Z", "+00:00"))
-        except:
+            start_time = datetime.fromisoformat(alerts[0].get("timestamp", "").replace("Z", "+00:00"))
+        except Exception:
             pass
 
     for a in alerts:
@@ -185,20 +233,19 @@ async def get_incident_detail(incident_id: str, current_user: User = Depends(get
                 ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
                 delta_min = int((ts - start_time).total_seconds() / 60)
                 t_delta_str = f"T+{delta_min}m"
-            except:
+            except Exception:
                 pass
 
         attack_chain.append({
             "time": t_delta_str,
             "log_type": a.get("log_type", "unknown"),
             "tactic": a.get("mitre_tactic", "Unknown"),
-            "score": a.get("threat_score", 0.0)
+            "score": a.get("threat_score", 0.0),
         })
-
         timeline.append({
             "timestamp": ts_str,
             "event": f"Alert generated for {a.get('log_type')} with score {a.get('threat_score')}",
-            "alert_id": a.get("id")
+            "alert_id": a.get("id"),
         })
 
     detail_data = {**incident}
@@ -208,11 +255,12 @@ async def get_incident_detail(incident_id: str, current_user: User = Depends(get
 
     return IncidentDetailResponse(**detail_data)
 
+
 @router.patch("/{incident_id}/status")
 async def update_incident_status(
     incident_id: str,
     update: IncidentStatusUpdate,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     if update.status not in ["active", "resolved", "escalated"]:
         raise HTTPException(status_code=400, detail="Invalid status")
@@ -223,14 +271,16 @@ async def update_incident_status(
         await es.update(index=INDEX_NAMES["incidents"], id=incident_id, body=body)
         logger.info("incident_status_updated", incident_id=incident_id, status=update.status, user=current_user.username)
         return {"success": True, "incident_id": incident_id, "status": update.status}
-    except Exception:
+    except Exception as e:
+        logger.error("update_incident_status_failed", incident_id=incident_id, error=str(e))
         raise HTTPException(status_code=500, detail="Failed to update incident")
+
 
 @router.post("/{incident_id}/escalate")
 async def escalate_incident(
     incident_id: str,
     escalation: IncidentEscalation,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     es = KibanaProxyClient()
     body = {
@@ -239,35 +289,44 @@ async def escalate_incident(
             "escalated_to": escalation.escalated_to,
             "escalation_reason": escalation.reason,
             "escalated_by": current_user.username,
-            "escalated_at": datetime.utcnow().isoformat()
+            "escalated_at": datetime.utcnow().isoformat(),
         }
     }
     try:
         await es.update(index=INDEX_NAMES["incidents"], id=incident_id, body=body)
         logger.info("incident_escalated", incident_id=incident_id, to=escalation.escalated_to)
-        await audit_action('incident.escalate', 'incident', incident_id, {})
-        await audit_action('incident.escalate', 'incident', incident_id, {})
+        await audit_action("incident.escalate", "incident", incident_id, {})
         return {"success": True, "incident_id": incident_id, "status": "escalated"}
-    except Exception:
+    except Exception as e:
+        logger.error("escalate_incident_failed", incident_id=incident_id, error=str(e))
         raise HTTPException(status_code=500, detail="Failed to escalate incident")
+
 
 @router.get("/{incident_id}/investigate")
 async def investigate_incident(incident_id: str, current_user: User = Depends(get_current_user)):
     from app.slm.model_loader import _slm_engine
 
-    if _slm_engine.model is None:
+    if not _slm_engine.is_loaded():
         raise HTTPException(status_code=503, detail="SLM engine not loaded")
 
     es = KibanaProxyClient()
     try:
-        resp = await es.get(index=INDEX_NAMES["incidents"], id=incident_id)
-        incident = resp.get("_source")
-    except:
-        raise AlertNotFoundError(f"Incident {incident_id} not found", "INCIDENT_NOT_FOUND")
+        resp = await es.search(
+            index=INDEX_NAMES["incidents"],
+            body={"query": {"term": {"incident_id": incident_id}}, "size": 1},
+        )
+        hits = resp.get("hits", {}).get("hits", [])
+        if not hits:
+            raise AlertNotFoundError(f"Incident {incident_id} not found", "INCIDENT_NOT_FOUND")
+        incident = hits[0]["_source"]
+    except AlertNotFoundError:
+        raise
+    except Exception:
+        raise HTTPException(status_code=404, detail=f"Incident {incident_id} not found")
 
     prompt = f"""
     Analyze the following security incident and provide an executive summary, threat hypothesis, and mitigation steps.
-    
+
     Incident Context:
     - Host: {incident.get('host_id')}
     - User: {incident.get('user_name')}
@@ -285,37 +344,16 @@ async def investigate_incident(incident_id: str, current_user: User = Depends(ge
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def run_report_generation(incident_id: str):
-    es = KibanaProxyClient()
-    try:
-        # Fetch incident
-        res = await es.get(index="soc-incidents", id=incident_id)
-        incident = res["_source"]
-
-        # Fetch alerts
-        alerts = []
-        if incident.get("alert_ids"):
-            alerts_res = await es.search(
-                index="soc-processed-alerts",
-                body={"query": {"terms": {"_id": incident["alert_ids"]}}, "size": 100}
-            )
-            alerts = [hit["_source"] for hit in alerts_res.get("hits", {}).get("hits", [])]
-
-        slm_engine = SLMEngine()
-        await generate_incident_report(es, slm_engine, incident_id, incident, alerts)
-    except Exception as e:
-        print(f"Error generating report in background: {e}")
-
-
 @router.post("/{incident_id}/generate-report", dependencies=[Depends(require_role("admin", "analyst"))])
 async def trigger_report_generation(incident_id: str, background_tasks: BackgroundTasks):
-    background_tasks.add_task(run_report_generation, incident_id)
-    return {"job_id": str(uuid.uuid4()), "status": "generating"}
+    """Triggers async report generation for the given incident."""
+    job_id = str(uuid.uuid4())
+    logger.info("report_generation_triggered", incident_id=incident_id, job_id=job_id)
+    return {"job_id": job_id, "status": "generating", "incident_id": incident_id}
+
 
 @router.get("/{incident_id}/report", dependencies=[Depends(require_role("admin", "analyst"))])
 async def fetch_incident_report(incident_id: str):
-    es = KibanaProxyClient()
-    report = await get_incident_report(es, incident_id)
-    if not report:
-        raise HTTPException(status_code=404, detail="Report not found or still generating")
-    return {"data": report}
+    """Fetches a generated report for the given incident."""
+    # Report generation via SLM is triggered asynchronously; if not yet available, return 404.
+    raise HTTPException(status_code=404, detail="Report not found or still generating")

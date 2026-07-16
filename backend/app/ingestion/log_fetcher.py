@@ -43,17 +43,23 @@ async def fetch_logs(
     now = time.time()
     if query_hash in _empty_query_cache:
         cache_time, count = _empty_query_cache[query_hash]
-        # If we previously fetched 0 docs and it was within the last (since_minutes) window
         if count == 0 and now - cache_time < (since_minutes * 60) * 0.8:
-            logger.debug(f"Skipping empty query fetch for {index_pattern}")
+            logger.debug("fetch_logs_cache_hit_empty", index=index_pattern, since_minutes=since_minutes)
             return []
+
+    logger.info(
+        "fetch_logs_started",
+        index=index_pattern,
+        since_minutes=since_minutes,
+        max_size=size,
+    )
 
     filters = [
         {
             "range": {
                 "@timestamp": {
                     "gte": f"now-{since_minutes}m",
-                    "lte": "now"
+                    "lte": "now",
                 }
             }
         }
@@ -66,7 +72,7 @@ async def fetch_logs(
             }
         },
         "sort": [{"@timestamp": {"order": "desc"}}],
-        "_source": ["host", "user", "@timestamp", "message", "process", "event", "winlog", "kibana"]
+        "_source": ["host", "user", "@timestamp", "message", "process", "event", "winlog", "kibana"],
     }
 
     results = []
@@ -107,6 +113,13 @@ async def fetch_logs(
     # Update cache
     _empty_query_cache[query_hash] = (time.time(), len(results))
 
+    logger.info(
+        "fetch_logs_completed",
+        index=index_pattern,
+        since_minutes=since_minutes,
+        docs_fetched=len(results),
+    )
+
     # Cleanup old cache entries (older than 1 hour)
     if len(_empty_query_cache) > 1000:
         cutoff = time.time() - 3600
@@ -132,15 +145,34 @@ async def fetch_all_sources(client: KibanaProxyClient, since_minutes: int = 5) -
 
     final_results = {log_type: [] for log_type in log_types}
 
+    total_fetched = 0
     for log_type, result in zip(log_types, results_list):
         if isinstance(result, Exception):
-            logger.error(f"Failed to fetch logs for {log_type}: {result}")
+            logger.error(
+                "fetch_all_sources_log_type_failed",
+                log_type=log_type,
+                index=SOURCE_PATTERNS[log_type],
+                error=str(result),
+            )
             continue
 
         for doc in result:
             doc["log_type"] = log_type
             final_results[log_type].append(doc)
+        total_fetched += len(result)
+        logger.info(
+            "fetch_all_sources_log_type_ok",
+            log_type=log_type,
+            index=SOURCE_PATTERNS[log_type],
+            docs_fetched=len(result),
+        )
 
+    logger.info(
+        "fetch_all_sources_completed",
+        since_minutes=since_minutes,
+        total_docs=total_fetched,
+        breakdown={lt: len(v) for lt, v in final_results.items()},
+    )
     return final_results
 
 async def fetch_by_entity(client: KibanaProxyClient, host_id: str, user_name: str, since_minutes: int = 30) -> dict[str, list[dict]]:

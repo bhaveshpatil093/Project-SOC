@@ -6,10 +6,30 @@
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    @apply m-0 p-0 font-sans;
+    @apply m-0 p-0 font-sans antialiased selection:bg-blue-500/30;
   }
   
   *:focus-visible {
     @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-[var(--bg-primary)];
+  }
+}
+
+@layer utilities {
+  .bg-glass {
+    @apply bg-[var(--bg-secondary)]/80 backdrop-blur-xl border border-[var(--border)]/50 shadow-sm;
+  }
+  
+  .bg-glass-heavy {
+    @apply bg-[var(--bg-secondary)]/60 backdrop-blur-2xl border border-[var(--border)]/50 shadow-md;
+  }
+
+  .bg-grid-pattern {
+    background-image: linear-gradient(to right, var(--border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: center center;
+    mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+    opacity: 0.15;
   }
 }

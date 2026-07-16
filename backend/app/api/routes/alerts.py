@@ -125,8 +125,8 @@ async def get_stats():
             if t:
                 tactic_counter[t] += 1
                 
-        top_tactics = [{"tactic": t, "count": c} for t, c in tactic_counter.most_common(5)]
-        top_hosts = [{"host_id": h, "count": c} for h, c in Counter(a.get("host_id") for a in open_alerts if a.get("host_id")).most_common(5)]
+        top_tactics = [{"key": t, "doc_count": c} for t, c in tactic_counter.most_common(5)]
+        top_hosts = [{"key": h, "doc_count": c} for h, c in Counter(a.get("host_id") for a in open_alerts if a.get("host_id")).most_common(5)]
         
         last_24h_limit = (datetime.utcnow() - timedelta(hours=24)).isoformat() + "Z"
         last_24h_count = sum(1 for a in open_alerts if a.get("created_at", "") > last_24h_limit)

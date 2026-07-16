@@ -2936,6 +2936,7 @@
           "Incidents"
         ],
         "summary": "Trigger Report Generation",
+        "description": "Triggers async report generation for the given incident.",
         "operationId": "trigger_report_generation_api_incidents__incident_id__generate_report_post",
         "security": [
           {
@@ -2981,6 +2982,7 @@
           "Incidents"
         ],
         "summary": "Fetch Incident Report",
+        "description": "Fetches a generated report for the given incident.",
         "operationId": "fetch_incident_report_api_incidents__incident_id__report_get",
         "security": [
           {

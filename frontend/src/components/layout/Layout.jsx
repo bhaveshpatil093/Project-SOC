@@ -14,7 +14,10 @@ export const Layout = () => {
   const marginLeftClass = isTablet ? 'ml-0' : sidebarOpen ? 'ml-64' : 'ml-20'
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-secondary)] flex">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-secondary)] flex relative overflow-hidden">
+      {/* Global Background Texture */}
+      <div className="absolute inset-0 z-0 pointer-events-none bg-grid-pattern"></div>
+      
       <Sidebar />
       <div
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${marginLeftClass} pb-16 sm:pb-0 relative z-10`}

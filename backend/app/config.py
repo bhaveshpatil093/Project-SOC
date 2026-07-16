@@ -9,7 +9,7 @@ _BACKEND_DIR = Path(__file__).resolve().parent.parent  # .../backend/
 
 class Settings(BaseSettings):
     # Kibana Console Proxy
-    KIBANA_URL: str = "https://172.30.253.121:5601"
+    KIBANA_URL: str = "http://172.30.253.121:5601"
     KIBANA_USER: str = "intern"
     KIBANA_PASSWORD: str = "test123"
     KIBANA_VERIFY_SSL: bool = False

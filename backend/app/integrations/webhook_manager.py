@@ -129,7 +129,8 @@ class WebhookManager:
         return True
 
     def _sign_payload(self, secret: str, body: bytes) -> str:
-        return hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+        import hmac as hmac_lib
+        return hmac_lib.new(secret.encode(), body, "sha256").hexdigest()
 
     async def _send_webhook(self, es, config: WebhookConfig, event_type: str, payload: dict):
         timestamp = datetime.utcnow().isoformat() + "Z"

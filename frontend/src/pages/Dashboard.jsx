@@ -106,11 +106,17 @@ const StatCard = ({
 
   return (
     <div
-      className={`bg-[var(--bg-secondary)] p-5 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between hover:shadow-lg hover:-translate-y-1 ${isFlashing ? 'border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] scale-[1.02]' : 'border-[var(--border)] hover:border-[var(--text-secondary)]/30'}`}
+      className={`bg-glass p-5 rounded-2xl transition-all duration-300 relative overflow-hidden flex flex-col justify-between hover:-translate-y-1 group ${
+        isFlashing
+          ? 'border-green-500/50 shadow-[0_0_30px_rgba(34,197,94,0.2)] scale-[1.02]'
+          : isCritical
+            ? 'hover:border-red-500/50 hover:shadow-[0_0_30px_rgba(239,68,68,0.15)]'
+            : 'hover:border-blue-500/30 hover:shadow-[0_0_30px_rgba(59,130,246,0.1)]'
+      }`}
     >
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-start relative z-10">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-[var(--bg-tertiary)]/50 border border-[var(--border)]">
+          <div className="p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] group-hover:bg-[var(--bg-tertiary)] transition-colors">
             <Icon className={`h-5 w-5 ${colorClass} ${pulseIcon ? 'animate-pulse' : ''}`} />
           </div>
           <h3 className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider leading-tight max-w-[100px]">{title}</h3>
@@ -151,7 +157,7 @@ const LiveMetricsTicker = () => {
   }, [lastIngestion])
 
   return (
-    <div className="w-full bg-[var(--bg-primary)] border-b border-[var(--border)] py-1.5 px-4 text-xs font-mono flex items-center justify-between shadow-sm overflow-x-auto whitespace-nowrap hide-scrollbar">
+    <div className="w-full bg-glass border-b border-[var(--border)]/50 py-2 px-4 text-xs font-mono flex items-center justify-between overflow-x-auto whitespace-nowrap hide-scrollbar backdrop-blur-md relative z-20">
       <div className="flex items-center gap-4 sm:gap-6 shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-[var(--text-secondary)]">Last ingestion:</span>
@@ -213,8 +219,8 @@ const LiveAlertFeed = () => {
   }, [liveAlerts, isPaused])
 
   return (
-    <div className="w-full xl:w-[300px] bg-[var(--bg-primary)] xl:border-l border-t xl:border-t-0 border-[var(--border)] flex flex-col xl:h-[calc(100vh-100px)] shrink-0 xl:sticky top-4 h-[400px]">
-      <div className="p-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-primary)]/50">
+    <div className="w-full xl:w-[320px] bg-glass xl:border-l border-t xl:border-t-0 border-[var(--border)]/50 flex flex-col xl:h-[calc(100vh-100px)] shrink-0 xl:sticky top-4 h-[400px] shadow-2xl z-10">
+      <div className="p-4 border-b border-[var(--border)]/50 flex items-center justify-between">
         <h3 className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
           <Activity className="h-4 w-4 text-blue-500" />
           Live Alert Stream
@@ -239,14 +245,14 @@ const LiveAlertFeed = () => {
             <div
               key={alert.id || alert._id}
               onClick={() => navigate(`/alerts/${alert.id || alert._id}`)}
-              className="bg-[var(--bg-secondary)] border border-[var(--border)] p-3 rounded-lg cursor-pointer hover:bg-[var(--bg-tertiary)] transition-all animate-in slide-in-from-top-2 fade-in duration-300 relative overflow-hidden group"
+              className="bg-[var(--bg-secondary)]/60 border border-[var(--border)] p-3 rounded-xl cursor-pointer hover:bg-[var(--bg-tertiary)] hover:border-[var(--text-secondary)]/50 transition-all animate-in slide-in-from-top-2 fade-in duration-300 relative overflow-hidden group shadow-sm"
             >
               <div
                 className={`absolute left-0 top-0 bottom-0 w-1 ${
                   alert.threat_level === 'critical'
-                    ? 'bg-red-500'
+                    ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]'
                     : alert.threat_level === 'high'
-                      ? 'bg-orange-500'
+                      ? 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]'
                       : alert.threat_level === 'medium'
                         ? 'bg-yellow-500'
                         : 'bg-blue-500'
@@ -439,7 +445,7 @@ export const Dashboard = () => {
           {/* Charts - Bottom Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Threat Level Donut */}
-            <div className="bg-[var(--bg-secondary)] p-4 md:p-6 rounded-xl border border-[var(--border)] h-[300px] md:h-[400px] flex flex-col relative">
+            <div className="bg-glass p-4 md:p-6 rounded-2xl h-[300px] md:h-[400px] flex flex-col relative">
               <h3 className="text-lg font-semibold mb-4 text-[var(--text-primary)]">
                 Threat Level Distribution
               </h3>
@@ -479,7 +485,7 @@ export const Dashboard = () => {
             </div>
 
             {/* Top MITRE Tactis Bar Chart */}
-            <div className="bg-[var(--bg-secondary)] p-4 md:p-6 rounded-xl border border-[var(--border)] h-[300px] md:h-[400px] flex flex-col">
+            <div className="bg-glass p-4 md:p-6 rounded-2xl h-[300px] md:h-[400px] flex flex-col">
               <h3 className="text-lg font-semibold mb-4 text-[var(--text-primary)]">
                 Top MITRE Tactics
               </h3>
@@ -529,15 +535,15 @@ export const Dashboard = () => {
           </div>
 
           {/* Top Hosts Table */}
-          <div className="bg-[var(--bg-secondary)] rounded-xl border border-[var(--border)] overflow-hidden mt-6">
-            <div className="px-6 py-5 border-b border-[var(--border)]">
+          <div className="bg-glass rounded-2xl overflow-hidden mt-6">
+            <div className="px-6 py-5 border-b border-[var(--border)]/50">
               <h3 className="text-lg font-semibold text-[var(--text-primary)]">
                 Top Hosts by Threat Volume
               </h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-[var(--bg-primary)] border-b border-[var(--border)]">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-[var(--bg-secondary)]/50">
                   <tr>
                     <th className="px-6 py-4 text-sm font-semibold text-[var(--text-secondary)]">
                       Hostname
@@ -582,8 +588,24 @@ export const Dashboard = () => {
                         <td className="px-6 py-4 text-sm text-green-500 font-medium">
                           {host.low || 0}
                         </td>
-                        <td className="px-6 py-4 text-sm text-[var(--text-primary)] font-bold">
-                          {host.doc_count || host.total || 0}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-[var(--text-primary)] font-bold min-w-[30px]">
+                              {host.doc_count || host.total || 0}
+                            </span>
+                            {/* Threat Bar */}
+                            <div className="h-1.5 w-full bg-[var(--bg-secondary)] rounded-full overflow-hidden flex">
+                              {((host.critical || 0) > 0) && (
+                                <div style={{ width: `${((host.critical || 0) / (host.doc_count || host.total || 1)) * 100}%` }} className="bg-red-500 h-full"></div>
+                              )}
+                              {((host.high || 0) > 0) && (
+                                <div style={{ width: `${((host.high || 0) / (host.doc_count || host.total || 1)) * 100}%` }} className="bg-orange-500 h-full"></div>
+                              )}
+                              {((host.medium || 0) > 0) && (
+                                <div style={{ width: `${((host.medium || 0) / (host.doc_count || host.total || 1)) * 100}%` }} className="bg-yellow-500 h-full"></div>
+                              )}
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     ))

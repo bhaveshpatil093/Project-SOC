@@ -44,7 +44,7 @@ export const TopBar = () => {
   }
 
   return (
-    <header className="h-16 bg-[var(--bg-primary)]/80 backdrop-blur-xl border-b border-[var(--border)]/60 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 shadow-sm">
+    <header className="h-16 bg-glass flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30">
       <div className="flex items-center gap-3">
         {/* Hamburger visible only on tablet (sm to lg) */}
         <button
