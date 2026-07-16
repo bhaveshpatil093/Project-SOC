@@ -115,16 +115,16 @@ const StatCard = ({
       }`}
     >
       <div className="flex justify-between items-start relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] group-hover:bg-[var(--bg-tertiary)] transition-colors">
-            <Icon className={`h-5 w-5 ${colorClass} ${pulseIcon ? 'animate-pulse' : ''}`} />
+        <div className="flex items-center gap-3 w-full">
+          <div className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] group-hover:bg-[var(--bg-tertiary)] transition-colors shrink-0">
+            <Icon className={`h-6 w-6 ${colorClass} ${pulseIcon ? 'animate-pulse' : ''}`} />
           </div>
-          <h3 className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider leading-tight max-w-[100px]">{title}</h3>
+          <h3 className="text-[var(--text-secondary)] text-xs sm:text-sm font-bold uppercase tracking-wider leading-tight">{title}</h3>
         </div>
         {/* Optional Live Indicator */}
       </div>
-      <div className="flex items-end gap-3 mt-5">
-        <p className={`text-3xl font-black tracking-tight ${colorClass} truncate`}>{displayValue}</p>
+      <div className="flex items-end gap-3 mt-6 relative z-10">
+        <p className={`text-3xl sm:text-4xl font-black tracking-tight ${colorClass} truncate`}>{displayValue}</p>
         {isCritical && parseInt(value, 10) > 0 && (
           <span className="flex h-3 w-3 relative mb-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -392,7 +392,7 @@ export const Dashboard = () => {
           </div>
 
           {/* Stat Cards - Top Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             <StatCard
               title="Total Open Alerts"
               value={stats?.total || stats?.total_open || 0}

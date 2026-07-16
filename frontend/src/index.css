@@ -16,11 +16,15 @@
 
 @layer utilities {
   .bg-glass {
-    @apply bg-[var(--bg-secondary)]/80 backdrop-blur-xl border border-[var(--border)]/50 shadow-sm;
+    @apply backdrop-blur-xl shadow-sm;
+    background-color: color-mix(in srgb, var(--bg-secondary) 80%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
   }
   
   .bg-glass-heavy {
-    @apply bg-[var(--bg-secondary)]/60 backdrop-blur-2xl border border-[var(--border)]/50 shadow-md;
+    @apply backdrop-blur-2xl shadow-md;
+    background-color: color-mix(in srgb, var(--bg-secondary) 60%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
   }
 
   .bg-grid-pattern {
