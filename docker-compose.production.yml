@@ -37,6 +37,7 @@ services:
       - ES_VERIFY_CERTS=true
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - SECRETS_ENCRYPTION_KEY=${SECRETS_ENCRYPTION_KEY}
+      - KIBANA_URL=http://172.30.253.121:5601
     volumes:
       - models_data:/app/models/saved
       - app_data:/app/data

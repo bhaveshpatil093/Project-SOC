@@ -7,12 +7,21 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _BACKEND_DIR = Path(__file__).resolve().parent.parent  # .../backend/
 
 
+from pydantic import field_validator
+
 class Settings(BaseSettings):
     # Kibana Console Proxy
     KIBANA_URL: str = "http://172.30.253.121:5601"
     KIBANA_USER: str = "intern"
     KIBANA_PASSWORD: str = "test123"
     KIBANA_VERIFY_SSL: bool = False
+
+    @field_validator("KIBANA_URL", mode="before")
+    def force_http(cls, v: str) -> str:
+        """Protocol-aware sanitize: Force http:// if user or env configures https://"""
+        if isinstance(v, str) and v.startswith("https://"):
+            return v.replace("https://", "http://", 1)
+        return v
 
     # App
     DB_PATH: str = str(_BACKEND_DIR / "data" / "soc.db")
