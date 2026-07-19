@@ -1,3 +1,4 @@
+from app.logging_config import get_logger
 from app.monitoring.audit_logger import audit_action
 from fastapi import APIRouter, Depends, Query
 
@@ -11,6 +12,7 @@ from app.ingestion.kibana_client import KibanaProxyClient
 from app.migrations.migration_runner import MigrationRunner
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 @router.get("/migrations", dependencies=[Depends(require_role("admin"))])
 async def get_migrations_status() -> dict[str, Any]:

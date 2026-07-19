@@ -6,7 +6,14 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-from app.ingestion.es_client import get_es_client, INDEX_NAMES
+from app.ingestion.kibana_client import KibanaProxyClient
+
+INDEX_NAMES = {
+    "alerts_processed": "soc-processed-alerts",
+    "incidents": "soc-incidents",
+    "features": "soc-features",
+    "baselines": "soc-baselines",
+}
 from app.config import settings
 from app.slm.conversation_manager import get_conversation_manager
 from app.slm.rag_pipeline import get_rag_pipeline
@@ -217,7 +224,7 @@ class CleanupManager:
         return result
 
     async def run_full_cleanup(self, dry_run: bool = True, execute_only: list = None) -> dict:
-        es = await get_es_client()
+        es = KibanaProxyClient()
         report = {}
         
         ops = {

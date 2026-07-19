@@ -104,7 +104,7 @@ async def broadcast_stats(kibana_client: KibanaProxyClient):
 async def run_drift_detection():
     logger.info("run_drift_detection_started")
     try:
-        from app.api.deps import get_model_manager
+        from app.models.model_manager import get_model_manager
         kibana_client = KibanaProxyClient()
         mm = get_model_manager()
         res = await mm.detect_drift(kibana_client)
@@ -115,7 +115,8 @@ async def run_drift_detection():
 async def run_platform_alerting():
     logger.info("run_platform_alerting_started")
     try:
-        from app.api.deps import get_model_manager, get_slm_engine
+        from app.models.model_manager import get_model_manager
+        from app.slm.model_loader import get_slm_engine
         from app.monitoring.platform_alerting import PlatformAlerter
         kibana_client = KibanaProxyClient()
         mm = get_model_manager()
@@ -249,7 +250,7 @@ async def start_scheduler(kibana_client: KibanaProxyClient):
         logger.warning("weekly_cleanup_job_skipped", reason="scripts.cleanup module not found")
 
     from app.monitoring.sla_tracker import sla_tracker_instance
-    from app.api.routes.admin import ws_manager
+    from app.api.routes.websocket import manager as ws_manager
 
     async def check_sla_breaches_job():
         try:
