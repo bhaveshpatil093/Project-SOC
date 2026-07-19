@@ -36,7 +36,8 @@ class SLMEngine:
         self.estimated_memory_mb = 0.0
 
         self._executor = ThreadPoolExecutor(max_workers=1)
-        self._lock = threading.Lock()
+        self._lock = threading.Lock()        # used only in generate() (sync)
+        self._load_lock = asyncio.Lock()     # used in load() / reload() (async)
 
     def _resolve_model_path(self, target_model: str):
         finetuned_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../models/saved/phi3-soc-finetuned/merged"))
@@ -55,7 +56,7 @@ class SLMEngine:
         return target_model, False
 
     async def load(self):
-        with self._lock:
+        async with self._load_lock:
             start_t = time.time()
 
             resolved_path, is_ft = self._resolve_model_path(self.model_name)
@@ -77,6 +78,8 @@ class SLMEngine:
             if self.load_in_4bit:
                 kwargs["load_in_4bit"] = True
 
+            loop = asyncio.get_running_loop()
+
             try:
                 def _load():
                     from transformers import AutoConfig
@@ -84,8 +87,8 @@ class SLMEngine:
                     if getattr(config, "rope_scaling", None):
                         config.rope_scaling = None
 
-                    self.tokenizer = AutoTokenizer.from_pretrained(resolved_path, trust_remote_code=True)
-                    self.model = AutoModelForCausalLM.from_pretrained(
+                    tokenizer = AutoTokenizer.from_pretrained(resolved_path, trust_remote_code=True)
+                    model = AutoModelForCausalLM.from_pretrained(
                         resolved_path,
                         config=config,
                         device_map=device_map,
@@ -93,10 +96,9 @@ class SLMEngine:
                         trust_remote_code=True,
                         **kwargs
                     )
+                    return tokenizer, model
 
-                loop = asyncio.get_event_loop()
-                await loop.run_in_executor(self._executor, _load)
-
+                self.tokenizer, self.model = await loop.run_in_executor(self._executor, _load)
                 self.model_name = resolved_path if is_ft else "microsoft/Phi-3-mini-4k-instruct"
 
             except Exception as e:
@@ -107,16 +109,20 @@ class SLMEngine:
                 self.model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
                 self.is_finetuned = False
                 self.finetuned_path = None
-                def _load_fallback():
-                    self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-                    self.model = AutoModelForCausalLM.from_pretrained(
-                        self.model_name,
-                        device_map=device_map,
-                        torch_dtype=torch.float16 if self.device != "cpu" else torch.float32,
-                        **kwargs
-                    )
-                loop = asyncio.get_event_loop()
-                await loop.run_in_executor(self._executor, _load_fallback)
+                try:
+                    def _load_fallback():
+                        tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+                        model = AutoModelForCausalLM.from_pretrained(
+                            self.model_name,
+                            device_map=device_map,
+                            torch_dtype=torch.float16 if self.device != "cpu" else torch.float32,
+                            **kwargs
+                        )
+                        return tokenizer, model
+                    self.tokenizer, self.model = await loop.run_in_executor(self._executor, _load_fallback)
+                except Exception as e2:
+                    logger.error(f"Fallback SLM load also failed: {e2}")
+                    return self.get_model_info()
 
             self.load_time_seconds = time.time() - start_t
 
@@ -125,7 +131,7 @@ class SLMEngine:
             else:
                 self.estimated_memory_mb = 3800.0
 
-            logger.info(f"SLM loaded securely on {self.device} in {self.load_time_seconds:.2f}s")
+            logger.info(f"SLM loaded successfully on {self.device} in {self.load_time_seconds:.2f}s. is_loaded={self.is_loaded()}")
             return self.get_model_info()
 
     def get_model_info(self) -> dict:
@@ -141,9 +147,8 @@ class SLMEngine:
 
     async def reload(self, model_name: str = "auto"):
         logger.info(f"Hot-reloading SLM to target: {model_name}")
-        with self._lock:
-            self.unload()
-            self.model_name = model_name
+        self.unload()
+        self.model_name = model_name
         return await self.load()
 
     def generate(self, prompt: str, system_prompt: str = None,
@@ -178,7 +183,7 @@ class SLMEngine:
             return response.strip()
 
     async def generate_async(self, prompt: str, system_prompt: str = None, **kwargs) -> str:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(self._executor, lambda: self.generate(prompt, system_prompt, **kwargs))
 
     def is_loaded(self) -> bool:

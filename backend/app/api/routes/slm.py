@@ -21,6 +21,7 @@ from app.slm.agent import SOCAgent
 from app.slm.conversation_manager import get_conversation_manager
 from app.slm.model_loader import SOC_SYSTEM_PROMPT, get_slm_engine
 from app.slm.rag_pipeline import get_rag_pipeline
+from app.slm.playbooks import get_playbook_for_alert
 
 from app.logging_config import get_logger
 logger = get_logger(__name__)
@@ -127,9 +128,10 @@ async def clear_conversation(conversation_id: str):
 
 @router.post("/explain/{alert_id}", dependencies=[Depends(require_role("admin", "analyst", "viewer"))])
 async def explain_alert(alert_id: str, agent: SOCAgent = Depends(get_soc_agent)):
+    start_t = time.time()
     prompt = "Explain this security alert in simple terms for a Level-1 SOC engineer."
     res = await agent.investigate(user_question=prompt, alert_id=alert_id, conversation_history=[])
-    await audit_action('slm.explain_alert', 'alert', alert_id, {})
+    resp_time = (time.time() - start_t) * 1000
     await audit_action('slm.explain_alert', 'alert', alert_id, {})
     es = KibanaProxyClient()
     metrics = ResponseMetrics(
